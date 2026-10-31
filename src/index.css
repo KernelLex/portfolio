@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-space: #0b0e17;
+  --color-surface: #141a26;
+  --color-surface-hi: #1c2433;
+  --color-accent: #f5a35c;
+  --color-ink: #e9ebf2;
+  --color-ink-muted: #8b93a7;
+
+  --font-ui: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+}
+
+@layer base {
+  :root {
+    --hairline: rgb(233 235 242 / 0.08);
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-space);
+    color: var(--color-ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  /* The intro is a game: never let a stray drag select UI text. */
+  canvas {
+    display: block;
+    touch-action: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility hairline {
+  border: 1px solid var(--hairline);
+}
+
+@utility glass {
+  background: rgb(20 26 38 / 0.6);
+  backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid var(--hairline);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
