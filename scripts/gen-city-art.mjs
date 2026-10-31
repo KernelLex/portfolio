@@ -825,9 +825,20 @@ function door() {
 
 /* =============================================================== player === */
 
-const PLAYER_W = 24;
-const PLAYER_H = 32;
+const PLAYER_W = 32;
+const PLAYER_H = 44;
 const WALK_FRAMES = 8;
+const IDLE_FRAMES = 4;
+
+/**
+ * Half the stride: the front foot swings between +STEP and -STEP. One full
+ * cycle therefore covers 2 * 2 * STEP = 32px of ground.
+ *
+ * StreetScene derives the animation frame rate from that 32 and the player's
+ * actual speed, which is what stops the feet skating. Change STEP here and the
+ * matching constant in StreetScene has to change with it.
+ */
+const STEP = 8;
 
 const PC = {
   hood: hex('#223052'),
@@ -851,20 +862,20 @@ function limb(rect, x0, y0, x1, y1, w, col) {
 }
 
 /**
- * phase -1 is the idle pose; 0..7 is the walk cycle.
+ * One pose of the character.
  *
- * The upper body bobs, the feet do not - planting the feet is what stops the
- * cycle looking like a sprite being slid along the floor. Legs are drawn with
- * a transparent column between them so outline() can separate them.
+ * `swing` is how far the front foot is ahead of the hips (-STEP..+STEP);
+ * `bob` lifts the upper body; `lean` tips the torso forward.
+ *
+ * The upper body bobs, the feet do not - planting the feet is what stops a
+ * cycle looking like a sprite being slid along the floor. The legs are drawn
+ * with a transparent column between them so outline() separates them.
  */
-function playerFrame(phase) {
+function playerPose(swing, bob, lean = 0) {
   const c = new Px(PLAYER_W, PLAYER_H);
-  const idle = phase < 0;
-  const bob = idle ? 0 : [0, 1, 0, -1, 0, 1, 0, -1][phase];
-  const spread = idle ? 2 : [4, 2, 0, -2, -4, -2, 0, 2][phase];
 
-  // Bobbing upper body.
-  const put = (x, y, col) => c.set(x, y + bob, col);
+  // Bobbing, leaning upper body.
+  const put = (x, y, col) => c.set(x + lean, y + bob, col);
   const rect = (x, y, w, h, col) => {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, col);
   };
@@ -873,51 +884,69 @@ function playerFrame(phase) {
     for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) c.set(x + i, y + j, col);
   };
 
-  /* --- back leg, in shade ------------------------------------------------ */
-  limb(fixed, 8, 21, 8 - spread, 25, 3, [...PC.pants, 255]);
-  limb(fixed, 8 - Math.round(spread * 0.45), 25, 8 - spread, 29, 3, [...PC.pants, 255]);
-  fixed(7 - spread, 29, 5, 2, [...PC.shoe, 255]);
+  // Legs are long enough (12px hip to ankle) to carry a real stride.
+  const leg = (hipX, off, col) => {
+    const kneeX = hipX + Math.round(off * 0.5);
+    const footX = hipX + off;
+    limb(fixed, hipX, 29, kneeX, 35, 4, col);
+    limb(fixed, kneeX, 35, footX, 41, 4, col);
+    fixed(footX - 1, 41, 6, 2, [...PC.shoe, 255]);
+    fixed(footX - 1, 42, 6, 1, [...PC.sole, 255]);
+  };
 
-  /* --- back arm ----------------------------------------------------------- */
-  limb(rect, 8, 13, 8 + spread, 17, 3, [...PC.hoodDk, 255]);
-  limb(rect, 8 + Math.round(spread * 0.4), 17, 8 + spread, 20, 3, [...PC.hoodDk, 255]);
+  // The sleeve has to differ in value from the torso or only the hand reads.
+  const arm = (shX, off, col, cuff) => {
+    const elbowX = shX + Math.round(off * 0.5);
+    const handX = shX + off;
+    limb(rect, shX, 18, elbowX, 24, 3, col);
+    limb(rect, elbowX, 24, handX, 28, 3, col);
+    rect(handX, 28, 3, 1, [...cuff, 255]);
+    rect(handX, 29, 2, 3, [...R.skin[1], 255]);
+  };
+
+  /* --- back leg and arm, in shade ---------------------------------------- */
+  leg(11, -swing, [...PC.pants, 255]);
+  arm(10, swing, [...PC.hoodDk, 255], R.amber[0]);
 
   /* --- backpack ----------------------------------------------------------- */
-  rect(5, 14, 4, 7, [...PC.pack, 255]);
-  rect(5, 14, 1, 7, [...R.night[1], 255]);
+  rect(6, 19, 5, 10, [...PC.pack, 255]);
+  rect(6, 19, 1, 10, [...R.night[1], 255]);
+  rect(6, 19, 5, 1, [...PC.pack, 255]);
 
   /* --- torso -------------------------------------------------------------- */
-  // Chest is one pixel narrower than the hood and the waist narrower again, so
-  // the lit edge steps down the form instead of running as a straight stripe.
-  rect(8, 12, 8, 7, [...PC.hood, 255]); // chest
-  rect(8, 19, 7, 3, [...PC.hood, 255]); // waist, reaching past the hips
-  rect(8, 12, 2, 10, [...PC.hoodDk, 255]);
-  rect(14, 13, 1, 6, [...PC.hoodHi, 255]);
-  rect(8, 12, 8, 1, [...R.amber[2], 255]); // collar
-  rect(9, 15, 6, 1, [...PC.strap, 255]); // pack strap across the chest
-  rect(12, 14, 1, 8, [...PC.hoodDk, 255]); // zip
+  // Chest wider than the waist, and both narrower than the hood, so the lit
+  // edge steps down the form instead of running as one straight stripe.
+  rect(11, 17, 10, 1, [...PC.hood, 255]); // sloped shoulders
+  rect(10, 18, 12, 7, [...PC.hood, 255]); // chest
+  rect(10, 25, 11, 5, [...PC.hood, 255]); // waist
+  rect(10, 18, 3, 12, [...PC.hoodDk, 255]); // shaded side
+  rect(19, 18, 2, 11, [...PC.hoodHi, 255]); // lit side
+  rect(11, 17, 10, 1, [...R.amber[2], 255]); // collar
+  rect(11, 21, 9, 1, [...PC.strap, 255]); // pack strap across the chest
+  rect(17, 19, 1, 10, [...PC.hoodDk, 255]); // zip
+  rect(10, 29, 11, 1, [...R.night[0], 160]); // hem shadow
 
   /* --- hood and face ------------------------------------------------------ */
-  rect(8, 2, 9, 11, [...PC.hood, 255]);
-  rect(8, 2, 3, 11, [...PC.hoodDk, 255]);
-  rect(6, 5, 2, 6, [...PC.hoodDk, 255]); // hood falling behind the neck
-  rect(10, 2, 7, 1, [...PC.hoodHi, 255]); // lit crown
-  rect(16, 3, 1, 9, [...PC.hoodHi, 255]); // lit hood edge by the face
-  rect(12, 5, 4, 6, [...R.skin[2], 255]); // face in profile
-  rect(12, 5, 4, 1, [...R.skin[0], 255]); // hood shadow on the brow
-  rect(15, 7, 1, 3, [...R.skin[3], 255]); // lit nose and jaw
-  put(14, 7, [...R.night[0], 255]); // eye
+  // Crown is rounded and the neck tapers, or the head reads as a box on a box.
+  rect(13, 2, 7, 1, [...PC.hood, 255]);
+  rect(11, 3, 11, 1, [...PC.hood, 255]);
+  rect(10, 4, 13, 10, [...PC.hood, 255]);
+  rect(11, 14, 11, 2, [...PC.hood, 255]);
+  rect(10, 4, 4, 11, [...PC.hoodDk, 255]); // shaded side
+  rect(11, 3, 4, 1, [...PC.hoodDk, 255]);
+  rect(7, 7, 3, 7, [...PC.hoodDk, 255]); // hood falling behind the neck
+  rect(13, 2, 7, 1, [...PC.hoodHi, 255]); // lit crown
+  rect(22, 5, 1, 10, [...PC.hoodHi, 255]); // lit hood edge by the face
+  rect(16, 7, 6, 8, [...R.skin[2], 255]); // face in profile
+  rect(16, 7, 6, 1, [...R.skin[0], 255]); // hood shadow on the brow
+  rect(21, 9, 1, 4, [...R.skin[3], 255]); // lit nose and jaw
+  rect(16, 14, 5, 1, [...R.skin[0], 255]); // jawline
+  rect(19, 10, 2, 1, [...R.night[0], 255]); // eye
+  rect(16, 13, 2, 1, [...PC.hoodDk, 255]); // chin strap of the hood
 
-  /* --- front leg ---------------------------------------------------------- */
-  limb(fixed, 13, 21, 13 + spread, 25, 3, [...PC.pantsHi, 255]);
-  limb(fixed, 13 + Math.round(spread * 0.45), 25, 13 + spread, 29, 3, [...PC.pantsHi, 255]);
-  fixed(12 + spread, 29, 5, 2, [...PC.shoe, 255]);
-  fixed(12 + spread, 30, 5, 1, [...PC.sole, 255]);
-
-  /* --- front arm ---------------------------------------------------------- */
-  limb(rect, 14, 13, 14 - spread, 17, 3, [...PC.hood, 255]);
-  limb(rect, 14 - Math.round(spread * 0.4), 17, 14 - spread, 20, 3, [...PC.hood, 255]);
-  rect(14 - spread, 20, 3, 2, [...R.skin[1], 255]); // hand
+  /* --- front leg and arm --------------------------------------------------- */
+  leg(16, swing, [...PC.pantsHi, 255]);
+  arm(18, -swing, [...PC.hoodHi, 255], R.amber[2]);
 
   // Rim first (it reads as light wrapping the form), keyline second.
   rimLight(c, R.amber[3], 1, 120);
@@ -925,13 +954,30 @@ function playerFrame(phase) {
   return c;
 }
 
-function playerIdle() {
-  return playerFrame(-1);
-}
+/**
+ * Contact, down, passing, up - twice, once per leg. Travelling 2*2*STEP of
+ * ground per loop.
+ */
+const WALK_SWING = [STEP, STEP / 2, 0, -STEP / 2, -STEP, -STEP / 2, 0, STEP / 2];
+const WALK_BOB = [0, 1, 0, -1, 0, 1, 0, -1];
 
 function playerWalk() {
   const sheet = new Px(PLAYER_W * WALK_FRAMES, PLAYER_H);
-  for (let f = 0; f < WALK_FRAMES; f++) blit(sheet, playerFrame(f), f * PLAYER_W, 0);
+  for (let f = 0; f < WALK_FRAMES; f++) {
+    // Leaning into the rain while moving.
+    blit(sheet, playerPose(WALK_SWING[f], WALK_BOB[f], 1), f * PLAYER_W, 0);
+  }
+  return sheet;
+}
+
+/** Standing still is still moving: a slow breath, barely a pixel of it. */
+const IDLE_BOB = [0, 0, 1, 1];
+
+function playerIdle() {
+  const sheet = new Px(PLAYER_W * IDLE_FRAMES, PLAYER_H);
+  for (let f = 0; f < IDLE_FRAMES; f++) {
+    blit(sheet, playerPose(2, IDLE_BOB[f], 0), f * PLAYER_W, 0);
+  }
   return sheet;
 }
 

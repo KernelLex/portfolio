@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Game } from 'phaser';
-import { VIEW_H, VIEW_W } from './viewport';
+import { VIEW_H, viewportWidth } from './viewport';
 
 type Props = {
   /** Called once the door zoom has finished playing. */
@@ -66,7 +66,10 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
         game = new Phaser.Game({
           type: Phaser.AUTO,
           parent: hostRef.current,
-          width: VIEW_W,
+          // Height is fixed so the scene's y coordinates stay valid; width
+          // follows the display's aspect so a wide screen sees more street
+          // instead of black bars.
+          width: viewportWidth(),
           height: VIEW_H,
           pixelArt: true,
           roundPixels: true,

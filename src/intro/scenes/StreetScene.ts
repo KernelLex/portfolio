@@ -1,20 +1,35 @@
 import Phaser from 'phaser';
 import { BROWSER_NAME, introPalette } from '../../config';
 import { playWhoosh } from '../../lib/sound';
-import { VIEW_H, VIEW_W } from '../viewport';
+import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { CityPostFX } from '../pipelines/CityPostFX';
 
-/* Every number below is in "pixel art pixels" (the 480x270 authoring grid),
+/* Every number below is in "pixel art pixels" (the 270-tall authoring grid),
  * not screen pixels. */
-const WORLD_W = 1400;
+const WORLD_W = 960;
 const GROUND_Y = 212; // where the player's feet sit
 const STREET_TOP = 190;
 const BUILDING_BASE = 196;
 
 const PLAYER_START_X = 70;
-const PLAYER_SPEED = 150; // ~7.5s of walking to reach the shop
-const SHOP_X = 1230;
-const DOOR_ZONE = 34;
+const SHOP_X = 790;
+const DOOR_ZONE = 36;
+
+/**
+ * Movement. Speed and stride are locked together: the walk sheet covers
+ * STRIDE_PER_CYCLE pixels of ground per loop, so playing it at
+ * (speed / STRIDE_PER_CYCLE) cycles per second is the only rate at which the
+ * feet do not skate. WALK_FPS is that rate at full speed; the scene scales the
+ * animation's timeScale by actual speed for everything in between.
+ */
+const PLAYER_SPEED = 88;
+const PLAYER_ACCEL = 420;
+const PLAYER_FRICTION = 620;
+const STRIDE_PER_CYCLE = 32; // must match STEP * 4 in scripts/gen-city-art.mjs
+const WALK_FRAME_COUNT = 8;
+const WALK_FPS = (PLAYER_SPEED / STRIDE_PER_CYCLE) * WALK_FRAME_COUNT;
+/** Below this the walk reads as a shuffle, so switch to the idle breath. */
+const MOVING_THRESHOLD = 5;
 
 const IDLE_BEFORE_AUTOWALK = 2500;
 const IDLE_AT_DOOR_BEFORE_ENTER = 3000;
@@ -23,11 +38,11 @@ const ADD = Phaser.BlendModes.ADD;
 
 /** Signs along the street. Easter eggs: every one is something Amogh built. */
 const SIGNS: ReadonlyArray<{ x: number; y: number; label: string; color: string }> = [
-  { x: 250, y: 126, label: 'VERA ERP', color: introPalette.cyan },
-  { x: 440, y: 96, label: 'SECANT', color: introPalette.magenta },
-  { x: 640, y: 134, label: 'HAZEN', color: introPalette.violet },
-  { x: 880, y: 100, label: 'TRUECOMMIT', color: introPalette.lime },
-  { x: 1060, y: 138, label: 'THROTTLE', color: introPalette.cyan },
+  { x: 180, y: 126, label: 'VERA ERP', color: introPalette.cyan },
+  { x: 320, y: 96, label: 'SECANT', color: introPalette.magenta },
+  { x: 450, y: 134, label: 'HAZEN', color: introPalette.violet },
+  { x: 590, y: 100, label: 'TRUECOMMIT', color: introPalette.lime },
+  { x: 700, y: 138, label: 'THROTTLE', color: introPalette.cyan },
 ];
 
 /**
@@ -36,17 +51,17 @@ const SIGNS: ReadonlyArray<{ x: number; y: number; label: string; color: string 
  */
 const FOREGROUND_PARALLAX = 1.25;
 const PROPS: ReadonlyArray<{ x: number; frame: number }> = [
-  { x: 120, frame: 0 },
-  { x: 330, frame: 2 },
-  { x: 560, frame: 1 },
-  { x: 790, frame: 3 },
-  { x: 1010, frame: 0 },
-  { x: 1240, frame: 2 },
-  { x: 1450, frame: 1 },
+  { x: 100, frame: 0 },
+  { x: 250, frame: 2 },
+  { x: 400, frame: 1 },
+  { x: 560, frame: 3 },
+  { x: 720, frame: 0 },
+  { x: 880, frame: 2 },
+  { x: 1040, frame: 1 },
 ];
 
 /** Grates that breathe. Placed between the signs so the street is never still. */
-const VENTS: ReadonlyArray<number> = [310, 720, 1120];
+const VENTS: ReadonlyArray<number> = [250, 520, 680];
 
 const DEPTH = {
   sky: 0,
@@ -79,12 +94,15 @@ export type StreetSceneOptions = {
 
 type SignParts = {
   container: Phaser.GameObjects.Container;
-  lights: Phaser.GameObjects.GameObject[];
+  lights: Phaser.GameObjects.Image[];
   baseAlpha: number[];
 };
 
 export class StreetScene extends Phaser.Scene {
   private opts: StreetSceneOptions;
+
+  /** Actual viewport width in game pixels - varies with the display aspect. */
+  private camW = BASE_VIEW_W;
 
   private sky!: Phaser.GameObjects.TileSprite;
   private skyline!: Phaser.GameObjects.TileSprite;
@@ -113,6 +131,9 @@ export class StreetScene extends Phaser.Scene {
   private hintDismissed = false;
   private idleFor = 0;
   private atDoorFor = 0;
+  private velocity = 0;
+  /** Fractional camera position. Only the rounded value reaches the camera. */
+  private camX = 0;
   private lookAhead = 0;
   private lastFootFrame = -1;
 
@@ -126,10 +147,13 @@ export class StreetScene extends Phaser.Scene {
     for (const key of ['sky', 'skyline', 'buildings', 'cables', 'street', 'shop', 'door', 'glow']) {
       this.load.image(key, base + key + '.png');
     }
-    this.load.image('player-idle', base + 'player-idle.png');
+    this.load.spritesheet('player-idle', base + 'player-idle.png', {
+      frameWidth: 32,
+      frameHeight: 44,
+    });
     this.load.spritesheet('player-walk', base + 'player-walk.png', {
-      frameWidth: 24,
-      frameHeight: 32,
+      frameWidth: 32,
+      frameHeight: 44,
     });
     this.load.spritesheet('props', base + 'props.png', { frameWidth: 64, frameHeight: 120 });
 
@@ -139,6 +163,7 @@ export class StreetScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.camW = this.scale.width;
     this.ensureFallbackTextures();
     this.rainTexture(); // the footfall splash needs it even when rain is off
     this.cameras.main.setBounds(0, 0, WORLD_W, VIEW_H);
@@ -172,16 +197,16 @@ export class StreetScene extends Phaser.Scene {
       g.generateTexture(key, w, h);
       g.destroy();
     };
-    make('sky', VIEW_W, VIEW_H, 0x070912);
-    make('skyline', VIEW_W, 110, 0x0c1120);
-    make('buildings', VIEW_W, 170, 0x0a0f1c);
-    make('cables', VIEW_W, 64, 0x000000);
-    make('street', VIEW_W, 80, 0x0a0d16);
+    make('sky', BASE_VIEW_W, VIEW_H, 0x070912);
+    make('skyline', BASE_VIEW_W, 110, 0x0c1120);
+    make('buildings', BASE_VIEW_W, 170, 0x0a0f1c);
+    make('cables', BASE_VIEW_W, 64, 0x000000);
+    make('street', BASE_VIEW_W, 80, 0x0a0d16);
     make('shop', 160, 120, 0x141b2c);
     make('door', 28, 44, 0x1b2235);
     make('glow', 64, 64, 0xffffff);
-    make('player-idle', 24, 32, 0x243253);
-    make('player-walk', 24, 32, 0x243253);
+    make('player-idle', 32, 44, 0x243253);
+    make('player-walk', 32, 44, 0x243253);
     make('props', 64, 120, 0x05060d);
   }
 
@@ -198,10 +223,14 @@ export class StreetScene extends Phaser.Scene {
   /* ------------------------------------------------------------ parallax -- */
 
   private buildParallax(): void {
-    // Each layer is a screen-sized tile sprite scrolled by hand, so no layer
-    // needs a 1400px-wide image and the loop is seamless at any world width.
+    // Each layer is a viewport-sized tile sprite scrolled by hand, so no layer
+    // needs a world-wide image and the loop is seamless at any world width.
     const layer = (y: number, h: number, key: string, depth: number) =>
-      this.add.tileSprite(0, y, VIEW_W, h, key).setOrigin(0, 0).setScrollFactor(0).setDepth(depth);
+      this.add
+        .tileSprite(0, y, this.camW, h, key)
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(depth);
 
     this.sky = layer(0, VIEW_H, 'sky', DEPTH.sky);
     this.skyline = layer(BUILDING_BASE - 110, 110, 'skyline', DEPTH.skyline);
@@ -262,24 +291,18 @@ export class StreetScene extends Phaser.Scene {
       .setBlendMode(ADD);
     const arm = this.add.rectangle(0, h / 2 + 3, 2, 6, num, 0.4);
 
-    const container = this.add
-      .container(x, y, [panel, edge, arm, tube, text])
-      .setDepth(DEPTH.signs);
+    const container = this.add.container(x, y, [panel, edge, arm, tube, text]).setDepth(DEPTH.signs);
 
     // Halo around the sign itself, a pool of it on the wet road, and a smear
     // between the two.
     const halo = this.light(x, y, num, 0.3, w / 26, h / 18, DEPTH.signs - 1);
     const pool = this.light(x, GROUND_Y + 14, num, 0.26, w / 22, 0.5, DEPTH.lightPool);
-    const smear = this.add
-      .rectangle(x, GROUND_Y + 30, Math.max(6, w * 0.45), 52, num, 0.06)
-      .setBlendMode(ADD)
-      .setDepth(DEPTH.lightPool);
+    const smear = this.light(x, GROUND_Y + 34, num, 0.1, w / 46, 1.1, DEPTH.lightPool);
 
-    const lights = [halo, pool, smear];
     const parts: SignParts = {
       container,
-      lights,
-      baseAlpha: [0.3, 0.26, 0.06],
+      lights: [halo, pool, smear],
+      baseAlpha: [0.3, 0.26, 0.1],
     };
     if (!this.opts.reducedMotion) this.flicker(parts);
     return parts;
@@ -289,9 +312,7 @@ export class StreetScene extends Phaser.Scene {
   private flicker(parts: SignParts): void {
     const apply = (k: number) => {
       parts.container.setAlpha(k);
-      parts.lights.forEach((light, i) => {
-        (light as Phaser.GameObjects.Image).setAlpha(parts.baseAlpha[i] * k);
-      });
+      parts.lights.forEach((light, i) => light.setAlpha(parts.baseAlpha[i] * k));
     };
 
     this.tweens.addCounter({
@@ -318,7 +339,7 @@ export class StreetScene extends Phaser.Scene {
 
   /** The one sign that is not Amogh's: a billboard for the people reading this. */
   private buildBillboard(): void {
-    const x = 760;
+    const x = 400;
     const y = 58;
     const num = Phaser.Display.Color.HexStringToColor(introPalette.accent).color;
 
@@ -426,11 +447,23 @@ export class StreetScene extends Phaser.Scene {
   /* -------------------------------------------------------------- player -- */
 
   private buildPlayer(): void {
-    if (!this.anims.exists('walk') && this.textures.get('player-walk').frameTotal > 1) {
+    const sheeted = this.textures.get('player-walk').frameTotal > 1;
+    if (sheeted && !this.anims.exists('walk')) {
       this.anims.create({
         key: 'walk',
-        frames: this.anims.generateFrameNumbers('player-walk', { start: 0, end: 7 }),
-        frameRate: 12,
+        frames: this.anims.generateFrameNumbers('player-walk', {
+          start: 0,
+          end: WALK_FRAME_COUNT - 1,
+        }),
+        frameRate: WALK_FPS,
+        repeat: -1,
+      });
+    }
+    if (this.textures.get('player-idle').frameTotal > 1 && !this.anims.exists('idle')) {
+      this.anims.create({
+        key: 'idle',
+        frames: this.anims.generateFrameNumbers('player-idle', { start: 0, end: 3 }),
+        frameRate: 4,
         repeat: -1,
       });
     }
@@ -445,13 +478,14 @@ export class StreetScene extends Phaser.Scene {
       .setDepth(DEPTH.reflection);
 
     this.shadow = this.add
-      .ellipse(PLAYER_START_X, GROUND_Y - 1, 18, 5, 0x000000, 0.4)
+      .ellipse(PLAYER_START_X, GROUND_Y - 1, 20, 5, 0x000000, 0.4)
       .setDepth(DEPTH.player - 1);
 
     this.player = this.add
       .sprite(PLAYER_START_X, GROUND_Y, 'player-idle')
       .setOrigin(0.5, 1)
       .setDepth(DEPTH.player);
+    if (this.anims.exists('idle')) this.player.play('idle');
 
     // Water kicked up on each footfall.
     this.footSplash = this.add
@@ -505,11 +539,12 @@ export class StreetScene extends Phaser.Scene {
 
   private buildRain(): void {
     this.rainTexture();
+    const w = this.camW;
 
     // Far rain: slower, dimmer, behind the player.
     this.add
       .particles(0, 0, 'rain-drop', {
-        x: { min: -60, max: VIEW_W + 60 },
+        x: { min: -60, max: w + 60 },
         y: -12,
         lifespan: 1500,
         speedY: { min: 200, max: 280 },
@@ -526,7 +561,7 @@ export class StreetScene extends Phaser.Scene {
     // Near rain: fast, long, in front of everything.
     this.add
       .particles(0, 0, 'rain-drop', {
-        x: { min: -80, max: VIEW_W + 80 },
+        x: { min: -80, max: w + 80 },
         y: -16,
         lifespan: 900,
         speedY: { min: 420, max: 560 },
@@ -540,10 +575,10 @@ export class StreetScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(DEPTH.rainNear);
 
-    // Rain hitting the road.
+    // Rain bouncing off the road.
     this.add
       .particles(0, 0, 'rain-drop', {
-        x: { min: 0, max: VIEW_W },
+        x: { min: 0, max: w },
         y: { min: GROUND_Y + 2, max: VIEW_H - 6 },
         lifespan: 260,
         speedY: { min: -70, max: -30 },
@@ -602,7 +637,7 @@ export class StreetScene extends Phaser.Scene {
     });
 
     this.hint = this.add
-      .text(VIEW_W / 2, VIEW_H - 16, touch ? 'Tap and hold to walk' : 'Hold  >  or  D  to walk', {
+      .text(this.camW / 2, VIEW_H - 16, touch ? 'Tap and hold to walk' : 'Hold  >  or  D  to walk', {
         fontFamily: '"JetBrains Mono", monospace',
         fontSize: '9px',
         color: '#8b93a7',
@@ -658,7 +693,7 @@ export class StreetScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (this.entering) return;
 
-    const dt = delta / 1000;
+    const dt = Math.min(0.05, delta / 1000); // a tab-out must not teleport anyone
     const pressedRight =
       this.walking || this.cursors?.right?.isDown === true || this.keyD?.isDown === true;
     const pressedLeft = this.cursors?.left?.isDown === true || this.keyA?.isDown === true;
@@ -679,20 +714,8 @@ export class StreetScene extends Phaser.Scene {
     else if (pressedLeft) dir = -1;
     else if (autoWalk) dir = 1;
 
-    const maxX = SHOP_X - 6;
-    if (dir !== 0) {
-      this.player.x = Phaser.Math.Clamp(this.player.x + dir * PLAYER_SPEED * dt, 24, maxX);
-      this.player.setFlipX(dir < 0);
-      if (this.player.anims.currentAnim?.key !== 'walk' && this.anims.exists('walk')) {
-        this.player.play('walk');
-      }
-      this.splashOnFootfall();
-    } else if (this.player.anims.isPlaying) {
-      this.player.stop();
-      this.player.setTexture('player-idle');
-      this.lastFootFrame = -1;
-    }
-
+    this.movePlayer(dir, dt);
+    this.animatePlayer();
     this.syncPlayerDressing();
 
     const inDoorZone = Math.abs(this.player.x - SHOP_X) < DOOR_ZONE;
@@ -719,6 +742,54 @@ export class StreetScene extends Phaser.Scene {
     this.followCamera(dt, dir);
   }
 
+  /** Weighted movement - nothing in this scene snaps from nought to full. */
+  private movePlayer(dir: number, dt: number): void {
+    if (dir !== 0) {
+      this.velocity = Phaser.Math.Clamp(
+        this.velocity + dir * PLAYER_ACCEL * dt,
+        -PLAYER_SPEED,
+        PLAYER_SPEED,
+      );
+    } else {
+      const drop = PLAYER_FRICTION * dt;
+      this.velocity =
+        Math.abs(this.velocity) <= drop ? 0 : this.velocity - Math.sign(this.velocity) * drop;
+    }
+
+    if (this.velocity === 0) return;
+
+    const minX = 24;
+    const maxX = SHOP_X - 6;
+    const next = this.player.x + this.velocity * dt;
+    this.player.x = Phaser.Math.Clamp(next, minX, maxX);
+    // Walking into either end should stop, not grind at full speed.
+    if (this.player.x !== next) this.velocity = 0;
+  }
+
+  /**
+   * Playback rate tracks ground speed, so one loop of the cycle always covers
+   * exactly STRIDE_PER_CYCLE pixels however fast the player is going. This is
+   * the whole fix for skating feet.
+   */
+  private animatePlayer(): void {
+    const speed = Math.abs(this.velocity);
+    const anims = this.player.anims;
+
+    if (speed > MOVING_THRESHOLD) {
+      if (anims.currentAnim?.key !== 'walk' && this.anims.exists('walk')) this.player.play('walk');
+      anims.timeScale = speed / PLAYER_SPEED;
+      this.player.setFlipX(this.velocity < 0);
+      this.splashOnFootfall();
+      return;
+    }
+
+    if (anims.currentAnim?.key !== 'idle' && this.anims.exists('idle')) {
+      this.player.play('idle');
+      this.lastFootFrame = -1;
+    }
+    anims.timeScale = 1;
+  }
+
   /** Shadow and mirror image track the player every frame. */
   private syncPlayerDressing(): void {
     this.shadow.x = this.player.x;
@@ -734,30 +805,37 @@ export class StreetScene extends Phaser.Scene {
   private splashOnFootfall(): void {
     const frame = Number(this.player.frame.name);
     if (Number.isNaN(frame)) return;
-    const isContact = frame === 0 || frame === 4;
-    if (isContact && frame !== this.lastFootFrame) {
+    if ((frame === 0 || frame === 4) && frame !== this.lastFootFrame) {
       this.footSplash?.explode(3, this.player.x, GROUND_Y - 1);
     }
     this.lastFootFrame = frame;
   }
 
+  /**
+   * The camera tracks a fractional position but only ever hands the camera a
+   * whole number. Phaser's roundPixels snaps sprites to whole pixels, so a
+   * fractional scroll makes sprites and backgrounds round inconsistently -
+   * which is exactly what reads as jitter.
+   */
   private followCamera(dt: number, dir: number): void {
     const cam = this.cameras.main;
     // Lead the camera in the direction of travel so the player is not centred
     // on their own nose while walking.
     this.lookAhead = Phaser.Math.Linear(this.lookAhead, dir * 42, Math.min(1, dt * 1.6));
     const target = Phaser.Math.Clamp(
-      this.player.x - VIEW_W / 3 + this.lookAhead,
+      this.player.x - this.camW / 3 + this.lookAhead,
       0,
-      WORLD_W - VIEW_W,
+      Math.max(0, WORLD_W - this.camW),
     );
-    cam.scrollX = Phaser.Math.Linear(cam.scrollX, target, Math.min(1, dt * 6));
 
-    this.sky.tilePositionX = cam.scrollX * 0.05;
-    this.skyline.tilePositionX = cam.scrollX * 0.25;
-    this.buildings.tilePositionX = cam.scrollX * 0.55;
-    this.cables.tilePositionX = cam.scrollX * 1.1;
-    this.street.tilePositionX = cam.scrollX;
+    this.camX = Phaser.Math.Linear(this.camX, target, Math.min(1, dt * 6));
+    cam.scrollX = Math.round(this.camX);
+
+    this.sky.tilePositionX = Math.round(this.camX * 0.05);
+    this.skyline.tilePositionX = Math.round(this.camX * 0.25);
+    this.buildings.tilePositionX = Math.round(this.camX * 0.55);
+    this.cables.tilePositionX = Math.round(this.camX * 1.1);
+    this.street.tilePositionX = Math.round(this.camX);
   }
 
   /* ------------------------------------------------------------- door ----- */
@@ -766,11 +844,11 @@ export class StreetScene extends Phaser.Scene {
     if (this.entering) return;
     this.entering = true;
     this.walking = false;
+    this.velocity = 0;
 
     playWhoosh();
 
     this.player.stop();
-    this.player.setTexture('player-idle');
     this.tweens.add({ targets: [this.prompt, this.hint], alpha: 0, duration: 200 });
 
     // The door swings inward and the player steps through.

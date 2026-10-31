@@ -62,8 +62,8 @@ that grid, not in screen pixels.
 | `props.png`       | 256 × 120 | 1.25×  | Spritesheet, **4 frames of 64 × 120**: 0 street lamp, 1 railing, 2 bollards + rubbish, 3 crate + weeds.            |
 | `shop.png`        | 160 × 120 | 1.00×  | Storefront. Origin bottom-centre at the ground line. See anchors below.                                            |
 | `door.png`        | 28 × 44   | 1.00×  | Closed door, centred on the shop. Swings open via `scaleX` — no separate open frame.                               |
-| `player-idle.png` | 24 × 32   | 1.00×  | Single frame, facing **right**. Origin bottom-centre, feet on the last row.                                        |
-| `player-walk.png` | 192 × 32  | 1.00×  | Spritesheet, **8 frames of 24 × 32**, facing **right**. Played at 12 fps. Frames 0 and 4 are the contact poses.    |
+| `player-idle.png` | 128 × 44  | 1.00×  | Spritesheet, **4 frames of 32 × 44**, facing **right**. A slow breath, 4 fps. Origin bottom-centre.                |
+| `player-walk.png` | 256 × 44  | 1.00×  | Spritesheet, **8 frames of 32 × 44**, facing **right**. Frames 0 and 4 are the contact poses. See stride below.    |
 | `glow.png`        | 64 × 64   | —      | Soft white disc. Tinted, scaled and additively blended for every light in the city. Not pixel art by design.       |
 
 The four tiled layers (`sky`, `skyline`, `buildings`, `street`) and `cables`
@@ -72,6 +72,18 @@ is 1400px wide and repeats each tile.
 
 `props.png` frames are placed as individual world objects, not tiled, so they
 never visibly repeat. Frame 0 gets an amber light attached in the scene.
+
+## Stride — read this before replacing the walk sheet
+
+The walk cycle covers **32px of ground per loop** (`STEP = 8` in the generator:
+the front foot swings between +8 and −8, twice per loop). `StreetScene` derives
+the animation frame rate from that number and the player's live speed, so one
+loop always covers exactly 32px however fast they are moving. That is the only
+thing stopping the feet from skating.
+
+A replacement sheet with a different stride **must** update `STRIDE_PER_CYCLE`
+in `src/intro/scenes/StreetScene.ts` to match, or the feet will slide. Measure
+it as `2 × (front foot x at frame 0 − front foot x at frame 4)`.
 
 ## Shop anchors
 
