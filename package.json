@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "assets:intro": "node scripts/gen-placeholder-assets.mjs"
+    "assets:intro": "node scripts/gen-city-art.mjs"
   },
   "dependencies": {
     "gsap": "^3.15.0",

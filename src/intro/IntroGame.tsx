@@ -16,6 +16,13 @@ type Props = {
  * a stray second Game would otherwise leave an orphaned canvas and a running
  * render loop behind.
  */
+/**
+ * If the scene has not finished starting by now, something is wrong with
+ * WebGL, the assets or the engine - move the visitor along rather than leave
+ * them on a black rectangle.
+ */
+const BOOT_WATCHDOG_MS = 6000;
+
 export default function IntroGame({ onEnter, reducedMotion }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [booted, setBooted] = useState(false);
@@ -28,50 +35,66 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
     let game: Game | null = null;
     let cancelled = false;
 
+    const bail = (reason: string, err?: unknown) => {
+      if (cancelled) return;
+      console.warn('[intro] skipping the street scene:', reason, err ?? '');
+      onEnterRef.current();
+    };
+
+    const watchdog = window.setTimeout(() => bail('scene did not start in time'), BOOT_WATCHDOG_MS);
+
     void (async () => {
-      // Phaser measures text at creation time, so the pixel font has to be
-      // resident first or every sign is laid out with fallback metrics.
       try {
-        await Promise.all([
-          document.fonts.load('8px "Press Start 2P"'),
-          document.fonts.load('9px "JetBrains Mono"'),
+        // Phaser measures text at creation time, so the pixel font has to be
+        // resident first or every sign is laid out with fallback metrics.
+        try {
+          await Promise.all([
+            document.fonts.load('8px "Press Start 2P"'),
+            document.fonts.load('9px "JetBrains Mono"'),
+          ]);
+        } catch {
+          /* fall back to monospace metrics */
+        }
+
+        const [{ default: Phaser }, { StreetScene }] = await Promise.all([
+          import('phaser'),
+          import('./scenes/StreetScene'),
         ]);
-      } catch {
-        /* fall back to monospace metrics */
+
+        if (cancelled || !hostRef.current) return;
+
+        game = new Phaser.Game({
+          type: Phaser.AUTO,
+          parent: hostRef.current,
+          width: VIEW_W,
+          height: VIEW_H,
+          pixelArt: true,
+          roundPixels: true,
+          backgroundColor: '#070912',
+          scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+          },
+          // Sound goes through our own muted-by-default WebAudio layer instead.
+          audio: { noAudio: true },
+          scene: new StreetScene({
+            onEnter: () => onEnterRef.current(),
+            onReady: () => {
+              window.clearTimeout(watchdog);
+              if (!cancelled) setBooted(true);
+            },
+            reducedMotion,
+          }),
+        });
+      } catch (err) {
+        window.clearTimeout(watchdog);
+        bail('failed to start', err);
       }
-
-      const [{ default: Phaser }, { StreetScene }] = await Promise.all([
-        import('phaser'),
-        import('./scenes/StreetScene'),
-      ]);
-
-      if (cancelled || !hostRef.current) return;
-
-      game = new Phaser.Game({
-        type: Phaser.AUTO,
-        parent: hostRef.current,
-        width: VIEW_W,
-        height: VIEW_H,
-        pixelArt: true,
-        roundPixels: true,
-        backgroundColor: '#070912',
-        scale: {
-          mode: Phaser.Scale.FIT,
-          autoCenter: Phaser.Scale.CENTER_BOTH,
-        },
-        // Sound goes through our own muted-by-default WebAudio layer instead.
-        audio: { noAudio: true },
-        scene: new StreetScene({
-          onEnter: () => onEnterRef.current(),
-          reducedMotion,
-        }),
-      });
-
-      setBooted(true);
     })();
 
     return () => {
       cancelled = true;
+      window.clearTimeout(watchdog);
       game?.destroy(true);
       game = null;
     };
