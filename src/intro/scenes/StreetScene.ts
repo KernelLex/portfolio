@@ -65,7 +65,6 @@ export class StreetScene extends Phaser.Scene {
   private hintDismissed = false;
   private idleFor = 0;
   private atDoorFor = 0;
-  private hasInput = false;
 
   constructor(opts: StreetSceneOptions) {
     super('street');
@@ -466,7 +465,6 @@ export class StreetScene extends Phaser.Scene {
 
   private markInput(): void {
     this.idleFor = 0;
-    this.hasInput = true;
     if (!this.hintDismissed) {
       this.hintDismissed = true;
       this.tweens.add({ targets: this.hint, alpha: 0, duration: 450, ease: 'Sine.easeIn' });
@@ -490,8 +488,9 @@ export class StreetScene extends Phaser.Scene {
     if (pressedRight || pressedLeft || pressedEnter) this.markInput();
 
     this.idleFor += delta;
-    // Nobody should be able to get stuck on the first screen.
-    const autoWalk = !this.hasInput || this.idleFor > IDLE_BEFORE_AUTOWALK;
+    // Nobody should be able to get stuck on the first screen. This also covers
+    // the visitor who never touches anything: idleFor just keeps climbing.
+    const autoWalk = this.idleFor > IDLE_BEFORE_AUTOWALK;
 
     let dir = 0;
     if (pressedRight) dir = 1;
@@ -582,11 +581,14 @@ export class StreetScene extends Phaser.Scene {
     cam.zoomTo(4.5, 600, 'Sine.easeInOut');
 
     // The interior light grows to fill the frame, handing off to the flash.
+    // Lifted above the rain and the player so nothing streaks across it.
+    this.doorway.setDepth(20);
     this.tweens.add({
       targets: this.doorway,
-      scaleX: 1.6,
+      scaleX: 9,
+      scaleY: 4.5,
       duration: 600,
-      ease: 'Sine.easeIn',
+      ease: 'Quad.easeIn',
     });
 
     this.time.delayedCall(600, () => this.opts.onEnter());
