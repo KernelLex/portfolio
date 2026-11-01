@@ -7,7 +7,7 @@ import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { Billboard } from './Billboard';
 import { Controls } from './controls';
 import { Blade, LedSign, Ticker, fascia, flicker, flickerLights, type Animated } from './Signage';
-import { STREET_LANES, Traffic } from './Traffic';
+import { PEOPLE_KINDS, STREET_LANES, Traffic } from './Traffic';
 import { PLAYER_SPEED, Walker } from './Walker';
 import {
   ADD,
@@ -265,8 +265,7 @@ export class StreetScene extends Phaser.Scene {
     };
     sheet('rickshaw-roll', 'rickshaw', 0, 1, 14);
     sheet('note-pulse', 'note', 0, 3, 7);
-    sheet('ped-cyan', 'pedestrians', 0, 3, 8);
-    sheet('ped-magenta', 'pedestrians', 4, 7, 8);
+    for (let k = 0; k < PEOPLE_KINDS; k++) sheet(`ped-${k}`, 'pedestrians', k * 4, k * 4 + 3, 7);
   }
 
   /* ---------------------------------------------------------------- city -- */
@@ -772,7 +771,8 @@ export class StreetScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     const dt = Math.min(0.05, delta / 1000); // a tab-out must not teleport anyone
     this.clock += dt;
-    this.traffic.update(dt, this.cameras.main.scrollX);
+    // People only make room for a player who is out on the pavement.
+    this.traffic.update(dt, this.cameras.main.scrollX, this.busy ? undefined : this.walker.x);
     this.billboard.update(dt);
     if (!this.opts.reducedMotion) {
       for (const a of this.animated) a.update(dt);
@@ -832,67 +832,65 @@ export class StreetScene extends Phaser.Scene {
 
   /* ---------------------------------------------------- in and out the door */
 
-  /** Doors slide open, the player walks up and in, they close, the view irises shut. */
+  /**
+   * The player walks up to the doors, turns to them, and they slide open; in
+   * they go, back to the camera, the doors close behind them, and the view
+   * irises shut on the doorway.
+   */
   private enterCafe(): void {
     if (this.busy) return;
     this.busy = true;
     const w = this.walker;
     w.freeze();
     this.tweens.add({ targets: [this.prompt, this.hint], alpha: 0, duration: 200 });
-    this.slideDoors(true);
 
     const toDoor = Math.abs(CAFE_X - w.x);
-    w.stride(CAFE_X >= w.x ? 1 : -1);
+    if (toDoor > 1) w.stride(CAFE_X >= w.x ? 1 : -1);
     this.tweens.add({
       targets: w.sprite,
       x: CAFE_X,
-      duration: (toDoor / PLAYER_SPEED) * 1000 + 80,
+      duration: (toDoor / PLAYER_SPEED) * 1000 + 40,
       onUpdate: () => w.syncDressing(),
       onComplete: () => {
-        this.tweens.add({ targets: w.sprite, y: BUILDING_BASE + 2, scale: 0.88, duration: 420, ease: 'Sine.easeIn', onUpdate: () => w.syncDressing() });
-        this.tweens.add({ targets: w.sprite, alpha: 0, duration: 220, delay: 240 });
-        this.tweens.add({ targets: [w.shadow, w.reflection], alpha: 0, duration: 300 });
-        this.time.delayedCall(500, () => this.slideDoors(false));
-        this.time.delayedCall(620, () => iris(this, DOORWAY.x, DOORWAY.y, 'close', 600, () => this.scene.start('cafe', { entry: 'door' })));
+        this.slideDoors(true);
+        w.stepDepth('away', { x: CAFE_X, y: BUILDING_BASE, scale: 0.88 }, 620, () => {
+          this.slideDoors(false);
+          this.time.delayedCall(260, () =>
+            iris(this, DOORWAY.x, DOORWAY.y, 'close', 600, () => this.scene.start('cafe', { entry: 'door' })),
+          );
+        });
+        // Over the threshold: now the doors close in front of them.
+        this.time.delayedCall(420, () => w.sprite.setDepth(DEPTH.cafe + 0.5));
+        this.tweens.add({ targets: w.reflection, alpha: 0, duration: 300 });
       },
     });
   }
 
-  /** Back from the cafe: the view irises open on the doors, and out the player steps. */
+  /**
+   * Back from the cafe: the view irises open on the doors, they part, and the
+   * player steps out towards the camera, then turns to the street.
+   */
   private comeOutOfCafe(): void {
     this.busy = true;
     const w = this.walker;
     w.freeze();
-    w.sprite.setPosition(CAFE_X, BUILDING_BASE + 2).setScale(0.88).setAlpha(0);
-    w.shadow.setAlpha(0);
-    w.reflection?.setAlpha(0);
-    w.syncDressing();
+    w.sprite.setTexture('player-turn', 2).setPosition(CAFE_X, BUILDING_BASE).setScale(0.88).setDepth(DEPTH.cafe + 0.5);
+    w.shadow.setPosition(CAFE_X, BUILDING_BASE - 1).setScale(0.88);
+    w.reflection?.setVisible(false);
     this.hint.setAlpha(0);
     this.hintDismissed = true;
     this.followCamera(1, -1, true);
 
     iris(this, DOORWAY.x, DOORWAY.y, 'open', 650);
-    this.time.delayedCall(250, () => this.slideDoors(true));
-    this.time.delayedCall(450, () => {
-      w.stride(-1);
-      this.tweens.add({
-        targets: w.sprite,
-        x: CAFE_X - 18,
-        y: GROUND_Y,
-        scale: 1,
-        alpha: 1,
-        duration: 560,
-        ease: 'Sine.easeOut',
-        onUpdate: () => w.syncDressing(),
-        onComplete: () => {
-          w.rest();
-          this.slideDoors(false);
-          w.unfreeze();
-          this.busy = false;
-        },
+    this.time.delayedCall(380, () => this.slideDoors(true));
+    this.time.delayedCall(640, () => {
+      w.stepDepth('toward', { x: CAFE_X - 6, y: GROUND_Y, scale: 1 }, 560, () => {
+        this.slideDoors(false);
+        w.face(-1);
+        w.unfreeze();
+        this.busy = false;
       });
-      this.tweens.add({ targets: w.shadow, alpha: 1, duration: 560 });
-      if (w.reflection) this.tweens.add({ targets: w.reflection, alpha: 0.2, duration: 560 });
+      this.time.delayedCall(200, () => w.sprite.setDepth(DEPTH.player));
     });
   }
 }

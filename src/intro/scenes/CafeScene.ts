@@ -7,7 +7,7 @@ import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { Controls } from './controls';
 import type { LinkSceneData } from './LinkScene';
 import type { IntroSceneOptions } from './StreetScene';
-import { Walker } from './Walker';
+import { PLAYER_SPEED, Walker } from './Walker';
 import { PIXEL_FONT, SIGN_FONT, addLight, attachPostFX, colour, iris, isTouch, neonText, signText, uiText } from './shared';
 
 /* Room layout, in pixel-art pixels. Mirrors scripts/art/cafe.mjs. */
@@ -24,7 +24,9 @@ const SEAT_ZONE = 16;
 
 /** The way out: sliding doors in the back wall, at the left end of the room. */
 const EXIT_X = 28;
-const EXIT_ZONE = { min: 16, max: 58 };
+const EXIT_ZONE = { min: 16, max: 44 };
+/** Where the player first stands on the floor, having come in through the doors. */
+const ENTRY_X = 60;
 const DOOR_LEAF = 14;
 const DOOR_H = 44;
 
@@ -74,6 +76,8 @@ const GLOW: Record<Game, number> = {
 const DEPTH = {
   wall: 0,
   decor: 1,
+  /** In the doorway: in front of the street beyond, behind the door leaves. */
+  doorway: 1.05,
   holo: 1.2,
   lights: 1.5,
   kit: 2,
@@ -105,7 +109,9 @@ export class CafeScene extends Phaser.Scene {
   private exitPrompt!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
   private doors: Phaser.GameObjects.Image[] = [];
+  private spill!: Phaser.GameObjects.Image;
   private clockText!: Phaser.GameObjects.Text;
+  private clockDate!: Phaser.GameObjects.Text;
   private ad!: { texts: Phaser.GameObjects.Text[]; shape: Phaser.GameObjects.Graphics };
   private cricket!: Rect;
 
@@ -181,12 +187,28 @@ export class CafeScene extends Phaser.Scene {
         .setMask(mask),
     );
 
+    // Rain falling past the doorway outside, and the street's cold light that
+    // spills across the floor when the doors open.
+    if (!this.opts.reducedMotion) {
+      this.add
+        .particles(EXIT_X, FLOOR_Y - DOOR_H, 'rain-drop', {
+          x: { min: -DOOR_LEAF + 1, max: DOOR_LEAF - 1 },
+          speedY: { min: 220, max: 280 },
+          lifespan: 160,
+          alpha: { min: 0.15, max: 0.35 },
+          frequency: 45,
+        })
+        .setDepth(DEPTH.decor + 0.02);
+    }
+    this.spill = addLight(this, EXIT_X, FLOOR_Y + 16, C.cyan, 0, 1.2, 0.5, DEPTH.floorGlow);
+
     neonText(this, EXIT_X, FLOOR_Y - DOOR_H - 10, 'EXIT', '#49b85f', 8, SIGN_FONT).setDepth(DEPTH.decor + 0.2);
     addLight(this, EXIT_X, FLOOR_Y - DOOR_H - 10, C.exit, 0.25, 0.9, 0.4, DEPTH.decor + 0.15);
   }
 
   private slideDoors(open: boolean): void {
     playDoor();
+    this.tweens.add({ targets: this.spill, alpha: open ? 0.3 : 0, duration: 320 });
     this.doors.forEach((leaf, i) => {
       const home = EXIT_X + (i ? DOOR_LEAF / 2 : -DOOR_LEAF / 2);
       this.tweens.add({
@@ -288,14 +310,19 @@ export class CafeScene extends Phaser.Scene {
     trophy.fillRect(-45, -5, 1, 3).fillRect(-36, -5, 1, 3);
     cup.add(trophy);
 
-    const clock = this.holo(40, 60, 50, 16, C.lime);
+    // The visitor's own time, to the second.
+    const clock = this.holo(40, 62, 72, 26, C.lime);
     this.clockText = this.add
-      .text(0, 0, '', { fontFamily: PIXEL_FONT, fontSize: '8px', color: introPalette.lime })
+      .text(0, -5, '', { fontFamily: PIXEL_FONT, fontSize: '8px', color: introPalette.lime })
       .setOrigin(0.5)
       .setResolution(2);
-    clock.add(this.clockText);
+    this.clockDate = this.add
+      .text(0, 7, '', { fontFamily: SIGN_FONT, fontSize: '8px', color: '#daff9a' })
+      .setOrigin(0.5)
+      .setResolution(2);
+    clock.add([this.clockText, this.clockDate]);
     this.tickClock();
-    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.tickClock() });
+    this.time.addEvent({ delay: 250, loop: true, callback: () => this.tickClock() });
 
     // Ring lights hanging from the ceiling, breathing.
     [180, 420, 660, 840].forEach((x, i) => {
@@ -320,7 +347,11 @@ export class CafeScene extends Phaser.Scene {
 
   private tickClock(): void {
     const now = new Date();
-    this.clockText.setText(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const hours = now.getHours();
+    this.clockText.setText(`${pad(hours % 12 || 12)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`);
+    const day = now.toLocaleDateString('en-IN', { weekday: 'short' }).toUpperCase();
+    this.clockDate.setText(`${hours < 12 ? 'AM' : 'PM'}  ${day} ${now.getDate()}`);
   }
 
   private buildCounter(): void {
@@ -475,38 +506,25 @@ export class CafeScene extends Phaser.Scene {
 
   /* ---------------------------------------------------------- sequences -- */
 
-  /** Arriving from the street: the doors part and the player steps in. */
+  /** Arriving from the street: the doors part and the player steps in, towards the camera. */
   private walkIn(): void {
     const w = this.walker;
     w.freeze();
-    w.sprite.setPosition(EXIT_X, FLOOR_Y + 4).setScale(0.82).setAlpha(0);
-    w.shadow.setAlpha(0);
-    w.reflection?.setAlpha(0);
-    w.syncDressing();
+    w.sprite.setTexture('player-turn', 2).setPosition(EXIT_X, FLOOR_Y).setScale(0.8).setDepth(DEPTH.doorway);
+    w.shadow.setPosition(EXIT_X, FLOOR_Y - 1).setScale(0.8).setAlpha(0);
+    w.reflection?.setVisible(false);
     this.followCamera(1, true);
 
     iris(this, EXIT_X, FLOOR_Y - 22, 'open', 650);
-    this.time.delayedCall(200, () => this.slideDoors(true));
-    this.time.delayedCall(420, () => {
-      w.stride(1);
-      this.tweens.add({
-        targets: w.sprite,
-        x: 64,
-        y: GROUND_Y,
-        scale: 1,
-        alpha: 1,
-        duration: 620,
-        ease: 'Sine.easeOut',
-        onUpdate: () => w.syncDressing(),
-        onComplete: () => {
-          w.rest();
-          this.slideDoors(false);
-          w.unfreeze();
-          this.phase = 'walking';
-        },
+    this.time.delayedCall(300, () => this.slideDoors(true));
+    this.time.delayedCall(560, () => {
+      w.stepDepth('toward', { x: ENTRY_X, y: GROUND_Y, scale: 1 }, 760, () => {
+        this.slideDoors(false);
+        w.face(1);
+        w.unfreeze();
+        this.phase = 'walking';
       });
-      this.tweens.add({ targets: w.shadow, alpha: 1, duration: 620 });
-      if (w.reflection) this.tweens.add({ targets: w.reflection, alpha: 0.12, duration: 620 });
+      this.time.delayedCall(160, () => w.sprite.setDepth(DEPTH.player));
     });
     this.cashierHello();
   }
@@ -553,27 +571,35 @@ export class CafeScene extends Phaser.Scene {
     });
   }
 
-  /** Out through the doors, and back to the street. */
+  /**
+   * Out: walk to the doors, turn to them, and they slide open on the rain;
+   * through, back to the camera, the doors close behind, and the view irises
+   * shut. The mirror of how the player came in.
+   */
   private leave(): void {
     this.phase = 'leaving';
     const w = this.walker;
     w.freeze();
     this.tweens.add({ targets: [this.exitPrompt, this.hint], alpha: 0, duration: 150 });
-    this.slideDoors(true);
-    w.stride(-1);
+    const dx = EXIT_X - w.x;
+    if (Math.abs(dx) > 1) w.stride(dx > 0 ? 1 : -1);
     this.tweens.add({
       targets: w.sprite,
       x: EXIT_X,
-      y: FLOOR_Y + 4,
-      scale: 0.82,
-      duration: 560,
-      ease: 'Sine.easeIn',
+      duration: (Math.abs(dx) / PLAYER_SPEED) * 1000 + 40,
       onUpdate: () => w.syncDressing(),
+      onComplete: () => {
+        this.slideDoors(true);
+        w.stepDepth('away', { x: EXIT_X, y: FLOOR_Y, scale: 0.8 }, 760, () => {
+          this.slideDoors(false);
+          this.time.delayedCall(260, () =>
+            iris(this, EXIT_X, FLOOR_Y - 22, 'close', 600, () => this.scene.start('street', { entry: 'cafe' })),
+          );
+        });
+        // Over the threshold: the doors will close in front of them.
+        this.time.delayedCall(600, () => w.sprite.setDepth(DEPTH.doorway));
+      },
     });
-    this.tweens.add({ targets: w.sprite, alpha: 0, duration: 220, delay: 360 });
-    this.tweens.add({ targets: [w.shadow, w.reflection], alpha: 0, duration: 300 });
-    this.time.delayedCall(640, () => this.slideDoors(false));
-    this.time.delayedCall(700, () => iris(this, EXIT_X, FLOOR_Y - 22, 'close', 600, () => this.scene.start('street', { entry: 'cafe' })));
   }
 
   /** The cashier points you to your seat. */

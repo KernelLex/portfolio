@@ -66,6 +66,8 @@ export const LINK = {
   established: 'LINK ESTABLISHED',
   sync: 'SYNC',
   detail: `WRIST LINK  >  SEAT 0${SEAT_NUMBER}  >  HANDSHAKE OK`,
+  /** Typed out beside the wrist while it is scanned. */
+  readout: ['USER   AMOGH P', 'IMPLANT   WRIST', `SEAT   0${SEAT_NUMBER}`],
 } as const;
 
 /** Shown under the game on a phone held upright. */

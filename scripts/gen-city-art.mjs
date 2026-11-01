@@ -41,6 +41,7 @@ const assets = {
   'flyers.png': city.flyers,
   'flyers-far.png': city.flyersFar,
   'traffic.png': city.traffic,
+  'bus.png': city.bus,
   'pedestrians.png': city.pedestrians,
   'props.png': street.props,
   'cafe-front.png': street.cafeFront,
@@ -54,6 +55,7 @@ const assets = {
   'player-walk.png': people.playerWalk,
   'player-jump.png': people.playerJump,
   'player-sit.png': people.playerSit,
+  'player-turn.png': people.playerTurn,
   // inside the cafe
   'cafe-wall.png': cafe.cafeWall,
   'cafe-desk.png': cafe.desk,

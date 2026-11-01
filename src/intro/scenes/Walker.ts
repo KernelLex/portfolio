@@ -24,6 +24,9 @@ const GRAVITY = 620;
 
 export const PLAYER_HEIGHT = 44;
 
+/** One footfall when walking towards or away from the camera. */
+const DOOR_STEP_MS = 150;
+
 export type WalkerOptions = {
   x: number;
   groundY: number;
@@ -166,6 +169,51 @@ export class Walker {
 
   /** Keep the shadow and mirror image in step with a scripted move. */
   syncDressing(): void {
+    this.dress();
+  }
+
+  /**
+   * During a scripted move: walk into the picture (back to the camera) or out
+   * of it (facing the camera) - through a doorway - stepping two frames at a
+   * time while the sprite travels and scales. The shadow follows the feet;
+   * the mirror image is hidden until `face()`.
+   */
+  stepDepth(way: 'away' | 'toward', to: { x: number; y: number; scale: number }, duration: number, done?: () => void): void {
+    const base = way === 'away' ? 0 : 2;
+    const sprite = this.sprite;
+    sprite.anims.stop();
+    sprite.setFlipX(false).setTexture('player-turn', base);
+    this.reflection?.setVisible(false);
+    let step = 0;
+    const steps = this.scene.time.addEvent({
+      delay: DOOR_STEP_MS,
+      loop: true,
+      callback: () => sprite.setFrame(base + (++step % 2)),
+    });
+    this.scene.tweens.add({
+      targets: sprite,
+      x: to.x,
+      y: to.y,
+      scale: to.scale,
+      duration,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => this.shadow.setPosition(sprite.x, sprite.y - 1).setScale(sprite.scale),
+      onComplete: () => {
+        steps.remove();
+        sprite.setFrame(base);
+        done?.();
+      },
+    });
+    // The shadow fades as they pass into a doorway, and back as they leave one.
+    this.scene.tweens.add({ targets: this.shadow, alpha: way === 'away' ? 0 : 1, duration, ease: way === 'away' ? 'Quad.easeIn' : 'Quad.easeOut' });
+  }
+
+  /** Back to the side view on the ground line, facing `dir`, idling. */
+  face(dir: -1 | 1): void {
+    this.sprite.setScale(1).setFlipX(dir < 0);
+    this.shadow.setPosition(this.sprite.x, this.opts.groundY - 1).setScale(1).setAlpha(1);
+    this.reflection?.setVisible(true);
+    this.rest();
     this.dress();
   }
 

@@ -211,3 +211,46 @@ than "no food near PCs"; a longer, better jack-in; more life in the city.
 Verified in headless Chrome at 1600×900 and on a touch phone in landscape:
 the full flow (street → doors → cafe → seat → jack-in → desktop), and log off
 → seat → stand up → exit → street → back in. No console errors.
+
+## Revision: a cyberpunk player, real people, a proper exit (2 Nov)
+
+Amogh's direction: a better hand in the jack-in, and improve it further;
+pedestrians that are different from each other and do not overlap the
+player; a more cyberpunk player; a nicer way out of the cafe; more cars; a
+cafe clock that tells the real time.
+
+- **The player, in techwear.** Graphite jacket with a glowing zip seam, a
+  cyan visor across the eyes with a comms bud, the amber high collar, a tech
+  pack with a magenta LED strip and an antenna, a glowing wristband (where
+  the link port is), knee pads, light-up soles. New front and back views so
+  the player can face the camera or turn away in doorways.
+- **The hand.** Redrawn at a hand's real proportions, about three times as
+  long as it is deep: back of the hand domed to the knuckles, four fingers
+  stacked as they look side on, the thumb along the underside, nails. The
+  wrist is now a chrome implant with the port set into it and a light strip
+  round it; the sleeve is long enough to run off the screen on any width.
+- **The jack-in, further.** Data falling in the background of the band, the
+  scan typing out what it reads (user, implant, seat) on a leader line, the
+  implant's strip lighting as the scan finds it and flashing as each packet
+  arrives, and the fingers twitching as the link takes.
+- **Doors, both ways.** Going in: walk to the doors, turn your back, they
+  part, you walk in and they close in front of you, then the iris. Coming
+  out: the iris opens on the doors, they part, you step out facing the
+  camera, they close behind you, you turn to the street. Same in the cafe,
+  where rain falls past the open doorway and the street's light spills
+  across the floor.
+- **People.** Seven kinds: two under umbrellas, a runner in an LED mask, a
+  courier with a lit box, a trench coat with a visor, someone lost in their
+  phone, and a delivery robot. They walk the back of the pavement, behind
+  the player, slow down and stop short instead of walking through them, and
+  carry on past only if the player stays put. Never the same kind twice in
+  a row.
+- **Traffic.** On the road: a hover bike, a delivery van, a chrome coupe and
+  a night bus join the sedan, pickup, sports car and auto. In the sky: a
+  cargo drone and a racer.
+- **The clock** shows the visitor's own time to the second, 12-hour, with
+  the day and date.
+
+Verified in headless Chrome at 1600×900 and on a touch phone in landscape:
+both door sequences, log off → exit → street, the jack-in, people yielding.
+No console errors.

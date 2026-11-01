@@ -9,10 +9,10 @@ deterministically.
 | ---------------------------- | ---------------------------------------------------------------- |
 | `scripts/art/core.mjs`       | PNG encoder, the palette ramps, Bayer dithering, outline and rim |
 | `scripts/art/street.mjs`     | sky, skyline, buildings, cables, street, props, cafe front, door, billboard, auto-rickshaw, voice note, glow |
-| `scripts/art/characters.mjs` | the player: idle, walk, jump, and the back view for sitting      |
+| `scripts/art/characters.mjs` | the player in techwear: idle, walk, jump, seated, and front and back views for doorways |
 | `scripts/art/cafe.mjs`       | the futuristic cafe: wall and floor, desk, pod chair, people playing, counter, hardware |
 | `scripts/art/city.mjs`       | megastructures, haze, the street-front row of buildings and shops, sign casings and brackets, flying cars, road cars, pedestrians |
-| `scripts/art/link.mjs`       | the jack-in close-up: forearm with wrist port, the PC's I/O panel, the plug |
+| `scripts/art/link.mjs`       | the jack-in close-up: sleeve, chrome wrist implant with its port, the hand; the PC's I/O panel; the plug |
 
 To swap in a bought or commissioned pack instead: **drop files with the same
 names and frame sizes into this folder.** No code changes needed. Both scenes
@@ -84,10 +84,11 @@ Bottom-centre at the ground line. Within the 192 × 128 image:
 | `street-front.png` | 960 × 190 | —           | The row of buildings right behind the pavement, at the player's depth. Bottom on the building base line (196). |
 | `sign-frame.png`   | 32 × 16   | 2 × 16×16   | Nine-slice sign casings (4px borders): 0 steel, 1 brass.             |
 | `sign-bracket.png` | 16 × 16   | —           | Wall bracket for projecting blade signs.                              |
-| `flyers.png`       | 192 × 18  | 3 × 64×18   | Sky traffic: 0 sedan, 1 flying taxi, 2 police spinner (frame 2 flashes in-scene). |
+| `flyers.png`       | 320 × 18  | 5 × 64×18   | Sky traffic: 0 sedan, 1 flying taxi, 2 police spinner (frame 2 flashes in-scene), 3 cargo drone with a slung container, 4 racer. |
 | `flyers-far.png`   | 60 × 6    | 3 × 20×6    | The same three, distant.                                              |
-| `traffic.png`      | 264 × 30  | 3 × 88×30   | Road hover cars: 0 sedan, 1 wedge pickup, 2 sports. All face right.   |
-| `pedestrians.png`  | 176 × 44  | 8 × 22×44   | People under lit umbrellas, walking: 0–3 cyan umbrella, 4–7 magenta.  |
+| `traffic.png`      | 528 × 30  | 6 × 88×30   | Road traffic: 0 sedan, 1 wedge pickup, 2 sports, 3 hover bike and rider (48px long, centred), 4 delivery van, 5 chrome coupe. All face right. |
+| `bus.png`          | 144 × 36  | —           | The night bus: lit windows, passengers, destination board. Faces right. |
+| `pedestrians.png`  | 672 × 44  | 28 × 24×44  | Seven kinds of people, four walk frames each (frame 1 of each is the standing pose): cyan umbrella, magenta umbrella, runner in an LED mask, courier with a lit box, trench coat and visor, phone and headphones, delivery robot. They walk the back of the pavement and stop short of the player. |
 
 ### Street-front layout
 
@@ -115,6 +116,7 @@ Change a building's position or height in `city.mjs` and the sign positions in
 | `player-walk.png` | 256 × 44 | 8 × 32×44  | Facing right. Frames 0 and 4 are the contact poses. See stride below. |
 | `player-jump.png` | 64 × 44  | 2 × 32×44  | 0 rising (tucked), 1 falling (legs reaching down).                    |
 | `player-sit.png`  | 64 × 44  | 2 × 32×44  | Back view. 0 standing, turned to the desk. 1 seated: head and shoulders only, at the bottom of the cell. |
+| `player-turn.png` | 128 × 44 | 4 × 32×44  | Walking through doorways: 0–1 back view (stand, step), 2–3 front view (stand, step). |
 
 ### Stride — read this before replacing the walk sheet
 
@@ -143,7 +145,7 @@ draws them.
 
 | File            | Size      | Frames      | Notes                                                                 |
 | --------------- | --------- | ----------- | --------------------------------------------------------------------- |
-| `link-arm.png`  | 450 × 64  | 3 × 150×64  | Forearm entering from the left. 0 wrist closed, 1 panel sliding back, 2 port open and glowing. The cable leaves at (99, 24). |
+| `link-arm.png`  | 800 × 64  | 4 × 200×64  | Sleeve (long enough to run off the screen), chrome wrist implant, hand. 0 port closed, 1 panel sliding back, 2 port open and glowing, 3 open with the fingers twitching. The cable leaves at (125, 25); the implant's light strip is at (125, 35). |
 | `link-port.png` | 220 × 96  | 2 × 110×96  | The PC's I/O panel. 0 socket waiting (amber), 1 connected (cyan). The plug seats at (36, 54). |
 | `link-plug.png` | 20 × 12   | —           | The plug on the end of the cable.                                     |
 

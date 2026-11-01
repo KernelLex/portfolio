@@ -532,7 +532,7 @@ function signBracket() {
 const FLYER_W = 64;
 const FLYER_H = 18;
 
-/** Hover traffic in the sky lanes: a sedan, a flying taxi, a police spinner. */
+/** Hover traffic in the sky lanes: a sedan, a flying taxi, a police spinner, a cargo drone, a racer. */
 function flyerFrame(kind) {
   const c = new Px(FLYER_W, FLYER_H);
   if (kind === 0) {
@@ -558,7 +558,7 @@ function flyerFrame(kind) {
     fill(c, 42, 15, 8, 1, R.amber[3]);
     fill(c, 58, 9, 2, 2, R.yellow[4]);
     fill(c, 3, 8, 1, 3, R.magenta[3]);
-  } else {
+  } else if (kind === 2) {
     for (let j = 0; j < 3; j++) ditherRect(c, 22 - j * 2, 6 + j, 20 + j * 4, 1, R.night, () => 2.5);
     ditherRect(c, 6, 9, 54, 3, R.steel, (_i, j) => 3.4 - j * 0.4);
     ditherRect(c, 6, 12, 54, 2, R.night, () => 1);
@@ -569,14 +569,38 @@ function flyerFrame(kind) {
     fill(c, 43, 15, 8, 1, R.cyan[3]);
     fill(c, 59, 10, 2, 1, R.yellow[4]);
     fill(c, 3, 10, 2, 1, R.magenta[3]);
+  } else if (kind === 3) {
+    // a cargo drone: thrusters either end, a container slung underneath
+    ditherRect(c, 10, 2, 44, 4, R.steel, (_i, j) => 3 - j * 0.4);
+    fill(c, 6, 3, 6, 2, R.night[2]);
+    fill(c, 52, 3, 6, 2, R.night[2]);
+    fill(c, 6, 5, 6, 1, R.cyan[3]);
+    fill(c, 52, 5, 6, 1, R.cyan[3]);
+    fill(c, 22, 6, 1, 3, R.night[3]);
+    fill(c, 42, 6, 1, 3, R.night[3]);
+    ditherRect(c, 18, 9, 28, 8, R.amber, (_i, j) => 1.4 - j * 0.08);
+    for (let x = 20; x < 46; x += 4) fill(c, x, 9, 1, 8, R.amber[0]);
+    fill(c, 55, 3, 2, 1, R.yellow[4]);
+    fill(c, 7, 3, 1, 1, R.magenta[3]);
+  } else {
+    // a racer: a long needle with a bubble canopy
+    for (let x = 4; x <= 60; x++) {
+      const half = Math.max(1, Math.round(3 - Math.abs(x - 30) / 12));
+      for (let y = 10 - half; y <= 10 + half; y++) dither(c, x, y, R.magenta, 3.2 - (y - 10 + half) * 0.4);
+    }
+    ditherRect(c, 30, 5, 12, 4, R.cyan, (_i, j) => 2.6 - j * 0.3);
+    fill(c, 6, 6, 6, 2, R.night[2]); // tail fin
+    fill(c, 10, 13, 40, 1, R.cyan[3]);
+    fill(c, 60, 10, 2, 1, R.yellow[4]);
+    fill(c, 3, 9, 1, 3, R.magenta[4]);
   }
   outline(c, R.night[0]);
   return c;
 }
 
 function flyers() {
-  const sheet = new Px(FLYER_W * 3, FLYER_H);
-  for (let k = 0; k < 3; k++) blit(sheet, flyerFrame(k), k * FLYER_W, 0);
+  const sheet = new Px(FLYER_W * 5, FLYER_H);
+  for (let k = 0; k < 5; k++) blit(sheet, flyerFrame(k), k * FLYER_W, 0);
   return sheet;
 }
 
@@ -602,42 +626,138 @@ function flyersFar() {
 
 /* ========================================================== pedestrians === */
 
-const PED_W = 22;
+const PED_W = 24;
 const PED_H = 44;
+const PED_FRAMES = 4;
 
-/**
- * Somebody walking in the rain under an umbrella with a glowing rim and
- * shaft, facing right. Four frames of walk; the scene flips them.
- */
-function pedFrame(f, glow) {
-  const c = new Px(PED_W, PED_H);
+/** Two legs and two shoes, swinging. `top` is the hem of whatever they wear. */
+function pedLegs(c, f, back, front, top, sole = R.night[0]) {
   const swing = [2, 0, -2, 0][f];
-  const bob = f % 2;
-  for (let j = 0; j < 7; j++) {
-    const half = Math.round(4 + j * 1.15);
-    fill(c, 11 - half, 1 + j + bob, half * 2, 1, R.night[1]);
-  }
-  fill(c, 2, 8 + bob, 18, 1, glow[3]);
-  fill(c, 11, 9 + bob, 1, 11, glow[2]);
-  fill(c, 7, 11 + bob, 7, 7, R.night[1]); // hood
-  fill(c, 12, 13 + bob, 2, 3, R.skin[1]);
-  fill(c, 6, 18 + bob, 9, 17, R.night[2]); // long coat
-  fill(c, 6, 18 + bob, 2, 17, R.night[1]);
-  fill(c, 10, 19 + bob, 3, 2, R.skin[1]);
-  fill(c, 8 - swing, 35, 2, 7, R.night[1]);
-  fill(c, 11 + swing, 35, 2, 7, R.night[1]);
-  fill(c, 7 - swing, 42, 3, 2, R.night[0]);
-  fill(c, 11 + swing, 42, 3, 2, R.night[0]);
-  rimLight(c, glow[2], 1, 90);
-  outline(c, R.night[0]);
-  return c;
+  fill(c, 9 - swing, top, 2, 42 - top, back);
+  fill(c, 12 + swing, top, 2, 42 - top, front);
+  fill(c, 8 - swing, 42, 3, 2, R.night[0]);
+  fill(c, 12 + swing, 42, 3, 2, R.night[0]);
+  fill(c, 12 + swing, 43, 3, 1, sole);
 }
 
-/** Frames 0-3 under a cyan umbrella, 4-7 under a magenta one. */
+/** A dome of dark nylon with a glowing rim and shaft. */
+function umbrella(c, b, glow) {
+  for (let j = 0; j < 7; j++) {
+    const half = Math.round(5 + j * 1.2);
+    fill(c, 12 - half, 1 + j + b, half * 2, 1, R.night[1]);
+  }
+  fill(c, 1, 8 + b, 22, 1, glow[3]);
+  fill(c, 12, 9 + b, 1, 11, glow[2]);
+}
+
+/**
+ * Seven kinds of people, so the pavement never looks cloned. Each faces
+ * right, four frames of walk; the scene flips them.
+ */
+const PEOPLE = [
+  // 0: long coat under a cyan umbrella
+  (c, f, b) => {
+    umbrella(c, b, R.cyan);
+    fill(c, 9, 11 + b, 6, 6, R.teal[2]);
+    fill(c, 13, 13 + b, 2, 3, R.skin[1]);
+    ditherRect(c, 8, 17 + b, 8, 17, R.teal, (i) => 3 - i * 0.18);
+    fill(c, 11, 19 + b, 3, 2, R.skin[1]);
+    pedLegs(c, f, R.night[1], R.night[2], 34 + b);
+  },
+  // 1: bob haircut, short jacket and skirt, under a magenta umbrella
+  (c, f, b) => {
+    umbrella(c, b, R.magenta);
+    fill(c, 9, 11 + b, 6, 7, R.violet[0]);
+    fill(c, 13, 13 + b, 2, 3, R.skin[2]);
+    ditherRect(c, 9, 18 + b, 6, 9, R.violet, (i) => 2.6 - i * 0.2);
+    fill(c, 11, 20 + b, 3, 2, R.skin[2]);
+    fill(c, 8, 27 + b, 8, 4, R.night[2]);
+    pedLegs(c, f, R.steel[0], R.steel[1], 31 + b, R.magenta[2]);
+  },
+  // 2: a runner in a glossy raincoat, an LED mask smiling out of the hood
+  (c, f, b) => {
+    ditherRect(c, 9, 5 + b, 7, 9, R.concrete, (i) => 3.2 - i * 0.2);
+    fill(c, 13, 8 + b, 3, 4, R.night[0]);
+    fill(c, 13, 8 + b, 1, 1, R.lime[3]);
+    fill(c, 15, 8 + b, 1, 1, R.lime[3]);
+    fill(c, 13, 10 + b, 3, 1, R.lime[2]);
+    ditherRect(c, 8, 14 + b, 9, 18, R.concrete, (i) => 2.8 - i * 0.15);
+    fill(c, 15, 15 + b, 1, 14, R.concrete[4]); // the gloss of wet vinyl
+    fill(c, 13, 23 + b, 3, 1, R.night[1]); // hands in the pockets
+    pedLegs(c, f, R.night[1], R.night[2], 32 + b, R.lime[2]);
+  },
+  // 3: a courier, cap on, a glowing delivery box on the back
+  (c, f, b) => {
+    fill(c, 10, 8 + b, 6, 3, R.amber[1]);
+    fill(c, 15, 10 + b, 3, 1, R.amber[0]);
+    fill(c, 12, 11 + b, 4, 4, R.skin[1]);
+    ditherRect(c, 9, 15 + b, 7, 15, R.yellow, (i) => 2.4 - i * 0.12);
+    fill(c, 9, 22 + b, 7, 1, R.steel[4]); // reflective stripe
+    fill(c, 1, 13 + b, 8, 13, R.night[2]);
+    fill(c, 1, 13 + b, 8, 1, R.night[4]);
+    fill(c, 2, 18 + b, 6, 2, R.amber[3]);
+    fill(c, 13, 17 + b, 2, 8, R.yellow[1]);
+    fill(c, 13, 25 + b, 2, 2, R.skin[1]);
+    pedLegs(c, f, R.night[2], R.concrete[2], 30 + b);
+  },
+  // 4: trench coat, brimmed hat, a cyan visor slit in the shadow under it
+  (c, f, b) => {
+    const swing = [1, 0, -1, 0][f];
+    fill(c, 9, 3 + b, 6, 3, R.night[1]);
+    fill(c, 6, 6 + b, 12, 1, R.night[0]);
+    fill(c, 11, 7 + b, 4, 5, R.skin[0]);
+    fill(c, 11, 8 + b, 5, 1, R.cyan[3]);
+    fill(c, 9, 12 + b, 7, 2, R.brick[4]);
+    ditherRect(c, 7, 14 + b, 10, 19, R.brick, (i) => 4 - i * 0.25);
+    fill(c, 7, 24 + b, 10, 1, R.brick[1]);
+    fill(c, 6 + swing, 33 + b, 12, 4, R.brick[3]);
+    pedLegs(c, f, R.night[1], R.night[2], 37);
+  },
+  // 5: headphones on, face lit by the phone they cannot look away from
+  (c, f, b) => {
+    fill(c, 11, 12 + b, 6, 6, R.night[1]);
+    fill(c, 15, 15 + b, 2, 3, R.skin[3]);
+    fill(c, 10, 11 + b, 7, 1, R.magenta[2]);
+    fill(c, 11, 14 + b, 2, 2, R.magenta[3]);
+    ditherRect(c, 9, 18 + b, 8, 14, R.green, (i) => 2.2 - i * 0.12);
+    fill(c, 14, 21 + b, 4, 2, R.green[2]);
+    fill(c, 17, 19 + b, 2, 3, R.cyan[4]);
+    pedLegs(c, f, R.steel[0], R.steel[1], 32 + b, R.steel[3]);
+  },
+  // 6: a delivery robot on two wheels, flag up, blinking
+  (c, f, b) => {
+    ditherRect(c, 5, 29 + b, 14, 10, R.steel, (_i, j) => 3.4 - j * 0.2);
+    fill(c, 5, 29 + b, 14, 1, R.steel[4]);
+    fill(c, 12, 31 + b, 6, 4, R.night[0]);
+    if (f === 3) {
+      fill(c, 13, 33 + b, 4, 1, R.cyan[3]);
+    } else {
+      fill(c, 13, 32 + b, 1, 2, R.cyan[4]);
+      fill(c, 16, 32 + b, 1, 2, R.cyan[4]);
+    }
+    fill(c, 5, 38 + b, 14, 1, R.cyan[2]);
+    fill(c, 7, 21 + b, 1, 8, R.steel[1]);
+    fill(c, 8, 21 + b, 4, 3, R.magenta[3]);
+    for (const wx of [5, 14]) {
+      fill(c, wx, 39, 5, 5, R.night[0]);
+      c.set(wx + 1 + (f % 2) * 2, 41, [...R.steel[2], 255]);
+    }
+  },
+];
+
+/** The glow each kind carries: an umbrella rim, a mask, a box, a screen. */
+const PEOPLE_GLOW = [R.cyan, R.magenta, R.lime, R.amber, R.cyan, R.cyan, R.cyan];
+
 function pedestrians() {
-  const sheet = new Px(PED_W * 8, PED_H);
-  [R.cyan, R.magenta].forEach((glow, k) => {
-    for (let f = 0; f < 4; f++) blit(sheet, pedFrame(f, glow), (k * 4 + f) * PED_W, 0);
+  const sheet = new Px(PED_W * PED_FRAMES * PEOPLE.length, PED_H);
+  PEOPLE.forEach((draw, k) => {
+    for (let f = 0; f < PED_FRAMES; f++) {
+      const c = new Px(PED_W, PED_H);
+      draw(c, f, f % 2);
+      rimLight(c, PEOPLE_GLOW[k][2], 1, 90);
+      outline(c, R.night[0]);
+      blit(sheet, c, (k * PED_FRAMES + f) * PED_W, 0);
+    }
   });
   return sheet;
 }
@@ -646,10 +766,16 @@ function pedestrians() {
 
 const CAR_W = 88;
 const CAR_H = 30;
+const CAR_KINDS = 6;
 
-/** Road hover cars, facing right: a sedan, a wedge pickup, a low sports car. */
+/**
+ * Road hover cars, facing right: 0 sedan, 1 wedge pickup, 2 low sports car,
+ * 3 hover bike with its rider, 4 delivery van, 5 chrome muscle coupe.
+ */
 function carFrame(kind) {
   const c = new Px(CAR_W, CAR_H);
+  let pods = [12, 60];
+  let podGlow = R.cyan[3];
   if (kind === 0) {
     for (let j = 0; j < 5; j++) ditherRect(c, 30 - j * 3, 7 + j, 30 + j * 6, 1, R.cyan, () => 1.4 - j * 0.15);
     fill(c, 28, 7, 30, 1, R.cyan[3]);
@@ -673,7 +799,7 @@ function carFrame(kind) {
     fill(c, 82, 13, 4, 1, R.steel[4]);
     fill(c, 7, 16, 4, 2, R.magenta[3]);
     fill(c, 10, 21, 72, 1, R.amber[2]);
-  } else {
+  } else if (kind === 2) {
     for (let j = 0; j < 4; j++) ditherRect(c, 38 - j * 3, 10 + j, 22 + j * 6, 1, R.night, () => 2.6);
     ditherRect(c, 4, 14, 82, 8, R.magenta, (_i, j) => 2.3 - j * 0.2);
     fill(c, 6, 14, 78, 1, R.magenta[4]);
@@ -682,11 +808,58 @@ function carFrame(kind) {
     fill(c, 82, 16, 4, 2, R.yellow[4]);
     fill(c, 3, 16, 2, 3, R.magenta[4]);
     fill(c, 6, 21, 78, 1, R.magenta[3]);
+    podGlow = R.magenta[3];
+  } else if (kind === 3) {
+    // a long wedge of a bike, the rider tucked low over it
+    for (let x = 22; x <= 68; x++) {
+      const topY = 15 + Math.round(Math.abs(x - 50) * 0.08);
+      for (let y = topY; y <= 22; y++) dither(c, x, y, R.night, 3.4 - (y - topY) * 0.2);
+    }
+    fill(c, 24, 15, 40, 1, R.magenta[3]);
+    fill(c, 30, 20, 30, 1, R.cyan[3]);
+    ditherRect(c, 32, 7, 14, 9, R.violet, (i) => 1.6 + i * 0.08); // jacket, leaning in
+    fill(c, 44, 3, 7, 6, R.night[2]); // helmet
+    fill(c, 48, 5, 3, 2, R.cyan[3]); // visor
+    fill(c, 46, 10, 10, 2, R.violet[1]); // arms to the bars
+    fill(c, 28, 16, 8, 3, R.night[2]); // boot
+    fill(c, 66, 16, 3, 2, R.yellow[4]);
+    fill(c, 21, 17, 2, 2, R.magenta[4]);
+    pods = [28];
+  } else if (kind === 4) {
+    // boxy delivery van: a pale cargo box with a lit stripe, a sloped cab
+    ditherRect(c, 4, 4, 54, 17, R.steel, (_i, j) => 3.2 - j * 0.08);
+    fill(c, 4, 4, 54, 1, R.steel[4]);
+    fill(c, 4, 13, 54, 2, R.amber[3]);
+    fill(c, 10, 7, 8, 4, R.amber[2]); // the box-in-a-box logo
+    fill(c, 12, 8, 4, 2, R.steel[3]);
+    fill(c, 40, 6, 1, 14, R.steel[1]); // rear door seam
+    for (let x = 58; x <= 84; x++) {
+      const topY = 8 + Math.max(0, Math.round((x - 74) * 0.6));
+      for (let y = topY; y <= 20; y++) dither(c, x, y, R.steel, 2.6 - (y - topY) * 0.08);
+    }
+    ditherRect(c, 66, 9, 10, 5, R.cyan, () => 1.5); // windscreen
+    fill(c, 82, 15, 3, 2, R.yellow[4]);
+    fill(c, 3, 15, 2, 3, R.magenta[3]);
+    fill(c, 6, 20, 76, 1, R.night[1]);
+  } else {
+    // long, low chrome coupe with twin amber stripes
+    ditherRect(c, 4, 12, 82, 9, R.steel, (_i, j) => 3.6 - j * 0.3);
+    fill(c, 4, 12, 82, 1, R.steel[4]);
+    fill(c, 8, 13, 74, 1, R.amber[3]);
+    fill(c, 8, 15, 74, 1, R.amber[2]);
+    for (let j = 0; j < 4; j++) fill(c, 40 - j * 2, 8 + j, 20 + j * 4, 1, R.night[2]);
+    fill(c, 44, 9, 8, 1, R.cyan[3]); // canopy glint
+    fill(c, 4, 8, 8, 2, R.night[1]); // spoiler
+    fill(c, 6, 10, 2, 2, R.night[1]);
+    fill(c, 82, 14, 4, 2, R.yellow[4]);
+    fill(c, 3, 14, 2, 3, R.magenta[4]);
+    podGlow = R.amber[3];
   }
   // hover pods in place of wheels
-  for (const px of [12, 60]) {
-    fill(c, px, 22, 16, 3, R.night[1]);
-    fill(c, px + 1, 25, 14, 1, kind === 2 ? R.magenta[3] : R.cyan[3]);
+  for (const px of pods) {
+    const len = kind === 3 ? 34 : 16;
+    fill(c, px, 22, len, 3, R.night[1]);
+    fill(c, px + 1, 25, len - 2, 1, podGlow);
   }
   rimLight(c, R.cyan[2], -1, 70);
   outline(c, R.night[0]);
@@ -694,9 +867,44 @@ function carFrame(kind) {
 }
 
 function traffic() {
-  const sheet = new Px(CAR_W * 3, CAR_H);
-  for (let k = 0; k < 3; k++) blit(sheet, carFrame(k), k * CAR_W, 0);
+  const sheet = new Px(CAR_W * CAR_KINDS, CAR_H);
+  for (let k = 0; k < CAR_KINDS; k++) blit(sheet, carFrame(k), k * CAR_W, 0);
   return sheet;
 }
 
-export { megacity, haze, streetFront, signFrame, signBracket, flyers, flyersFar, traffic, pedestrians };
+const BUS_W = 144;
+const BUS_H = 36;
+
+/** A night bus, windows lit, a few passengers, a destination board up front. */
+function bus() {
+  const c = new Px(BUS_W, BUS_H);
+  ditherRect(c, 2, 3, 140, 24, R.teal, (_i, j) => 3.4 - j * 0.08);
+  fill(c, 2, 3, 140, 1, R.teal[4]);
+  // the windows, lit warm, with heads in some of them
+  for (let x = 8; x < 124; x += 12) {
+    const door = x === 32 || x === 92;
+    fill(c, x, 8, 10, door ? 17 : 8, door ? R.night[2] : R.amber[2]);
+    if (!door) {
+      fill(c, x, 8, 10, 1, R.amber[4]);
+      if ((x / 12) % 3 !== 1) {
+        fill(c, x + 3, 11, 3, 3, R.night[2]);
+        fill(c, x + 2, 14, 5, 2, R.night[2]);
+      }
+    }
+  }
+  ditherRect(c, 126, 6, 15, 12, R.cyan, (i) => 1.2 + i * 0.1); // windscreen
+  fill(c, 108, 4, 16, 3, R.night[0]); // destination board
+  for (let x = 110; x < 122; x += 2) c.set(x, 5, [...R.lime[3], 255]);
+  fill(c, 2, 20, 140, 2, R.magenta[3]);
+  fill(c, 139, 21, 3, 3, R.yellow[4]);
+  fill(c, 1, 20, 2, 4, R.magenta[4]);
+  for (const px of [12, 100]) {
+    fill(c, px, 27, 30, 4, R.night[1]);
+    fill(c, px + 1, 31, 28, 1, R.cyan[3]);
+  }
+  rimLight(c, R.cyan[2], -1, 70);
+  outline(c, R.night[0]);
+  return c;
+}
+
+export { megacity, haze, streetFront, signFrame, signBracket, flyers, flyersFar, traffic, bus, pedestrians };

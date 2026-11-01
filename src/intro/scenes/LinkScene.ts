@@ -7,9 +7,11 @@ import { VIEW_H } from '../viewport';
 import { ADD, PIXEL_FONT, SIGN_FONT, addLight, attachPostFX, colour } from './shared';
 
 /** Mirrors scripts/art/link.mjs: where the cable leaves the wrist and seats in the socket. */
-const WRIST_PORT = { x: 99, y: 24 };
+const WRIST_PORT = { x: 125, y: 25 };
+/** The light strip round the wrist implant, in the arm sprite's pixels. */
+const WRIST_STRIP = { x: 125, y: 35 };
 const SOCKET = { x: 36, y: 54 };
-const ARM = { w: 150, h: 64 };
+const ARM_H = 64;
 const PORT = { w: 110, h: 96 };
 const PLUG_W = 20;
 
@@ -69,9 +71,12 @@ const bezier = (a: Point, c: Point, b: Point, t: number): Point => {
  */
 export class LinkScene extends Phaser.Scene {
   private stripes!: Phaser.GameObjects.Graphics;
+  private streams!: Phaser.GameObjects.Graphics;
+  private wristGlow!: Phaser.GameObjects.Image;
   private cable!: Phaser.GameObjects.Graphics;
   private band!: Phaser.GameObjects.Container;
   private stripeShift = 0;
+  private still = false;
   private path: { start: Point; ctrl: Point; tip: Point } | null = null;
 
   constructor() {
@@ -82,13 +87,15 @@ export class LinkScene extends Phaser.Scene {
     const w = this.scale.width;
     const cy = BAND_TOP + BAND_H / 2;
     this.path = null;
+    this.still = data.reducedMotion;
     attachPostFX(this);
     setMusicPlace(null);
 
     // The close-up's layout scales with the viewport, so a narrow phone still
     // fits both ends of the cable.
-    const armX = Math.round(w * 0.22 - WRIST_PORT.x);
-    const armY = Math.round(cy - ARM.h / 2 - 6);
+    // The sleeve has to run off the left edge, however wide the screen.
+    const armX = Math.min(0, Math.round(w * 0.24 - WRIST_PORT.x));
+    const armY = Math.round(cy - ARM_H / 2 - 6);
     const portX = Math.round(w * 0.78 - SOCKET.x);
     const portY = Math.round(cy - PORT.h / 2 + 4);
     const start = { x: armX + WRIST_PORT.x, y: armY + WRIST_PORT.y };
@@ -96,6 +103,7 @@ export class LinkScene extends Phaser.Scene {
 
     /* --- the band: red, striped, glowing, edged ----------------------- */
     this.stripes = this.add.graphics();
+    this.streams = this.add.graphics();
     const glow = addLight(this, w / 2, cy, RED, 0.32, w / 40, 2.4, 0);
     const edges = this.add.graphics();
     // Everything band-wide overhangs both sides, so a glitch jolt never shows the cafe.
@@ -106,6 +114,21 @@ export class LinkScene extends Phaser.Scene {
     this.cable = this.add.graphics();
     const plug = this.add.image(start.x, start.y, 'link-plug').setOrigin(0.5).setVisible(false);
     const socketGlow = addLight(this, seat.x + PLUG_W / 2, seat.y, CYAN, 0, 0.5, 0.5, 0);
+    this.wristGlow = addLight(this, armX + WRIST_STRIP.x, armY + WRIST_STRIP.y, CYAN, 0, 0.45, 0.14, 0);
+
+    // What the scan reads off the implant, typed out under the arm on a leader line.
+    const leader = this.add.graphics().setAlpha(0);
+    leader
+      .lineStyle(1, CYAN, 0.7)
+      .lineBetween(start.x - 13, start.y + 8, start.x - 34, start.y + 30)
+      .lineBetween(start.x - 34, start.y + 30, start.x - 34, start.y + 36 + (LINK.readout.length - 1) * 9);
+    const readout = LINK.readout.map((line, i) =>
+      this.add
+        .text(start.x - 30, start.y + 36 + i * 9, '', { fontFamily: SIGN_FONT, fontSize: '8px', color: introPalette.cyan })
+        .setOrigin(0, 0.5)
+        .setResolution(2)
+        .setData('full', line),
+    );
     const scanner = this.add.graphics();
     const scanLine = this.add.rectangle(0, 0, 1, 1, CYAN, 0.8).setOrigin(0, 0.5).setBlendMode(ADD).setVisible(false);
 
@@ -134,15 +157,19 @@ export class LinkScene extends Phaser.Scene {
 
     this.band = this.add.container(-w, 0, [
       this.stripes,
+      this.streams,
       glow,
       edges,
       port,
       arm,
+      this.wristGlow,
       this.cable,
       plug,
       socketGlow,
       scanner,
       scanLine,
+      leader,
+      ...readout,
       status,
       splitRed,
       splitCyan,
@@ -197,6 +224,9 @@ export class LinkScene extends Phaser.Scene {
       this.band.x = 0;
       arm.setFrame(2);
       port.setFrame(1);
+      this.wristGlow.setAlpha(0.5);
+      readout.forEach((t) => t.setText(t.getData('full') as string));
+      leader.setAlpha(1);
       this.setCable(start, seat, 1, plug);
       established.setAlpha(1);
       drawSync(1);
@@ -242,6 +272,26 @@ export class LinkScene extends Phaser.Scene {
       playScan();
       this.time.delayedCall(360, playScan);
       blink(LINK.scanning, '#ffffff');
+      this.tweens.add({ targets: this.wristGlow, alpha: { from: 0, to: 0.6 }, duration: 180, yoyo: true, repeat: 3 });
+      const typing = T.found - T.scan;
+      let shown = -1;
+      this.tweens.addCounter({
+        from: 0,
+        to: LINK.readout.join('').length,
+        duration: typing - 80,
+        onUpdate: (tw) => {
+          const n = Math.floor(tw.getValue() ?? 0);
+          if (n === shown) return;
+          shown = n;
+          let left = n;
+          readout.forEach((t) => {
+            const full = t.getData('full') as string;
+            t.setText(full.slice(0, Math.max(0, left)));
+            left -= full.length;
+          });
+        },
+      });
+      leader.setAlpha(1);
       const box = { w: 96, h: 60 };
       scanLine.setVisible(true);
       this.tweens.add({
@@ -271,6 +321,7 @@ export class LinkScene extends Phaser.Scene {
       scanLine.setVisible(false);
       blink(LINK.found, introPalette.cyan);
       this.drawBrackets(scanner, start, 26, 16, AMBER);
+      this.wristGlow.setAlpha(0.7);
       this.tweens.add({ targets: scanner, alpha: { from: 1, to: 0.3 }, duration: 90, yoyo: true, repeat: 2 });
     });
     this.time.delayedCall(T.found + 100, () => arm.setFrame(1));
@@ -281,7 +332,8 @@ export class LinkScene extends Phaser.Scene {
       playCableOut();
       blink(LINK.jacking, '#ffffff');
       this.tweens.killTweensOf(scanner);
-      this.tweens.add({ targets: scanner, alpha: 0, duration: 160 });
+      this.tweens.add({ targets: [scanner, leader, ...readout], alpha: 0, duration: 200 });
+      this.tweens.add({ targets: this.wristGlow, alpha: 0.35, duration: 200 });
       plug.setVisible(true);
       this.tweens.addCounter({
         from: 0,
@@ -296,6 +348,8 @@ export class LinkScene extends Phaser.Scene {
     this.time.delayedCall(T.seat, () => {
       playJackIn();
       port.setFrame(1);
+      // the fingers twitch as the signal hits
+      [0, 90, 200, 320].forEach((at, i) => this.time.delayedCall(at, () => arm.setFrame(i % 2 ? 2 : 3)));
       socketGlow.setAlpha(0.6);
       this.tweens.killTweensOf(status);
       status.setAlpha(0);
@@ -371,10 +425,28 @@ export class LinkScene extends Phaser.Scene {
     this.time.delayedCall(T.done, () => data.done());
   }
 
-  update(_time: number, delta: number): void {
-    // The stripes drift, so the band never reads as a still frame.
+  update(time: number, delta: number): void {
+    if (this.still) return;
+    // The stripes drift and the data falls, so the band never reads as a still frame.
     this.stripeShift = (this.stripeShift + delta * 0.03) % 16;
     this.drawStripes(this.scale.width);
+    this.drawStreams(this.scale.width, time / 1000);
+  }
+
+  /** Faint columns of data falling behind the close-up. */
+  private drawStreams(w: number, t: number): void {
+    const g = this.streams;
+    g.clear();
+    for (let x = 6, i = 0; x < w; x += 11, i++) {
+      const speed = 18 + ((i * 37) % 23);
+      const head = (t * speed + i * 53) % (BAND_H + 40);
+      for (let k = 0; k < 6; k++) {
+        const y = BAND_TOP + head - k * 5;
+        if (y < BAND_TOP + 2 || y > BAND_BOTTOM - 4) continue;
+        g.fillStyle(k === 0 ? 0xff6b78 : RED, k === 0 ? 0.35 : 0.16 - k * 0.02);
+        g.fillRect(x, Math.round(y), (i + k) % 3 === 0 ? 2 : 1, 2);
+      }
+    }
   }
 
   /**
@@ -496,7 +568,11 @@ export class LinkScene extends Phaser.Scene {
         const p = bezier(start, ctrl, tip, tw.getValue() ?? 0);
         dot.setPosition(p.x, p.y);
       },
-      onComplete: () => dot.destroy(),
+      onComplete: () => {
+        dot.destroy();
+        this.wristGlow.setAlpha(0.8);
+        this.tweens.add({ targets: this.wristGlow, alpha: 0.35, duration: 220 });
+      },
     });
   }
 

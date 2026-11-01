@@ -8,10 +8,10 @@ import { Px, R, hex, dither, ditherRect, outline, rimLight, blit } from './core.
 
 const fill = (c, x, y, w, h, col, a = 255) => c.rect(x, y, w, h, [...col, a]);
 
-/** The hoodie colours from characters.mjs, so the sleeve matches the player. */
-const SLEEVE = { base: hex('#223052'), lit: hex('#35486f'), dark: hex('#111a2c') };
+/** The jacket colours from characters.mjs, so the sleeve matches the player. */
+const JACKET = [hex('#151827'), hex('#262b40'), hex('#3a4163')];
 
-const ARM_W = 150;
+const ARM_W = 200;
 const ARM_H = 64;
 const CY = 34; // the arm's centre line
 
@@ -19,65 +19,192 @@ const CY = 34; // the arm's centre line
  * Where the cable leaves the wrist, in the arm sprite's own pixels. The
  * cutscene anchors the cable here.
  */
-export const WRIST_PORT = { x: 99, y: CY - 10 };
+export const WRIST_PORT = { x: 125, y: 25 };
 
-/** frame 0: wrist closed. 1: the panel sliding back. 2: open, port glowing. */
+/**
+ * Left to right: sleeve and cuff, the chrome wrist implant, the hand. The
+ * sleeve is long so that it always runs off the left of the screen.
+ */
+const CUFF = { x0: 106, x1: 114 };
+const IMPLANT = { x0: 114, x1: 136 };
+const KNUCKLES = 166;
+
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/** Fill a column between two edges, shading each pixel by how far down it sits. */
+function column(x, top, bottom, shade) {
+  for (let y = top; y <= bottom; y++) shade(y, bottom > top ? (y - top) / (bottom - top) : 0);
+}
+
+/** Sleeve, then cuff: techwear with a lit seam, bunching where it meets the wrist. */
+function sleeve(c) {
+  for (let x = 0; x < CUFF.x1; x++) {
+    const cuff = x >= CUFF.x0;
+    const top = cuff ? 19 : Math.round(lerp(15, 18, x / CUFF.x0));
+    const bottom = cuff ? 48 : Math.round(lerp(53, 49, x / CUFF.x0));
+    column(x, top, bottom, (y, rel) => {
+      // lit from above, the brightest band a quarter of the way down
+      let t = 2.15 - Math.abs(rel - 0.24) * 2.7;
+      if (cuff) t -= 0.7;
+      // fabric bunching into the cuff, and creases towards the elbow
+      const bunch = !cuff && x > CUFF.x0 - 16 && Math.abs(((x + Math.sin(y * 0.45) * 2) % 6) - 3) < 0.6 && rel > 0.12 && rel < 0.9;
+      const crease = !cuff && x < CUFF.x0 * 0.4 && Math.abs(((x * 0.8 + y * 0.6) % 19) - 9) < 0.7 && rel > 0.2 && rel < 0.85;
+      if (bunch || crease) t -= 0.9;
+      if (cuff && x % 2 === 0) t += 0.35; // ribbing
+      dither(c, x, y, JACKET, t);
+    });
+    if (!cuff) {
+      // the glowing seam that runs the length of the sleeve
+      c.set(x, top + 5, [...R.cyan[2], 255]);
+      c.set(x, top + 6, [...R.cyan[0], 150]);
+    }
+  }
+  // amber cuff edge, the accent the player wears at the collar
+  for (let y = 19; y <= 48; y++) {
+    c.set(CUFF.x1 - 2, y, [...R.amber[2], 255]);
+    c.set(CUFF.x1 - 1, y, [...R.amber[y < 24 ? 4 : 3], 255]);
+  }
+}
+
+/** The chrome implant around the wrist, with the port set into its top. */
+function implant(c, f) {
+  const { x0, x1 } = IMPLANT;
+  for (let x = x0; x < x1; x++) {
+    const top = 24;
+    const bottom = x < x0 + 11 ? 42 : 41;
+    column(x, top, bottom, (y, rel) => {
+      // polished metal: a hard specular band near the top, deep shadow below
+      const t = rel < 0.2 ? 4 - rel * 4 : 3.3 - (rel - 0.2) * 3.6;
+      dither(c, x, y, R.steel, t);
+    });
+    c.set(x, top + 7, [...R.steel[4], 255]);
+    // the light strip that runs round the implant
+    const strip = Math.round(top + (bottom - top) * 0.66);
+    c.set(x, strip, [...R.cyan[3], 255]);
+    c.set(x, strip + 1, [...R.cyan[1], 200]);
+  }
+  // panel seams and bolts
+  for (const sx of [x0 + 1, x1 - 1]) {
+    for (let y = 25; y <= 40; y++) c.set(sx, y, [...R.night[2], 255]);
+  }
+  for (const [bx, by] of [
+    [x0 + 3, 38],
+    [x1 - 4, 37],
+  ]) {
+    c.set(bx, by, [...R.steel[4], 255]);
+    c.set(bx + 1, by + 1, [...R.steel[0], 255]);
+  }
+
+  // the port, 14 x 6, centred on WRIST_PORT
+  const px = WRIST_PORT.x - 7;
+  const py = 24;
+  fill(c, px - 1, py - 1, 16, 1, R.steel[0]);
+  if (f === 0) {
+    fill(c, px, py, 14, 6, R.steel[2]);
+    fill(c, px, py, 14, 1, R.steel[4]);
+    fill(c, px, py + 5, 14, 1, R.steel[0]);
+    fill(c, px + 6, py + 2, 2, 2, R.amber[3]);
+  } else {
+    fill(c, px, py, 14, 6, R.night[0]);
+    if (f === 1) {
+      fill(c, px + 7, py - 1, 7, 6, R.steel[2]);
+      fill(c, px + 7, py - 1, 7, 1, R.steel[4]);
+    } else {
+      // contacts glowing in the recess, a cyan ring around the edge
+      ditherRect(c, px + 2, py + 2, 10, 2, R.amber, (i) => 3.9 - Math.abs(i - 5) * 0.2);
+      for (let i = 0; i < 5; i++) c.set(px + 3 + i * 2, py + 3, [...R.cyan[4], 255]);
+      fill(c, px, py, 14, 1, R.cyan[2]);
+      fill(c, px, py + 5, 14, 1, R.cyan[1]);
+    }
+  }
+}
+
+/**
+ * The hand, side on, palm down, reaching for the PC: about three times as
+ * long as it is deep, as a hand is. `curl` bends the fingers further - 0
+ * relaxed, 1 the twitch as the signal hits.
+ */
+function hand(c, curl) {
+  const x0 = IMPLANT.x1;
+  const kn = KNUCKLES;
+  const tip = KNUCKLES + 30 - curl * 2;
+  // the red band the scene plays over this lights the underside
+  const bounce = (x, y) => c.set(x, y, [...R.magenta[1], 110]);
+
+  // back of the hand: a low dome from the wrist to the knuckles
+  const arc = (x) => Math.sin(((x - x0) / (kn - x0)) * Math.PI);
+  for (let x = x0; x < kn; x++) {
+    const top = Math.round(25 - arc(x) * 1.6);
+    const bottom = Math.round(lerp(40, 36, (x - x0) / (kn - x0)) + arc(x) * 1.2);
+    column(x, top, bottom, (y, rel) => {
+      let t = 3.5 - rel * 2.4;
+      // tendons running down to the knuckles
+      if (x > x0 + 6 && x < kn - 4 && y === top + 3) t += 0.3;
+      dither(c, x, y, R.skin, t);
+    });
+    bounce(x, bottom);
+  }
+  c.set(kn - 3, 24, [...R.skin[4], 255]);
+  c.set(kn - 2, 24, [...R.skin[4], 255]);
+
+  // four fingers as they look from the side: the index whole on top, the
+  // others behind it, each a sliver lower, darker and shorter
+  const rows = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3];
+  const reach = [0, 2, 5, 8];
+  for (let x = kn; x <= tip; x++) {
+    const k = (x - kn) / (tip - kn);
+    const top = Math.round(26 + k * k * (3 + curl * 3));
+    rows.forEach((band, r) => {
+      const end = tip - reach[band];
+      if (x > end) return;
+      const first = r === rows.indexOf(band);
+      const last = r === rows.lastIndexOf(band);
+      if (x === end && (first || last)) return; // round the tip
+      if (band === 0 && first && x === end - 1) return;
+      const y = top + r;
+      // the gaps between fingers only open up towards the tips
+      if (band > 0 && first) {
+        if (x >= end - 9) c.set(x, y, [...R.skin[1], 255]);
+        else dither(c, x, y, R.skin, 1.9);
+        return;
+      }
+      else if (band === 0 && r < 2 && x >= end - 3) c.set(x, y, [...R.skin[4], 255]); // nail
+      else dither(c, x, y, R.skin, 3.35 - (r - rows.indexOf(band)) * 0.5 - band * 0.45);
+      if (last && band === 3) bounce(x, y);
+    });
+    // the two finger joints, a crease and a slight break in the line
+    if (x === kn + 10 || x === kn + 20) c.set(x, top, [...R.skin[1], 255]);
+  }
+
+  // the thumb, nearer the viewer: a muscled base under the palm, tapering
+  // forward along the fingers
+  const thumbTip = KNUCKLES + 8 - curl;
+  for (let x = x0 + 4; x <= thumbTip; x++) {
+    const k = (x - x0 - 4) / (thumbTip - x0 - 4);
+    let top = Math.round(lerp(36, 35, k));
+    let bottom = Math.round(lerp(44, 39, k));
+    if (x >= thumbTip - 1) {
+      top += 1;
+      bottom -= 1;
+    }
+    column(x, top, bottom, (y, rel) => {
+      if (y === top && x > x0 + 10) c.set(x, y, [...R.skin[1], 255]);
+      else if (x >= thumbTip - 2 && rel < 0.4) c.set(x, y, [...R.skin[4], 255]);
+      else dither(c, x, y, R.skin, 3.2 - rel * 2);
+    });
+    bounce(x, bottom);
+  }
+}
+
+/**
+ * frame 0: wrist closed. 1: the port panel sliding back. 2: open, glowing.
+ * 3: open, the fingers twitching as the link takes.
+ */
 function armFrame(f) {
   const c = new Px(ARM_W, ARM_H);
-
-  // sleeve, entering from the left edge, with folds in the fabric
-  for (let x = 0; x < 84; x++) {
-    const th = Math.round(34 - x * 0.05);
-    const top = CY - (th >> 1);
-    for (let j = 0; j < th; j++) {
-      const k = j / th;
-      const col = k < 0.18 ? SLEEVE.lit : k > 0.78 ? SLEEVE.dark : SLEEVE.base;
-      c.set(x, top + j, [...col, 255]);
-      if (Math.sin((x + j * 0.6) * 0.18) > 0.85) c.set(x, top + j, [...SLEEVE.dark, 130]);
-    }
-  }
-  // amber cuff
-  for (let x = 82; x < 90; x++) {
-    for (let j = 0; j < 30; j++) dither(c, x, CY - 15 + j, R.amber, 2.9 - (j / 30) * 1.7);
-  }
-  // wrist, back of the hand, thumb, curled fingers
-  for (let x = 90; x < 108; x++) {
-    for (let j = 0; j < 22; j++) dither(c, x, CY - 12 + j, R.skin, 3.2 - (j / 22) * 2);
-  }
-  for (let x = 108; x < 134; x++) {
-    const th = 22 + Math.round((x - 108) * 0.1);
-    for (let j = 0; j < th; j++) dither(c, x, CY - 12 + j, R.skin, 3.3 - (j / th) * 2.1);
-  }
-  for (let x = 112; x < 128; x++) {
-    for (let j = 0; j < 5; j++) dither(c, x, CY - 16 + j, R.skin, 3.4 - j * 0.2);
-  }
-  for (let x = 134; x < 148; x++) {
-    const th = 16 - Math.round((x - 134) * 0.3);
-    for (let j = 0; j < th; j++) dither(c, x, CY - 6 + j, R.skin, 3 - (j / th) * 1.8);
-  }
-  for (const kx of [134, 139, 143]) fill(c, kx, CY - 4, 1, 12, R.skin[0], 160);
-  for (const fy of [CY - 2, CY + 2, CY + 6]) fill(c, 134, fy, 13, 1, R.skin[0], 150);
-  for (const fy of [CY - 4, CY, CY + 4]) fill(c, 145, fy, 2, 2, R.skin[4], 200);
-  fill(c, 128, CY - 12, 6, 1, R.skin[4], 200);
-
-  // the port, set into the top of the wrist
-  const px = 92;
-  const py = CY - 12;
-  if (f === 0) {
-    fill(c, px, py + 1, 14, 1, R.skin[0], 200);
-    fill(c, px, py + 5, 14, 1, R.skin[0], 200);
-    fill(c, px, py + 1, 1, 5, R.skin[0], 200);
-    fill(c, px + 13, py + 1, 1, 5, R.skin[0], 200);
-    c.set(px + 7, py + 3, [...R.amber[2], 255]);
-  } else {
-    const open = f === 1 ? 7 : 14;
-    fill(c, px, py, open, 6, R.night[0]);
-    if (f === 1) fill(c, px + open, py - 1, 14 - open, 2, R.skin[1]);
-    if (f === 2) {
-      ditherRect(c, px + 2, py + 1, 10, 3, R.amber, (i) => 3.9 - Math.abs(i - 5) * 0.2);
-      for (let i = 0; i < 4; i++) c.set(px + 3 + i * 2, py + 2, [...R.cyan[4], 255]);
-    }
-  }
+  sleeve(c);
+  hand(c, f === 3 ? 1 : 0);
+  implant(c, Math.min(f, 2));
 
   rimLight(c, R.cyan[3], 1, 90);
   outline(c, R.night[0]);
@@ -85,8 +212,8 @@ function armFrame(f) {
 }
 
 function linkArm() {
-  const sheet = new Px(ARM_W * 3, ARM_H);
-  for (let f = 0; f < 3; f++) blit(sheet, armFrame(f), f * ARM_W, 0);
+  const sheet = new Px(ARM_W * 4, ARM_H);
+  for (let f = 0; f < 4; f++) blit(sheet, armFrame(f), f * ARM_W, 0);
   return sheet;
 }
 
