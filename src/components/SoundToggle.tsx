@@ -4,19 +4,21 @@ import { isSoundOn, setSoundOn, subscribeSound } from '../lib/sound';
 /**
  * Sound is off until asked for (CLAUDE.md 5). The toggle lives in the frame so
  * it is reachable from the intro and from every page inside the browser.
+ * `label` names what it controls where that is more than interface sounds.
  */
-export default function SoundToggle() {
+export default function SoundToggle({ label }: { label?: string }) {
   const on = useSyncExternalStore(subscribeSound, isSoundOn, () => false);
+  const what = label ? `sound and ${label.toLowerCase()}` : 'interface sounds';
 
   return (
     <button
       type="button"
       onClick={() => setSoundOn(!on)}
       aria-pressed={on}
-      title={on ? 'Mute interface sounds' : 'Unmute interface sounds'}
-      className="glass grid h-8 w-8 place-items-center rounded-md text-ink-muted transition-colors hover:text-accent"
+      title={on ? `Mute ${what}` : `Unmute ${what}`}
+      className={`glass flex h-8 items-center gap-1.5 rounded-md text-ink-muted transition-colors hover:text-accent ${label ? 'px-2.5' : 'w-8 justify-center'}`}
     >
-      <span className="sr-only">{on ? 'Mute interface sounds' : 'Unmute interface sounds'}</span>
+      <span className="sr-only">{on ? `Mute ${what}` : `Unmute ${what}`}</span>
       <svg
         viewBox="0 0 16 16"
         className="h-4 w-4"
@@ -30,6 +32,11 @@ export default function SoundToggle() {
         <path d="M3 6h2.5L9 3v10L5.5 10H3z" />
         {on ? <path d="M11.5 5.5a3.5 3.5 0 0 1 0 5" /> : <path d="M11.5 6.5l3 3m0-3l-3 3" />}
       </svg>
+      {label && (
+        <span className="font-mono text-[0.7rem]" aria-hidden="true">
+          {label} {on ? 'on' : 'off'}
+        </span>
+      )}
     </button>
   );
 }

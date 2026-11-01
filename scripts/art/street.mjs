@@ -615,49 +615,44 @@ function cafeFront() {
 
 /* ============================================================ billboard === */
 
-const BB_W = 128;
-const BB_H = 90;
+const BB_W = 160;
+const BB_H = 84;
 
 /**
- * A rooftop LED billboard: bezel, bulb sockets, a catwalk with two lamps aimed
- * up at the face, and legs braced down to the roof. The face (x 6-121,
- * y 6-52) is left dark - StreetScene draws the animated content on it.
+ * The Wispr Flow board: a big LED face (x 6-153, y 6-65) in a steel bezel,
+ * bulb sockets along the top, a catwalk underneath with two lamps aimed up,
+ * and struts bracing it back to the tower it is bolted to. The face is left
+ * dark - StreetScene animates it.
  */
 function billboard() {
   const c = new Px(BB_W, BB_H);
   const steel = [...R.night[1], 255];
   const lit = [...R.night[3], 255];
 
-  // legs and cross-bracing
-  for (const lx of [30, 94]) {
-    c.rect(lx, 60, 4, BB_H - 60, steel);
-    c.rect(lx, 60, 1, BB_H - 60, lit);
+  // struts back to the wall, and the catwalk with its railing
+  for (const [x0, dir] of [
+    [22, 1],
+    [138, -1],
+  ]) {
+    for (let i = 0; i < 8; i++) c.rect(x0 + dir * i, 76 + i, 2, 1, steel);
   }
-  for (let i = 0; i <= 60; i++) {
-    const t = i / 60;
-    c.set(34 + i, 64 + Math.round(t * (BB_H - 68)), steel);
-    c.set(34 + i, BB_H - 4 - Math.round(t * (BB_H - 68)), steel);
-  }
-
-  // catwalk, railing, and the two lamps lighting the face from below
-  c.rect(6, 60, 116, 3, steel);
-  c.rect(6, 60, 116, 1, lit);
-  c.rect(6, 54, 116, 1, steel);
-  for (let x = 6; x <= 121; x += 5) c.rect(x, 54, 1, 6, steel);
-  for (const lx of [18, 104]) {
-    c.rect(lx, 56, 6, 4, steel);
-    ditherRect(c, lx + 1, 56, 4, 1, R.amber, () => 3.8);
+  c.rect(8, 76, 144, 3, steel);
+  c.rect(8, 76, 144, 1, lit);
+  c.rect(8, 70, 144, 1, steel);
+  for (let x = 8; x <= 151; x += 6) c.rect(x, 70, 1, 6, steel);
+  for (const lx of [34, 120]) {
+    c.rect(lx, 71, 6, 5, steel);
+    ditherRect(c, lx + 1, 71, 4, 1, R.amber, () => 3.8);
   }
 
-  // bezel and the dark LED face, its pitch faintly visible
-  c.rect(3, 3, 122, 52, steel);
-  c.rect(3, 3, 122, 1, lit);
-  c.rect(3, 3, 1, 52, lit);
-  c.rect(6, 6, 116, 47, [...R.night[0], 255]);
-  for (let y = 7; y < 52; y += 2) for (let x = 7; x < 121; x += 2) c.set(x, y, [...R.night[1], 255]);
+  // bezel and the dark face
+  c.rect(2, 2, 156, 68, steel);
+  c.rect(2, 2, 156, 1, lit);
+  c.rect(2, 2, 1, 68, lit);
+  c.rect(157, 2, 1, 68, [...R.night[0], 255]);
+  c.rect(5, 5, 150, 62, [...R.night[0], 255]);
 
-  // bulb sockets; the scene lights them in a chase
-  for (let x = 8; x <= 120; x += 6) c.rect(x, 0, 2, 2, [...R.night[0], 255]);
+  for (let x = 8; x <= 152; x += 6) c.rect(x, 0, 2, 2, [...R.night[0], 255]);
   return c;
 }
 
@@ -776,23 +771,28 @@ function note() {
   return sheet;
 }
 
+/**
+ * The cafe's automatic sliding doors: two glass leaves, frame 0 left and
+ * frame 1 right, warm light through the tint and a cyan strip on the edges
+ * that meet. The scene slides them apart.
+ */
 function door() {
   const c = new Px(DOOR_W, DOOR_H);
-  ditherRect(c, 0, 0, DOOR_W, DOOR_H, R.concrete, (i, j) => 2.4 - (i / DOOR_W) * 0.9 - j * 0.012);
-  c.rect(0, 0, DOOR_W, 1, [...R.concrete[4], 255]);
-  c.rect(DOOR_W - 1, 0, 1, DOOR_H, [...R.night[0], 200]);
-
-  // Glazed upper panel with warm light behind it.
-  c.rect(3, 4, DOOR_W - 6, 18, [...R.night[0], 255]);
-  ditherRect(c, 4, 5, DOOR_W - 8, 16, R.amber, (_i, j) => 3.2 - j * 0.1);
-  c.rect(DOOR_W >> 1, 4, 1, 18, [...R.night[0], 255]);
-  c.rect(4, 12, DOOR_W - 8, 1, [...R.night[0], 200]);
-
-  // Lower panel, kick plate, handle.
-  c.rect(4, 26, DOOR_W - 8, 12, [...R.night[1], 180]);
-  c.rect(4, 26, DOOR_W - 8, 1, [...R.concrete[3], 200]);
-  c.rect(2, DOOR_H - 4, DOOR_W - 4, 3, [...R.concrete[1], 255]);
-  ditherRect(c, DOOR_W - 7, 23, 2, 5, R.amber, () => 3.8);
+  const leaf = (ox, meetsOnRight) => {
+    const w = DOOR_W / 2;
+    c.rect(ox, 0, w, DOOR_H, [...R.night[0], 255]);
+    ditherRect(c, ox + 1, 1, w - 2, DOOR_H - 2, R.amber, (_i, j) => 2.2 - j * 0.02);
+    for (let j = 0; j < DOOR_H; j++) {
+      const x = ox + 2 + Math.round(j * 0.22);
+      if (x < ox + w - 1) c.set(x, j, [...R.cyan[4], 45]);
+    }
+    c.rect(meetsOnRight ? ox + w - 1 : ox, 2, 1, DOOR_H - 4, [...R.cyan[3], 255]);
+    c.rect(ox + 1, DOOR_H - 5, w - 2, 4, [...R.concrete[2], 255]);
+    c.rect(ox + 1, DOOR_H - 5, w - 2, 1, [...R.concrete[4], 255]);
+    c.rect(ox + 1, 18, w - 2, 1, [...R.night[1], 200]);
+  };
+  leaf(0, true);
+  leaf(DOOR_W / 2, false);
   return c;
 }
 

@@ -24,8 +24,10 @@ type Props = {
   entry: ComputerEntry;
   intro?: IntroResult;
   reducedMotion: boolean;
-  /** Log off: back out to the street. */
+  /** Log off: back to the cafe, still in the seat. */
   onLogOff: () => void;
+  /** Replay the intro from the start of the street. */
+  onReplay: () => void;
 };
 
 type OpenWindow = { id: WindowAppId; z: number; offset: number };
@@ -37,7 +39,7 @@ const WINDOW_WIDTH: Record<WindowAppId, number> = { readme: 440, terminal: 560, 
  * The cafe PC: boot, then a desktop that behaves like one. Its whole job is to
  * be the way into the browser, which the visitor opens themselves.
  */
-export default function Computer({ entry, intro, reducedMotion, onLogOff }: Props) {
+export default function Computer({ entry, intro, reducedMotion, onLogOff, onReplay }: Props) {
   const [stage, setStage] = useState<'boot' | 'desktop'>('boot');
   const [windows, setWindows] = useState<OpenWindow[]>([]);
   const [browser, setBrowser] = useState<BrowserState>('closed');
@@ -146,7 +148,7 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff }: Prop
               reducedMotion={reducedMotion}
               onMinimized={() => setBrowser('minimized')}
               onClosed={() => setBrowser('closed')}
-              onLogOff={onLogOff}
+              onReplay={onReplay}
             />
           )}
         </div>

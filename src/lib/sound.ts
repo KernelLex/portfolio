@@ -24,6 +24,11 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
+/** The shared context, or null while sound is off. Music plays through it too. */
+export function audioContext(): AudioContext | null {
+  return audio();
+}
+
 export function isSoundOn(): boolean {
   return enabled;
 }
@@ -79,6 +84,11 @@ export function playWhoosh(): void {
   tone({ freq: 520, to: 90, duration: 0.55, type: 'sawtooth', gain: 0.035 });
 }
 
+/** A pneumatic sigh: the cafe's sliding doors. */
+export function playDoor(): void {
+  tone({ freq: 900, to: 260, duration: 0.28, type: 'sine', gain: 0.03 });
+}
+
 /** Rising two-note chime - a voice note picked up. */
 export function playPickup(): void {
   tone({ freq: 660, to: 880, duration: 0.08, type: 'triangle', gain: 0.04 });
@@ -113,3 +123,13 @@ export function playJackIn(): void {
   window.setTimeout(() => tone({ freq: 880, to: 1760, duration: 0.25, type: 'sine', gain: 0.04 }), 40);
 }
 
+
+/** A scanner sweeping: a soft rising chirp. */
+export function playScan(): void {
+  tone({ freq: 1200, to: 2400, duration: 0.18, type: 'sine', gain: 0.018 });
+}
+
+/** One tick of the sync bar. */
+export function playTick(): void {
+  tone({ freq: 1800, duration: 0.025, type: 'square', gain: 0.012 });
+}

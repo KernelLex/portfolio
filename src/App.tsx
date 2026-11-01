@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { storageKeys } from './config';
 import type { ComputerEntry } from './computer/Computer';
+import type { IntroStart } from './intro/scenes/BootScene';
 import type { IntroResult } from './intro/scenes/StreetScene';
 import { readFlag, writeFlag } from './lib/storage';
 import { preloadSite } from './lib/useSitePreload';
@@ -13,6 +14,8 @@ import IntroGame from './intro/IntroGame';
 const Computer = lazy(() => import('./computer/Computer'));
 
 type Phase = 'intro' | 'computer';
+
+const FROM_THE_TOP: IntroStart = { scene: 'street', taken: [] };
 
 /** Reduced motion and returning visitors go straight to the cafe PC. */
 function initialPhase(): Phase {
@@ -31,6 +34,7 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>(start);
   const [entry, setEntry] = useState<ComputerEntry>(start === 'intro' ? 'fresh' : 'returning');
   const [intro, setIntro] = useState<IntroResult>();
+  const [introStart, setIntroStart] = useState<IntroStart>(FROM_THE_TOP);
   // A fresh PC every time you sit down at it.
   const [visit, setVisit] = useState(0);
 
@@ -56,27 +60,39 @@ export default function App() {
     sitDown('skipped');
   }, [sitDown]);
 
-  const handleLogOff = useCallback(() => setPhase('intro'), []);
+  // Logging off leaves you in the cafe, in your seat, free to walk back out.
+  const handleLogOff = useCallback(() => {
+    setIntroStart({ scene: 'cafe', taken: intro?.taken ?? [] });
+    setPhase('intro');
+  }, [intro]);
+
+  const handleReplay = useCallback(() => {
+    setIntroStart(FROM_THE_TOP);
+    setPhase('intro');
+  }, []);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-space">
-      {phase === 'intro' && <IntroGame onEnter={handleEntered} reducedMotion={reducedMotion} />}
+      {phase === 'intro' && <IntroGame start={introStart} onEnter={handleEntered} reducedMotion={reducedMotion} />}
 
       {phase === 'computer' && (
         <Suspense fallback={<div className="h-full w-full bg-black" />}>
-          <Computer key={visit} entry={entry} intro={intro} reducedMotion={reducedMotion} onLogOff={handleLogOff} />
+          <Computer key={visit} entry={entry} intro={intro} reducedMotion={reducedMotion}
+            onLogOff={handleLogOff}
+            onReplay={handleReplay}
+          />
         </Suspense>
       )}
 
       {phase === 'intro' && (
         <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
-          <SoundToggle />
+          <SoundToggle label="Music" />
           <button
             type="button"
             onClick={handleSkip}
             className="glass rounded-md px-3 py-1.5 font-mono text-[0.7rem] text-ink-muted transition-colors hover:text-accent"
           >
-            Skip intro →
+            {introStart.scene === 'cafe' ? 'Back to the PC →' : 'Skip intro →'}
           </button>
         </div>
       )}

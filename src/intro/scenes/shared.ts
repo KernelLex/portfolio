@@ -22,8 +22,9 @@ const SHEETS: ReadonlyArray<[string, number, number]> = [
   ['note', 18, 16],
   ['cafe-npc', 24, 26],
   ['cafe-counter', 128, 72],
-  ['cafe-fan', 64, 20],
-  ['cafe-decor', 48, 40],
+  ['cafe-decor', 48, 64],
+  ['door', 14, 44],
+  ['pedestrians', 22, 44],
   ['sign-frame', 16, 16],
   ['flyers', 64, 18],
   ['flyers-far', 20, 6],
@@ -39,7 +40,6 @@ const IMAGES: ReadonlyArray<string> = [
   'cables',
   'street',
   'cafe-front',
-  'door',
   'billboard',
   'glow',
   'cafe-wall',
@@ -60,8 +60,8 @@ const FALLBACKS: ReadonlyArray<[string, number, number, number]> = [
   ['cables', 480, 64, 0x000000],
   ['street', 480, 80, 0x0a0d16],
   ['cafe-front', 192, 128, 0x141b2c],
-  ['door', 28, 44, 0x1b2235],
-  ['billboard', 128, 90, 0x080b16],
+  ['door', 14, 44, 0x1b2235],
+  ['billboard', 160, 84, 0x080b16],
   ['glow', 64, 64, 0xffffff],
   ['cafe-wall', 480, 270, 0x0c1120],
   ['cafe-desk', 64, 52, 0x0a0e18],
@@ -75,8 +75,8 @@ const FALLBACKS: ReadonlyArray<[string, number, number, number]> = [
   ['note', 18, 16, 0xf5a35c],
   ['cafe-npc', 24, 26, 0x121a2e],
   ['cafe-counter', 128, 72, 0x121a2e],
-  ['cafe-fan', 64, 20, 0x080b16],
-  ['cafe-decor', 48, 40, 0x121a2e],
+  ['cafe-decor', 48, 64, 0x121a2e],
+  ['pedestrians', 22, 44, 0x121a2e],
   ['megacity', 480, 210, 0x0c1120],
   ['haze', 4, 128, 0xffffff],
   ['street-front', 960, 190, 0x141b2c],
@@ -91,8 +91,8 @@ const FALLBACKS: ReadonlyArray<[string, number, number, number]> = [
 ];
 
 /**
- * Everything for both scenes loads up front, in the street's preload, so the
- * cut into the cafe never waits on the network.
+ * Everything for every intro scene loads up front, in BootScene, so moving
+ * between the street and the cafe never waits on the network.
  */
 export function loadIntroAssets(scene: Phaser.Scene): void {
   for (const key of IMAGES) scene.load.image(key, BASE + key + '.png');
@@ -229,4 +229,55 @@ export function attachPostFX(scene: Phaser.Scene): void {
   } catch (err) {
     console.warn('[intro] post-processing unavailable:', err);
   }
+}
+
+/**
+ * An iris: the view shrinks to a circle on a point and closes (or opens back
+ * out from one). Classic, clean, and it says exactly where you are going.
+ * Needs WebGL for the inverted mask; falls back to a camera fade without it.
+ */
+export function iris(
+  scene: Phaser.Scene,
+  worldX: number,
+  worldY: number,
+  mode: 'open' | 'close',
+  duration: number,
+  done?: () => void,
+): void {
+  const cam = scene.cameras.main;
+  if (scene.renderer.type !== Phaser.WEBGL) {
+    if (mode === 'open') cam.fadeIn(duration, 0, 0, 0);
+    else cam.fadeOut(duration, 0, 0, 0);
+    if (done) scene.time.delayedCall(duration, done);
+    return;
+  }
+
+  const w = scene.scale.width;
+  const h = scene.scale.height;
+  const cx = (worldX - cam.scrollX) * cam.zoom;
+  const cy = (worldY - cam.scrollY) * cam.zoom;
+  const far = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) + 4;
+
+  const cover = scene.add.rectangle(0, 0, w, h, 0x000000).setOrigin(0, 0).setScrollFactor(0).setDepth(1000);
+  const hole = scene.make.graphics({ x: 0, y: 0 }, false).setScrollFactor(0);
+  const mask = hole.createGeometryMask();
+  mask.setInvertAlpha(true);
+  cover.setMask(mask);
+
+  const draw = (r: number) => hole.clear().fillStyle(0xffffff).fillCircle(cx, cy, Math.max(0, r));
+  draw(mode === 'open' ? 0 : far);
+  scene.tweens.addCounter({
+    from: mode === 'open' ? 0 : far,
+    to: mode === 'open' ? far : 0,
+    duration,
+    ease: mode === 'open' ? 'Cubic.easeOut' : 'Cubic.easeIn',
+    onUpdate: (tw) => draw(tw.getValue() ?? 0),
+    onComplete: () => {
+      if (mode === 'open') {
+        cover.destroy();
+        hole.destroy();
+      }
+      done?.();
+    },
+  });
 }

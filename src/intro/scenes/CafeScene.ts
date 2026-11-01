@@ -1,16 +1,18 @@
 import Phaser from 'phaser';
 import { introPalette } from '../../config';
 import { CAFE_INTERIOR, PROMPTS, SEAT_NUMBER, VOICE_NOTES } from '../../content/intro';
-import { playClick } from '../../lib/sound';
+import { setMusicPlace } from '../../lib/music';
+import { playClick, playDoor } from '../../lib/sound';
 import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { Controls } from './controls';
 import type { LinkSceneData } from './LinkScene';
 import type { IntroSceneOptions } from './StreetScene';
 import { Walker } from './Walker';
-import { addLight, attachPostFX, colour, isTouch, neonText, signText, uiText } from './shared';
+import { PIXEL_FONT, SIGN_FONT, addLight, attachPostFX, colour, iris, isTouch, neonText, signText, uiText } from './shared';
 
 /* Room layout, in pixel-art pixels. Mirrors scripts/art/cafe.mjs. */
-const ROOM_W = 800;
+const ROOM_W = 880;
+const FLOOR_Y = 176;
 const DESK_BASE_Y = 202;
 const SIT_BASE_Y = 189;
 const CHAIR_BASE_Y = 218;
@@ -20,11 +22,18 @@ const STATIONS = [250, 314, 378, 442, 506, 570, 634, 698, 762];
 const SEAT_X = STATIONS[SEAT_NUMBER - 1];
 const SEAT_ZONE = 16;
 
+/** The way out: sliding doors in the back wall, at the left end of the room. */
+const EXIT_X = 28;
+const EXIT_ZONE = { min: 16, max: 58 };
+const DOOR_LEAF = 14;
+const DOOR_H = 44;
+
 /** The monitor face on cafe-desk.png, relative to a station's x. */
 const SCREEN = { dx: -14, y: DESK_BASE_Y - 50, w: 28, h: 18 };
 const SCREEN_CY = SCREEN.y + SCREEN.h / 2;
-/** The TV's picture, on frame 5 of cafe-decor.png placed at (238, 68). */
-const TV = { x: 218, y: 56, w: 40, h: 24 };
+/** Prompts sit by what they act on, clear of the hint line at the bottom. */
+const SIT_PROMPT_Y = SCREEN.y - 14;
+const EXIT_PROMPT = { x: 58, y: FLOOR_Y - DOOR_H - 28 };
 
 const SCREEN_FPS = 12;
 
@@ -50,6 +59,7 @@ const C = {
   green: 0x2e8f47,
   greenDk: 0x1d6332,
   pitch: 0x9a7d16,
+  exit: 0x49b85f,
 };
 
 const GLOW: Record<Game, number> = {
@@ -64,8 +74,9 @@ const GLOW: Record<Game, number> = {
 const DEPTH = {
   wall: 0,
   decor: 1,
-  tubes: 1.5,
-  fans: 2,
+  holo: 1.2,
+  lights: 1.5,
+  kit: 2,
   desks: 3,
   screens: 3.1,
   screenGlow: 3.2,
@@ -77,7 +88,7 @@ const DEPTH = {
   hud: 20,
 } as const;
 
-type Phase = 'walking' | 'sitting' | 'seated' | 'linking';
+type Phase = 'arriving' | 'walking' | 'sitting' | 'seated' | 'linking' | 'leaving';
 type Rect = { x: number; y: number; w: number; h: number };
 
 export class CafeScene extends Phaser.Scene {
@@ -90,14 +101,20 @@ export class CafeScene extends Phaser.Scene {
   private glows: Phaser.GameObjects.Image[] = [];
   private seatChair!: Phaser.GameObjects.Image;
   private marker!: Phaser.GameObjects.Container;
-  private prompt!: Phaser.GameObjects.Text;
+  private sitPrompt!: Phaser.GameObjects.Text;
+  private exitPrompt!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
+  private doors: Phaser.GameObjects.Image[] = [];
+  private clockText!: Phaser.GameObjects.Text;
+  private ad!: { texts: Phaser.GameObjects.Text[]; shape: Phaser.GameObjects.Graphics };
+  private cricket!: Rect;
 
-  private phase: Phase = 'walking';
+  private phase: Phase = 'arriving';
   private seatScreen: 'off' | 'boot' = 'off';
   private clock = 0;
   private screenTick = 0;
-  private hintDismissed = false;
+  /** The hint line fades this long after the first input. */
+  private hintUntil = Infinity;
   private camX = 0;
 
   constructor(opts: IntroSceneOptions) {
@@ -105,28 +122,28 @@ export class CafeScene extends Phaser.Scene {
     this.opts = opts;
   }
 
-  create(): void {
+  create(data: { entry?: 'door' | 'pc' }): void {
     this.camW = this.scale.width;
-    this.phase = 'walking';
+    this.phase = 'arriving';
     this.seatScreen = 'off';
     this.glows = [];
+    this.doors = [];
+    this.hintUntil = Infinity;
     const cam = this.cameras.main;
     cam.setBounds(0, 0, ROOM_W, VIEW_H);
     cam.setBackgroundColor(introPalette.night);
-    cam.fadeIn(500, 0, 0, 0);
 
     this.add.tileSprite(0, 0, ROOM_W, VIEW_H, 'cafe-wall').setOrigin(0, 0).setDepth(DEPTH.wall);
-    this.buildEntrance();
-    this.buildDecor();
-    this.buildLights();
+    this.buildExit();
+    this.buildWall();
     this.buildCounter();
     this.buildStations();
     this.screens = this.add.graphics().setDepth(DEPTH.screens);
 
     this.walker = new Walker(this, {
-      x: 30,
+      x: 60,
       groundY: GROUND_Y,
-      minX: 16,
+      minX: EXIT_ZONE.min,
       maxX: ROOM_W - 16,
       depth: DEPTH.player,
       reflection: { alpha: 0.12, tint: 0x9fb4e0 },
@@ -137,42 +154,106 @@ export class CafeScene extends Phaser.Scene {
     this.buildHud();
     this.controls = new Controls(this);
     attachPostFX(this);
+    setMusicPlace('cafe');
+
+    if (data?.entry === 'pc') this.standUp();
+    else this.walkIn();
     this.drawScreens();
   }
 
   /* ---------------------------------------------------------------- room -- */
 
-  /** The door just walked through, the street's blue light still spilling in. */
-  private buildEntrance(): void {
-    this.add.rectangle(24, 176, 34, 58, C.night0).setOrigin(0.5, 1).setDepth(DEPTH.decor);
-    this.add.rectangle(24, 176, 28, 52, 0x1b2540).setOrigin(0.5, 1).setDepth(DEPTH.decor);
-    this.add.rectangle(24, 176, 28, 14, 0x121a2e).setOrigin(0.5, 1).setDepth(DEPTH.decor);
-    addLight(this, 24, 150, C.cyan, 0.14, 0.9, 1.4, DEPTH.decor + 0.1);
-    addLight(this, 40, 210, C.cyan, 0.08, 1.6, 0.4, DEPTH.floorGlow);
+  /** Sliding doors back out to the street, with a green EXIT sign over them. */
+  private buildExit(): void {
+    this.add.rectangle(EXIT_X, FLOOR_Y, DOOR_LEAF * 2 + 6, DOOR_H + 4, C.night0).setOrigin(0.5, 1).setDepth(DEPTH.decor);
+    // The street seen through the doorway when they open: rain-blue light.
+    this.add.rectangle(EXIT_X, FLOOR_Y, DOOR_LEAF * 2, DOOR_H, 0x1b2540).setOrigin(0.5, 1).setDepth(DEPTH.decor);
+    addLight(this, EXIT_X, FLOOR_Y - 20, C.cyan, 0.12, 0.8, 1.2, DEPTH.decor + 0.05);
+
+    const opening = this.make.graphics({ x: 0, y: 0 }, false);
+    opening.fillStyle(0xffffff).fillRect(EXIT_X - DOOR_LEAF, FLOOR_Y - DOOR_H, DOOR_LEAF * 2, DOOR_H);
+    const mask = opening.createGeometryMask();
+    this.doors = [0, 1].map((frame) =>
+      this.add
+        .image(EXIT_X + (frame ? DOOR_LEAF / 2 : -DOOR_LEAF / 2), FLOOR_Y, 'door', frame)
+        .setOrigin(0.5, 1)
+        .setDepth(DEPTH.decor + 0.1)
+        .setMask(mask),
+    );
+
+    neonText(this, EXIT_X, FLOOR_Y - DOOR_H - 10, 'EXIT', '#49b85f', 8, SIGN_FONT).setDepth(DEPTH.decor + 0.2);
+    addLight(this, EXIT_X, FLOOR_Y - DOOR_H - 10, C.exit, 0.25, 0.9, 0.4, DEPTH.decor + 0.15);
   }
 
-  private buildDecor(): void {
-    const piece = (frame: number, x: number, y: number) =>
-      this.add.image(x, y, 'cafe-decor', frame).setDepth(DEPTH.decor);
+  private slideDoors(open: boolean): void {
+    playDoor();
+    this.doors.forEach((leaf, i) => {
+      const home = EXIT_X + (i ? DOOR_LEAF / 2 : -DOOR_LEAF / 2);
+      this.tweens.add({
+        targets: leaf,
+        x: open ? home + (i ? DOOR_LEAF : -DOOR_LEAF) : home,
+        duration: 320,
+        ease: open ? 'Cubic.easeOut' : 'Cubic.easeInOut',
+      });
+    });
+  }
 
-    piece(7, 110, 82).setScale(1.3, 1);
-    signText(this, 110, 74, CAFE_INTERIOR.scores[0], introPalette.accent).setDepth(DEPTH.decor);
-    signText(this, 110, 87, CAFE_INTERIOR.scores[1], '#b3bdd6').setDepth(DEPTH.decor);
+  /**
+   * A holographic panel: a faint tinted field, a bright edge with heavier
+   * corner brackets, scanlines, and a flicker. Holograms are light, so these
+   * are drawn here rather than as pixel art.
+   */
+  private holo(x: number, y: number, w: number, h: number, color: number): Phaser.GameObjects.Container {
+    const field = this.add.rectangle(0, 0, w, h, color, 0.08);
+    const edge = this.add.graphics();
+    edge.lineStyle(1, color, 0.55).strokeRect(-w / 2, -h / 2, w, h);
+    edge.lineStyle(1, color, 1);
+    for (const [sx, sy] of [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ]) {
+      edge.lineBetween((sx * w) / 2, (sy * h) / 2, sx * (w / 2 - 4), (sy * h) / 2);
+      edge.lineBetween((sx * w) / 2, (sy * h) / 2, (sx * w) / 2, sy * (h / 2 - 4));
+    }
+    const scan = this.add.graphics();
+    scan.fillStyle(color, 0.07);
+    for (let yy = -h / 2; yy < h / 2; yy += 2) scan.fillRect(-w / 2, yy, w, 1);
 
-    piece(6, 172, 100);
-    piece(5, 238, 68);
-    piece(3, 452, 38);
-    piece(0, 302, 104);
-    piece(1, 590, 104);
-    piece(0, 716, 104).setFlipX(true);
-    piece(4, 652, 58);
+    const panel = this.add.container(x, y, [field, edge, scan]).setDepth(DEPTH.holo);
+    addLight(this, x, y, color, 0.12, w / 30, h / 22, DEPTH.holo - 0.05);
+    if (!this.opts.reducedMotion) {
+      this.time.addEvent({
+        delay: 1700 + Math.random() * 2400,
+        loop: true,
+        callback: () => {
+          panel.setAlpha(0.45);
+          this.time.delayedCall(60, () => panel.setAlpha(1));
+        },
+      });
+    }
+    return panel;
+  }
 
-    // The house rule every cafe has, on a plate stretched to fit it.
-    piece(2, 450, 116).setScale(2.6, 1);
-    signText(this, 450, 116, CAFE_INTERIOR.houseRule, '#a3245c').setDepth(DEPTH.decor);
+  /**
+   * The wall art has neon tubes every 160px from x=80, so each panel sits in
+   * its own bay between two of them.
+   */
+  private buildWall(): void {
+    const label = (panel: Phaser.GameObjects.Container, x: number, y: number, text: string, color: string, font = SIGN_FONT) =>
+      panel.add(this.add.text(x, y, text, { fontFamily: font, fontSize: '8px', color }).setOrigin(0.5).setResolution(2));
 
-    const neon = neonText(this, 330, 58, CAFE_INTERIOR.neon, introPalette.magenta, 10).setDepth(DEPTH.decor);
-    addLight(this, 330, 58, C.magenta, 0.2, 2.2, 0.6, DEPTH.decor - 0.1);
+    const scores = this.holo(160, 64, 54, 26, C.amber);
+    label(scores, 0, -5, CAFE_INTERIOR.scores[0], introPalette.accent);
+    label(scores, 0, 6, CAFE_INTERIOR.scores[1], '#e9ebf2');
+
+    // The cricket is on - on a hologram now, but of course it is still on.
+    this.holo(320, 64, 48, 30, C.cyan);
+    this.cricket = { x: 320 - 22, y: 64 - 13, w: 44, h: 26 };
+
+    const neon = neonText(this, 480, 56, CAFE_INTERIOR.neon, introPalette.magenta, 10).setDepth(DEPTH.decor);
+    addLight(this, 480, 56, C.magenta, 0.2, 2.2, 0.6, DEPTH.decor - 0.1);
     if (!this.opts.reducedMotion) {
       this.time.addEvent({
         delay: 2600,
@@ -184,42 +265,62 @@ export class CafeScene extends Phaser.Scene {
       });
     }
 
-    // Ceiling fans, turning slowly, as in every cafe in the city.
-    if (!this.anims.exists('fan-spin') && this.textures.get('cafe-fan').frameTotal > 4) {
-      this.anims.create({
-        key: 'fan-spin',
-        frames: this.anims.generateFrameNumbers('cafe-fan', { start: 0, end: 3 }),
-        frameRate: 12,
-        repeat: -1,
-      });
-    }
-    for (const x of [300, 610]) {
-      const fan = this.add.sprite(x, 2, 'cafe-fan', 0).setOrigin(0.5, 0).setDepth(DEPTH.fans);
-      if (!this.opts.reducedMotion && this.anims.exists('fan-spin')) fan.play('fan-spin');
-    }
+    const ad = this.holo(640, 64, 76, 30, C.magenta);
+    const shape = this.add.graphics();
+    ad.add(shape);
+    const adTexts = CAFE_INTERIOR.ad.map((t, i) => {
+      const text = this.add
+        .text(10, 0, t, { fontFamily: SIGN_FONT, fontSize: '8px', color: '#ffb0cf' })
+        .setOrigin(0.5)
+        .setResolution(2)
+        .setAlpha(i === 0 ? 1 : 0);
+      ad.add(text);
+      return text;
+    });
+    this.ad = { texts: adTexts, shape };
+
+    // Where "no food near the PCs" used to be: tonight's tournament.
+    const cup = this.holo(800, 70, 100, 28, C.amber);
+    label(cup, 7, -5, CAFE_INTERIOR.tournament[0], introPalette.accent, PIXEL_FONT);
+    label(cup, 7, 7, CAFE_INTERIOR.tournament[1], '#e9ebf2');
+    const trophy = this.add.graphics();
+    trophy.fillStyle(C.amber, 1).fillRect(-43, -6, 6, 5).fillRect(-41, -1, 2, 3).fillRect(-43, 2, 6, 1);
+    trophy.fillRect(-45, -5, 1, 3).fillRect(-36, -5, 1, 3);
+    cup.add(trophy);
+
+    const clock = this.holo(40, 60, 50, 16, C.lime);
+    this.clockText = this.add
+      .text(0, 0, '', { fontFamily: PIXEL_FONT, fontSize: '8px', color: introPalette.lime })
+      .setOrigin(0.5)
+      .setResolution(2);
+    clock.add(this.clockText);
+    this.tickClock();
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.tickClock() });
+
+    // Ring lights hanging from the ceiling, breathing.
+    [180, 420, 660, 840].forEach((x, i) => {
+      const color = i % 2 ? C.magenta : C.cyan;
+      const ring = this.add.graphics().setDepth(DEPTH.lights);
+      ring.lineStyle(1, C.night3, 1).lineBetween(x, 0, x, 10);
+      ring.lineStyle(2, color, 1).strokeEllipse(x, 13, 30, 6);
+      const glow = addLight(this, x, 14, color, 0.25, 1.1, 0.4, DEPTH.lights);
+      addLight(this, x, 60, color, 0.05, 1.8, 2.6, DEPTH.lights);
+      if (!this.opts.reducedMotion) {
+        this.tweens.add({ targets: [ring, glow], alpha: { from: 0.7, to: 1 }, duration: 1400 + i * 300, yoyo: true, repeat: -1 });
+      }
+    });
+
+    // Hardware along the walls.
+    this.add.image(60, FLOOR_Y + 2, 'cafe-decor', 2).setOrigin(0.5, 1).setDepth(DEPTH.kit);
+    addLight(this, 60, FLOOR_Y - 26, C.lime, 0.12, 0.6, 0.6, DEPTH.kit);
+    this.add.image(812, FLOOR_Y + 2, 'cafe-decor', 0).setOrigin(0.5, 1).setDepth(DEPTH.kit);
+    addLight(this, 812, FLOOR_Y - 36, C.cyan, 0.16, 0.8, 1.2, DEPTH.kit);
+    this.add.image(852, FLOOR_Y + 2, 'cafe-decor', 1).setOrigin(0.5, 1).setDepth(DEPTH.kit);
   }
 
-  /** Tube lights under the RGB strip; one of them has never worked properly. */
-  private buildLights(): void {
-    [200, 450, 700].forEach((x, i) => {
-      const tube = this.add.rectangle(x, 24, 36, 2, C.pale).setDepth(DEPTH.tubes);
-      const glow = addLight(this, x, 25, C.pale, 0.16, 1.4, 0.4, DEPTH.tubes);
-      addLight(this, x, 70, C.pale, 0.04, 2.4, 2.6, DEPTH.tubes);
-      if (i !== 2 || this.opts.reducedMotion) return;
-      this.time.addEvent({
-        delay: 1900,
-        loop: true,
-        callback: () => {
-          const off = Math.random() < 0.6;
-          tube.setAlpha(off ? 0.25 : 1);
-          glow.setAlpha(off ? 0.03 : 0.16);
-          this.time.delayedCall(90, () => {
-            tube.setAlpha(1);
-            glow.setAlpha(0.16);
-          });
-        },
-      });
-    });
+  private tickClock(): void {
+    const now = new Date();
+    this.clockText.setText(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
   }
 
   private buildCounter(): void {
@@ -227,28 +328,24 @@ export class CafeScene extends Phaser.Scene {
       .sprite(COUNTER_X, CHAIR_BASE_Y, 'cafe-counter', 0)
       .setOrigin(0.5, 1)
       .setDepth(DEPTH.chairs);
-    addLight(this, COUNTER_X - 18, 150, C.amber, 0.2, 1.6, 1.2, DEPTH.chairs + 0.1);
+    addLight(this, COUNTER_X - 18, 152, C.cyan, 0.18, 1.4, 1, DEPTH.chairs + 0.1);
+
+    const welcome = this.holo(COUNTER_X + 22, 100, 52, 14, C.cyan);
+    welcome.add(
+      this.add.text(0, 0, CAFE_INTERIOR.reception, { fontFamily: SIGN_FONT, fontSize: '8px', color: '#a8fff8' }).setOrigin(0.5).setResolution(2),
+    );
 
     if (!this.opts.reducedMotion) {
-      const blink = () => {
+      const flicker = () => {
         counter.setFrame(1);
-        this.time.delayedCall(140, () => counter.setFrame(0));
-        this.time.delayedCall(Phaser.Math.Between(2500, 4500), blink);
+        this.time.delayedCall(90, () => counter.setFrame(0));
+        this.time.delayedCall(Phaser.Math.Between(2500, 5000), flicker);
       };
-      this.time.delayedCall(1800, blink);
+      this.time.delayedCall(1800, flicker);
     }
-
-    // The cashier points you to your seat.
-    this.time.delayedCall(600, () => {
-      const bubble = uiText(this, COUNTER_X - 16, 128, CAFE_INTERIOR.cashier, { backing: true })
-        .setDepth(DEPTH.hud)
-        .setAlpha(0);
-      this.tweens.add({ targets: bubble, alpha: 1, y: 124, duration: 260, ease: 'Back.easeOut' });
-      this.tweens.add({ targets: bubble, alpha: 0, delay: 3400, duration: 400, onComplete: () => bubble.destroy() });
-    });
   }
 
-  /** Nine PCs, eight of them taken. */
+  /** Nine stations, eight of them taken. */
   private buildStations(): void {
     if (!this.anims.exists('npc-0')) {
       for (let v = 0; v < 3; v++) {
@@ -276,17 +373,13 @@ export class CafeScene extends Phaser.Scene {
           npc.play({ key: `npc-${variant}`, delay: Math.random() * 900 });
           npc.anims.msPerFrame = 380 + Math.random() * 500;
         }
-        const glow = addLight(this, x, SCREEN_CY, GLOW[GAMES[i]], 0.28, 0.75, 0.55, DEPTH.screenGlow);
-        this.glows.push(glow);
+        this.glows.push(addLight(this, x, SCREEN_CY, GLOW[GAMES[i]], 0.28, 0.75, 0.55, DEPTH.screenGlow));
         addLight(this, x, 226, GLOW[GAMES[i]], 0.12, 1.1, 0.28, DEPTH.floorGlow);
       }
 
-      // The free chair sits pushed out, waiting.
-      const chair = this.add
-        .image(isSeat ? x + 7 : x, CHAIR_BASE_Y, 'cafe-chair')
-        .setOrigin(0.5, 1)
-        .setDepth(DEPTH.chairs);
-      if (isSeat) this.seatChair = chair;
+      const pod = this.add.image(x, CHAIR_BASE_Y, 'cafe-chair').setOrigin(0.5, 1).setDepth(DEPTH.chairs);
+      addLight(this, x, CHAIR_BASE_Y - 1, C.cyan, 0.12, 0.6, 0.15, DEPTH.floorGlow);
+      if (isSeat) this.seatChair = pod;
     });
   }
 
@@ -302,15 +395,17 @@ export class CafeScene extends Phaser.Scene {
 
   private buildHud(): void {
     const touch = isTouch(this);
-    this.prompt = uiText(this, SEAT_X, GROUND_Y + 16, touch ? PROMPTS.sit.touch : PROMPTS.sit.keys, { backing: true })
+    this.sitPrompt = uiText(this, SEAT_X, SIT_PROMPT_Y, touch ? PROMPTS.sit.touch : PROMPTS.sit.keys, { backing: true })
       .setDepth(DEPTH.hud)
       .setAlpha(0);
-    this.prompt.setInteractive({ useHandCursor: true });
-    this.prompt.on('pointerdown', () => this.act());
+    this.sitPrompt.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.act('sit'));
 
-    this.hint = uiText(this, this.camW / 2, VIEW_H - 14, touch ? PROMPTS.seat.touch : PROMPTS.seat.keys, {
-      color: '#8b93a7',
-    })
+    this.exitPrompt = uiText(this, EXIT_PROMPT.x, EXIT_PROMPT.y, touch ? PROMPTS.exit.touch : PROMPTS.exit.keys, { backing: true })
+      .setDepth(DEPTH.hud)
+      .setAlpha(0);
+    this.exitPrompt.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.act('exit'));
+
+    this.hint = uiText(this, this.camW / 2, VIEW_H - 14, touch ? PROMPTS.seat.touch : PROMPTS.seat.keys, { color: '#8b93a7' })
       .setScrollFactor(0)
       .setDepth(DEPTH.hud);
   }
@@ -324,6 +419,7 @@ export class CafeScene extends Phaser.Scene {
     if (this.screenTick > 1000 / SCREEN_FPS && !this.opts.reducedMotion) {
       this.screenTick = 0;
       this.drawScreens();
+      this.animateAd();
     }
     this.glows.forEach((g, i) => g.setAlpha(0.24 + Math.sin(this.clock * 5 + i * 1.7) * 0.05));
 
@@ -339,36 +435,157 @@ export class CafeScene extends Phaser.Scene {
     }
 
     const atSeat = Math.abs(this.walker.x - SEAT_X) < SEAT_ZONE && !this.walker.airborne;
+    const atExit = this.walker.x < EXIT_ZONE.max && !this.walker.airborne;
     if (atSeat && (input.up || input.enter)) {
       this.sit();
+      return;
+    }
+    if (atExit && (input.up || input.enter)) {
+      this.leave();
       return;
     }
     if (input.up) this.walker.jump();
 
     this.walker.update(input.dir, dt);
-    this.prompt.setAlpha(Phaser.Math.Linear(this.prompt.alpha, atSeat ? 1 : 0, Math.min(1, dt * 8)));
+    const fade = Math.min(1, dt * 8);
+    this.sitPrompt.setAlpha(Phaser.Math.Linear(this.sitPrompt.alpha, atSeat ? 1 : 0, fade));
+    // At the seat, the prompt takes the marker's place.
+    this.marker.setAlpha(1 - this.sitPrompt.alpha);
+    this.exitPrompt.setAlpha(Phaser.Math.Linear(this.exitPrompt.alpha, atExit ? 1 : 0, fade));
+    this.hint.setAlpha(Phaser.Math.Linear(this.hint.alpha, this.clock < this.hintUntil ? 1 : 0, dt * 3));
     this.followCamera(dt);
   }
 
   private markInput(): void {
-    if (this.hintDismissed) return;
-    this.hintDismissed = true;
-    this.tweens.add({ targets: this.hint, alpha: 0, duration: 450, delay: 1500 });
+    if (this.hintUntil === Infinity) this.hintUntil = this.clock + 1.5;
   }
 
-  /** Tapping the prompt does whatever the prompt says. */
-  private act(): void {
-    if (this.phase === 'walking' && Math.abs(this.walker.x - SEAT_X) < SEAT_ZONE) this.sit();
-    else if (this.phase === 'seated') this.jackIn();
+  /** Tapping a prompt does whatever the prompt says. */
+  private act(which: 'sit' | 'exit'): void {
+    if (which === 'exit' && this.phase === 'walking') this.leave();
+    else if (which === 'sit' && this.phase === 'walking' && Math.abs(this.walker.x - SEAT_X) < SEAT_ZONE) this.sit();
+    else if (which === 'sit' && this.phase === 'seated') this.jackIn();
   }
 
-  private followCamera(dt: number): void {
+  private followCamera(dt: number, snap = false): void {
     const target = Phaser.Math.Clamp(this.walker.x - this.camW * 0.4, 0, Math.max(0, ROOM_W - this.camW));
-    this.camX = Phaser.Math.Linear(this.camX, target, Math.min(1, dt * 5));
+    this.camX = snap ? target : Phaser.Math.Linear(this.camX, target, Math.min(1, dt * 5));
     this.cameras.main.scrollX = Math.round(this.camX);
   }
 
   /* ---------------------------------------------------------- sequences -- */
+
+  /** Arriving from the street: the doors part and the player steps in. */
+  private walkIn(): void {
+    const w = this.walker;
+    w.freeze();
+    w.sprite.setPosition(EXIT_X, FLOOR_Y + 4).setScale(0.82).setAlpha(0);
+    w.shadow.setAlpha(0);
+    w.reflection?.setAlpha(0);
+    w.syncDressing();
+    this.followCamera(1, true);
+
+    iris(this, EXIT_X, FLOOR_Y - 22, 'open', 650);
+    this.time.delayedCall(200, () => this.slideDoors(true));
+    this.time.delayedCall(420, () => {
+      w.stride(1);
+      this.tweens.add({
+        targets: w.sprite,
+        x: 64,
+        y: GROUND_Y,
+        scale: 1,
+        alpha: 1,
+        duration: 620,
+        ease: 'Sine.easeOut',
+        onUpdate: () => w.syncDressing(),
+        onComplete: () => {
+          w.rest();
+          this.slideDoors(false);
+          w.unfreeze();
+          this.phase = 'walking';
+        },
+      });
+      this.tweens.add({ targets: w.shadow, alpha: 1, duration: 620 });
+      if (w.reflection) this.tweens.add({ targets: w.reflection, alpha: 0.12, duration: 620 });
+    });
+    this.cashierHello();
+  }
+
+  /** Back from the PC after logging off: still in the seat, then up and free. */
+  private standUp(): void {
+    const w = this.walker;
+    const sprite = w.sprite;
+    w.freeze();
+    sprite.setTexture('player-sit', 1).setPosition(SEAT_X, SIT_BASE_Y).setDepth(DEPTH.npcs);
+    this.seatChair.setX(SEAT_X);
+    w.shadow.setAlpha(0);
+    w.reflection?.setAlpha(0);
+    this.marker.setAlpha(0);
+    this.hint.setAlpha(0);
+    this.seatScreen = 'boot';
+    sprite.x = SEAT_X;
+    this.camX = Phaser.Math.Clamp(SEAT_X - this.camW / 2, 0, Math.max(0, ROOM_W - this.camW));
+    this.cameras.main.scrollX = Math.round(this.camX);
+
+    iris(this, SEAT_X, SCREEN_CY, 'open', 700);
+    this.time.delayedCall(800, () => {
+      this.seatScreen = 'off';
+      this.drawScreens();
+      playClick();
+      sprite.setTexture('player-sit', 0).setPosition(SEAT_X, CHAIR_BASE_Y - 2).setDepth(DEPTH.player);
+      this.tweens.add({ targets: this.seatChair, x: SEAT_X + 7, duration: 260, ease: 'Quad.easeOut' });
+      this.tweens.add({
+        targets: sprite,
+        y: GROUND_Y,
+        duration: 320,
+        ease: 'Quad.easeIn',
+        onUpdate: () => w.syncDressing(),
+        onComplete: () => {
+          sprite.setFlipX(true);
+          w.rest();
+          this.tweens.add({ targets: w.shadow, alpha: 1, duration: 300 });
+          if (w.reflection) this.tweens.add({ targets: w.reflection, alpha: 0.12, duration: 300 });
+          this.hint.setText(isTouch(this) ? PROMPTS.loggedOff.touch : PROMPTS.loggedOff.keys);
+          w.unfreeze();
+          this.phase = 'walking';
+        },
+      });
+    });
+  }
+
+  /** Out through the doors, and back to the street. */
+  private leave(): void {
+    this.phase = 'leaving';
+    const w = this.walker;
+    w.freeze();
+    this.tweens.add({ targets: [this.exitPrompt, this.hint], alpha: 0, duration: 150 });
+    this.slideDoors(true);
+    w.stride(-1);
+    this.tweens.add({
+      targets: w.sprite,
+      x: EXIT_X,
+      y: FLOOR_Y + 4,
+      scale: 0.82,
+      duration: 560,
+      ease: 'Sine.easeIn',
+      onUpdate: () => w.syncDressing(),
+    });
+    this.tweens.add({ targets: w.sprite, alpha: 0, duration: 220, delay: 360 });
+    this.tweens.add({ targets: [w.shadow, w.reflection], alpha: 0, duration: 300 });
+    this.time.delayedCall(640, () => this.slideDoors(false));
+    this.time.delayedCall(700, () => iris(this, EXIT_X, FLOOR_Y - 22, 'close', 600, () => this.scene.start('street', { entry: 'cafe' })));
+  }
+
+  /** The cashier points you to your seat. */
+  private cashierHello(): void {
+    this.time.delayedCall(900, () => {
+      const bubble = uiText(this, COUNTER_X - 16, 128, CAFE_INTERIOR.cashier, { backing: true })
+        .setDepth(DEPTH.hud)
+        .setAlpha(0);
+      this.tweens.add({ targets: bubble, alpha: 1, y: 124, duration: 260, ease: 'Back.easeOut' });
+      this.tweens.add({ targets: bubble, alpha: 0, delay: 3400, duration: 400, onComplete: () => bubble.destroy() });
+    });
+  }
 
   /** Turn away, step up to the desk, sit. */
   private sit(): void {
@@ -378,7 +595,7 @@ export class CafeScene extends Phaser.Scene {
     const sprite = this.walker.sprite;
     sprite.setTint(0xffffff).setFlipX(false).setTexture('player-sit', 0);
     this.walker.reflection?.setVisible(false);
-    this.tweens.add({ targets: [this.prompt, this.hint, this.marker], alpha: 0, duration: 180 });
+    this.tweens.add({ targets: [this.sitPrompt, this.hint, this.marker], alpha: 0, duration: 180 });
     this.tweens.add({ targets: [sprite, this.walker.shadow], x: SEAT_X, duration: 120 });
 
     this.tweens.add({
@@ -393,10 +610,8 @@ export class CafeScene extends Phaser.Scene {
         this.tweens.add({ targets: this.seatChair, x: SEAT_X, duration: 220, ease: 'Quad.easeOut' });
 
         const touch = isTouch(this);
-        this.prompt
-          .setText(touch ? PROMPTS.link.touch : PROMPTS.link.keys)
-          .setPosition(SEAT_X, SCREEN.y - 14);
-        this.tweens.add({ targets: this.prompt, alpha: 1, duration: 220 });
+        this.sitPrompt.setText(touch ? PROMPTS.link.touch : PROMPTS.link.keys);
+        this.tweens.add({ targets: this.sitPrompt, alpha: 1, duration: 220 });
         this.phase = 'seated';
       },
     });
@@ -409,7 +624,7 @@ export class CafeScene extends Phaser.Scene {
    */
   private jackIn(): void {
     this.phase = 'linking';
-    this.tweens.add({ targets: this.prompt, alpha: 0, duration: 150 });
+    this.tweens.add({ targets: this.sitPrompt, alpha: 0, duration: 150 });
 
     this.add.rectangle(SEAT_X + 20, 185, 2, 1, C.lime).setOrigin(0, 0).setDepth(DEPTH.screens);
     addLight(this, SEAT_X + 21, 185, C.lime, 0.5, 0.2, 0.2, DEPTH.screenGlow);
@@ -420,8 +635,8 @@ export class CafeScene extends Phaser.Scene {
     const data: LinkSceneData = {
       reducedMotion: this.opts.reducedMotion,
       done: () => {
-        const found = Number(this.registry.get('notesFound')) || 0;
-        this.opts.onEnter({ notesFound: found, notesTotal: VOICE_NOTES.length });
+        const taken = [...((this.registry.get('notesTaken') as number[] | undefined) ?? [])];
+        this.opts.onEnter({ notesFound: taken.length, notesTotal: VOICE_NOTES.length, taken });
       },
     };
     this.scene.launch('link', data);
@@ -429,7 +644,19 @@ export class CafeScene extends Phaser.Scene {
 
   /* ------------------------------------------------------------- screens -- */
 
-  /** Every monitor, the TV and the seat's PC, redrawn at a retro frame rate. */
+  /** The ad panel turns a wireframe diamond and swaps its line every few seconds. */
+  private animateAd(): void {
+    const g = this.ad.shape;
+    const a = this.clock * 1.6;
+    g.clear().lineStyle(1, C.magenta, 0.9);
+    const w = Math.abs(Math.cos(a)) * 7 + 1;
+    g.strokePoints([{ x: -27, y: -9 }, { x: -27 + w, y: 0 }, { x: -27, y: 9 }, { x: -27 - w, y: 0 }], true);
+    g.lineBetween(-27 - w, 0, -27 + w, 0);
+    const which = Math.floor(this.clock / 2.5) % this.ad.texts.length;
+    this.ad.texts.forEach((t, i) => t.setAlpha(i === which ? 1 : 0));
+  }
+
+  /** Every monitor, the cricket and the seat's PC, redrawn at a retro frame rate. */
   private drawScreens(): void {
     const g = this.screens;
     g.clear();
@@ -440,7 +667,7 @@ export class CafeScene extends Phaser.Scene {
       if (x === SEAT_X) this.drawSeat(g, r, t);
       else this.drawGame(g, GAMES[i], r, t, i);
     });
-    this.drawCricket(g, TV, t);
+    this.drawCricket(g, this.cricket, t);
   }
 
   private drawSeat(g: Phaser.GameObjects.Graphics, r: Rect, t: number): void {
@@ -521,23 +748,29 @@ export class CafeScene extends Phaser.Scene {
         g.fillStyle(C.magenta).fillCircle(x + w / 2 + Math.sin(t * 1.3) * 7, y + h / 2 + Math.cos(t) * 3, 5);
         g.fillStyle(C.amber).fillCircle(x + w / 2 + Math.cos(t * 0.9) * 8, y + h / 2 + Math.sin(t * 1.7) * 3, 3);
         g.fillStyle(C.night1).fillRect(x, y + h - 2, w, 2);
-        g.fillStyle(C.pale).fillRect(x, y + h - 2, Math.round(((t * 2) % 10) / 10 * w), 1);
+        g.fillStyle(C.pale).fillRect(x, y + h - 2, Math.round((((t * 2) % 10) / 10) * w), 1);
         break;
       }
     }
   }
 
-  /** A cricket match on the TV, because of course there is. */
+  /** A cricket match, holographic now, because of course it is still on. */
   private drawCricket(g: Phaser.GameObjects.Graphics, r: Rect, t: number): void {
-    g.fillStyle(C.green).fillRect(r.x, r.y, r.w, r.h);
-    g.fillStyle(C.greenDk).fillRect(r.x, r.y, r.w, 4);
-    g.fillStyle(C.pitch).fillRect(r.x + r.w / 2 - 2, r.y + 6, 4, 12);
-    const fielders: Array<[number, number]> = [[6, 8], [32, 9], [10, 17], [30, 18], [20, 5]];
+    g.fillStyle(C.green, 0.75).fillRect(r.x, r.y, r.w, r.h);
+    g.fillStyle(C.greenDk, 0.75).fillRect(r.x, r.y, r.w, 4);
+    g.fillStyle(C.pitch, 0.9).fillRect(r.x + r.w / 2 - 2, r.y + 6, 4, 12);
+    const fielders: Array<[number, number]> = [
+      [6, 8],
+      [36, 9],
+      [10, 17],
+      [32, 18],
+      [22, 5],
+    ];
     g.fillStyle(C.pale);
     for (const [fx, fy] of fielders) g.fillRect(r.x + fx + Math.round(Math.sin(t + fx) * 1), r.y + fy, 1, 2);
     const ball = (t * 0.8) % 1;
     g.fillStyle(0xff5f5f).fillRect(r.x + r.w / 2, Math.round(r.y + 6 + ball * 11), 1, 1);
-    g.fillStyle(C.night0).fillRect(r.x, r.y + r.h - 4, r.w, 4);
+    g.fillStyle(C.night0, 0.8).fillRect(r.x, r.y + r.h - 4, r.w, 4);
     g.fillStyle(C.lime).fillRect(r.x + 2, r.y + r.h - 3, 8, 2);
     g.fillStyle(C.pale).fillRect(r.x + 12, r.y + r.h - 3, 12, 2);
   }

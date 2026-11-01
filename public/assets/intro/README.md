@@ -10,8 +10,8 @@ deterministically.
 | `scripts/art/core.mjs`       | PNG encoder, the palette ramps, Bayer dithering, outline and rim |
 | `scripts/art/street.mjs`     | sky, skyline, buildings, cables, street, props, cafe front, door, billboard, auto-rickshaw, voice note, glow |
 | `scripts/art/characters.mjs` | the player: idle, walk, jump, and the back view for sitting      |
-| `scripts/art/cafe.mjs`       | cafe wall and floor, desk, chair, people playing, counter, fan, wall decor |
-| `scripts/art/city.mjs`       | megastructures, haze, the street-front row of buildings and shops, sign casings and brackets, flying cars, road cars |
+| `scripts/art/cafe.mjs`       | the futuristic cafe: wall and floor, desk, pod chair, people playing, counter, hardware |
+| `scripts/art/city.mjs`       | megastructures, haze, the street-front row of buildings and shops, sign casings and brackets, flying cars, road cars, pedestrians |
 | `scripts/art/link.mjs`       | the jack-in close-up: forearm with wrist port, the PC's I/O panel, the plug |
 
 To swap in a bought or commissioned pack instead: **drop files with the same
@@ -59,8 +59,8 @@ layers are 480 wide and repeat to fill whatever width the screen gives.
 | `street.png`     | 480 × 80  | —           | Pavement, kerb, wet asphalt, puddles. 1×. Tiles.                            |
 | `props.png`      | 256 × 120 | 4 × 64×120  | Lamp, railing, bollards, crate. Foreground at 1.25×.                        |
 | `cafe-front.png` | 192 × 128 | —           | The cyber cafe. See anchors below.                                          |
-| `door.png`       | 28 × 44   | —           | Cafe door. Swings open via `scaleX`.                                        |
-| `billboard.png`  | 128 × 90  | —           | Rooftop LED billboard frame. The face (x 6–121, y 6–52) is drawn in-scene.  |
+| `door.png`       | 28 × 44   | 2 × 14×44   | Sliding glass doors: 0 left leaf, 1 right leaf. Masked to the opening and slid apart in-scene (street and cafe). |
+| `billboard.png`  | 160 × 84  | —           | LED billboard frame bolted to the glass tower: bulb sockets every 6px from x 8, catwalk, lamps, struts. The face (x 6–153, y 6–65) is drawn in-scene. |
 | `rickshaw.png`   | 120 × 40  | 2 × 60×40   | A Bengaluru auto, facing right, two frames of wheel.                        |
 | `note.png`       | 72 × 16   | 4 × 18×16   | The collectible voice note: a mic, its sound rings pulsing.                 |
 | `glow.png`       | 64 × 64   | —           | Soft white disc, tinted for every light. Not pixel art by design.           |
@@ -87,6 +87,7 @@ Bottom-centre at the ground line. Within the 192 × 128 image:
 | `flyers.png`       | 192 × 18  | 3 × 64×18   | Sky traffic: 0 sedan, 1 flying taxi, 2 police spinner (frame 2 flashes in-scene). |
 | `flyers-far.png`   | 60 × 6    | 3 × 20×6    | The same three, distant.                                              |
 | `traffic.png`      | 264 × 30  | 3 × 88×30   | Road hover cars: 0 sedan, 1 wedge pickup, 2 sports. All face right.   |
+| `pedestrians.png`  | 176 × 44  | 8 × 22×44   | People under lit umbrellas, walking: 0–3 cyan umbrella, 4–7 magenta.  |
 
 ### Street-front layout
 
@@ -96,8 +97,8 @@ Eight buildings, each with a shop on the ground floor (screen y 146–196):
 | ------- | ----------------------------- | ---------- | --------------------------------- |
 | 0–112   | brick flats, fire escape      | ramen      | VERA ERP lightbox                 |
 | 112–200 | low shop house, rooftop clutter | repairs  | SECANT on a rooftop scaffold      |
-| 200–330 | glass office tower            | 24/7 mart  | the Wispr Flow LED billboard      |
-| 330–440 | balconies, laundry, plants    | bar        | HAZEN on a rooftop scaffold       |
+| 200–350 | glass office tower            | 24/7 mart  | the Wispr Flow LED billboard      |
+| 350–440 | balconies, laundry, plants    | chai & coffee | HAZEN on a rooftop scaffold    |
 | 440–560 | industrial, ducts, vents      | garage     | TRUECOMMIT lightbox + ticker      |
 | 560–704 | brick flats with AC units     | clinic     | THROTTLE blade sign, beside the cafe |
 | 704–896 | the cafe tower                | (cafe-front.png) | CYBER CAFE, NET blade high up |
@@ -127,13 +128,16 @@ A replacement with a different stride must update `STRIDE_PER_CYCLE` in
 
 | File               | Size      | Frames      | Notes                                                                 |
 | ------------------ | --------- | ----------- | --------------------------------------------------------------------- |
-| `cafe-wall.png`    | 480 × 270 | —           | Ceiling, RGB strip, panelled wall, wainscot, tiled floor. Tiles.      |
-| `cafe-desk.png`    | 64 × 52   | —           | A station facing the camera. Screen (x 18–45, y 2–19) is drawn in-scene. |
-| `cafe-chair.png`   | 26 × 30   | —           | Gaming chair from behind. Drawn in front of whoever sits in it.       |
-| `cafe-npc.png`     | 144 × 26  | 6 × 24×26   | Three people from behind, two frames each (lean in, work the mouse).  |
-| `cafe-counter.png` | 256 × 72  | 2 × 128×72  | Front counter and cashier. Frame 1 blinks.                            |
-| `cafe-fan.png`     | 256 × 20  | 4 × 64×20   | Ceiling fan, side on.                                                 |
-| `cafe-decor.png`   | 384 × 40  | 8 × 48×40   | 0 space poster, 1 sunset poster, 2 sign plate, 3 AC unit, 4 clock, 5 TV (picture drawn in-scene), 6 snack shelf, 7 rates board. |
+| `cafe-wall.png`    | 480 × 270 | —           | Ceiling light slots, RGB strip, hex-panel wall, neon tubes at x 80 / 240 / 400, lit wainscot, neon grid floor. Tiles. The scene hangs one holo panel per bay between tubes. |
+| `cafe-desk.png`    | 64 × 52   | —           | A station facing the camera: frameless display, glowing slab edge, projected keyboard, glass PC core (power LED at 52, 35). Screen (x 18–45, y 2–19) is drawn in-scene. |
+| `cafe-chair.png`   | 26 × 30   | —           | Egg pod from behind, cyan trim. Drawn in front of whoever sits in it. |
+| `cafe-npc.png`     | 144 × 26  | 6 × 24×26   | Three people from behind (neck implant, lit headphones), two frames each. |
+| `cafe-counter.png` | 256 × 72  | 2 × 128×72  | Light-lined counter and the cashier in an AR visor. Frame 1 flickers the visor. |
+| `cafe-decor.png`   | 144 × 64  | 3 × 48×64   | Floor-standing hardware: 0 drinks machine, 1 server rack, 2 planter with a glowing plant. |
+
+The holo panels (scores, the cricket, the ad, CYBER CUP, the clock, WELCOME),
+the ring lights and the EXIT sign are light, not objects, so `CafeScene.ts`
+draws them.
 
 ## Jack-in close-up
 

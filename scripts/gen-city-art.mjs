@@ -41,6 +41,7 @@ const assets = {
   'flyers.png': city.flyers,
   'flyers-far.png': city.flyersFar,
   'traffic.png': city.traffic,
+  'pedestrians.png': city.pedestrians,
   'props.png': street.props,
   'cafe-front.png': street.cafeFront,
   'door.png': street.door,
@@ -59,7 +60,6 @@ const assets = {
   'cafe-chair.png': cafe.chair,
   'cafe-npc.png': cafe.npcs,
   'cafe-counter.png': cafe.counter,
-  'cafe-fan.png': cafe.fan,
   'cafe-decor.png': cafe.decor,
   // the jack-in close-up
   'link-arm.png': linkArm,

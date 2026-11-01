@@ -97,8 +97,8 @@ const FLOOR_H = 32;
 const FRONT = [
   { x: 0, w: 112, floors: 3, style: 'brick', ramp: 'brick', bias: 0.1, shop: 'ramen' },
   { x: 112, w: 88, floors: 1, style: 'shophouse', ramp: 'concrete', bias: 0.2, shop: 'repair' },
-  { x: 200, w: 130, floors: 4, style: 'glass', ramp: 'night', bias: 0.7, shop: 'mart' },
-  { x: 330, w: 110, floors: 2, style: 'balcony', ramp: 'teal', bias: 0.4, shop: 'bar' },
+  { x: 200, w: 150, floors: 4, style: 'glass', ramp: 'night', bias: 0.7, shop: 'mart' },
+  { x: 350, w: 90, floors: 2, style: 'balcony', ramp: 'teal', bias: 0.4, shop: 'chai' },
   { x: 440, w: 120, floors: 3, style: 'industrial', ramp: 'concrete', bias: -0.2, shop: 'garage' },
   { x: 560, w: 144, floors: 3, style: 'apartment', ramp: 'brick', bias: 0.4, shop: 'clinic' },
   { x: 704, w: 192, floors: 4, style: 'cafe', ramp: 'night', bias: 0.5, shop: null },
@@ -305,20 +305,24 @@ const SHOPS = {
     fill(c, dx + 3, y0 + 18, 14, 1, R.green[3]);
     ditherRect(c, x0 + 2, y0, 6, y1 - y0, R.cyan, () => 3.4); // the drinks fridge
   },
-  bar(c, x0, x1, y0, y1, r) {
-    ditherRect(c, x0 + 2, y0, x1 - x0 - 4, y1 - y0, R.violet, (_i, j) => 1.6 - j * 0.03);
-    for (const sy of [y0 + 6, y0 + 14]) {
-      fill(c, x0 + 6, sy + 5, x1 - x0 - 40, 1, R.amber[1]);
-      for (let x = x0 + 7; x < x1 - 36; x += 3) fill(c, x, sy + ((x >> 2) % 2), 1, 5 - ((x >> 2) % 2), [R.amber, R.green, R.cyan][(x >> 1) % 3][3]);
+  chai(c, x0, x1, y0, y1) {
+    ditherRect(c, x0 + 2, y0, x1 - x0 - 4, y1 - y0, R.amber, (_i, j) => 2.7 - j * 0.04);
+    const dx = x1 - 24;
+    fill(c, x0 + 2, y0 + 22, dx - x0 - 4, 3, R.amber[0]); // counter
+    for (let x = x0 + 6; x < dx - 4; x += 9) fill(c, x, y0 + 25, 3, y1 - y0 - 25, R.night[0], 210); // stools
+    // a brass kettle on the counter, cups on the shelf, a chalk menu
+    ditherRect(c, x0 + 8, y0 + 11, 8, 11, R.yellow, (i) => 3.5 - i * 0.2);
+    fill(c, x0 + 10, y0 + 9, 4, 2, R.yellow[2]);
+    fill(c, x0 + 16, y0 + 14, 3, 1, R.yellow[2]);
+    for (let x = x0 + 22; x < dx - 18; x += 5) {
+      fill(c, x, y0 + 6, 3, 3, R.steel[4]);
+      fill(c, x + 3, y0 + 7, 1, 1, R.steel[4]);
     }
-    const dx = x1 - 26;
+    fill(c, dx - 16, y0 + 10, 12, 9, R.night[0]);
+    for (let j = 0; j < 3; j++) fill(c, dx - 14, y0 + 12 + j * 2, 6 + (j % 2) * 2, 1, R.amber[3]);
     fill(c, dx, y0, 22, y1 - y0, R.amber[0]);
-    fill(c, dx, y0, 22, 1, R.amber[1]);
-    for (let y = -6; y <= 6; y++) {
-      for (let x = -6; x <= 6; x++) {
-        if (x * x + y * y <= 36) c.set(dx + 11 + x, y0 + 12 + y, [...R.magenta[x * x + y * y > 20 ? 1 : 3], 255]);
-      }
-    }
+    ditherRect(c, dx + 2, y0 + 2, 18, 18, R.amber, () => 3);
+    fill(c, dx + 2, y0 + 22, 18, 1, R.amber[1]);
   },
   garage(c, x0, x1, y0, y1, r) {
     for (let j = 0; j < y1 - y0; j++) fill(c, x0 + 2, y0 + j, x1 - x0 - 26, 1, j % 2 ? R.concrete[1] : R.concrete[2]);
@@ -596,6 +600,48 @@ function flyersFar() {
   return sheet;
 }
 
+/* ========================================================== pedestrians === */
+
+const PED_W = 22;
+const PED_H = 44;
+
+/**
+ * Somebody walking in the rain under an umbrella with a glowing rim and
+ * shaft, facing right. Four frames of walk; the scene flips them.
+ */
+function pedFrame(f, glow) {
+  const c = new Px(PED_W, PED_H);
+  const swing = [2, 0, -2, 0][f];
+  const bob = f % 2;
+  for (let j = 0; j < 7; j++) {
+    const half = Math.round(4 + j * 1.15);
+    fill(c, 11 - half, 1 + j + bob, half * 2, 1, R.night[1]);
+  }
+  fill(c, 2, 8 + bob, 18, 1, glow[3]);
+  fill(c, 11, 9 + bob, 1, 11, glow[2]);
+  fill(c, 7, 11 + bob, 7, 7, R.night[1]); // hood
+  fill(c, 12, 13 + bob, 2, 3, R.skin[1]);
+  fill(c, 6, 18 + bob, 9, 17, R.night[2]); // long coat
+  fill(c, 6, 18 + bob, 2, 17, R.night[1]);
+  fill(c, 10, 19 + bob, 3, 2, R.skin[1]);
+  fill(c, 8 - swing, 35, 2, 7, R.night[1]);
+  fill(c, 11 + swing, 35, 2, 7, R.night[1]);
+  fill(c, 7 - swing, 42, 3, 2, R.night[0]);
+  fill(c, 11 + swing, 42, 3, 2, R.night[0]);
+  rimLight(c, glow[2], 1, 90);
+  outline(c, R.night[0]);
+  return c;
+}
+
+/** Frames 0-3 under a cyan umbrella, 4-7 under a magenta one. */
+function pedestrians() {
+  const sheet = new Px(PED_W * 8, PED_H);
+  [R.cyan, R.magenta].forEach((glow, k) => {
+    for (let f = 0; f < 4; f++) blit(sheet, pedFrame(f, glow), (k * 4 + f) * PED_W, 0);
+  });
+  return sheet;
+}
+
 /* ============================================================= traffic === */
 
 const CAR_W = 88;
@@ -653,4 +699,4 @@ function traffic() {
   return sheet;
 }
 
-export { megacity, haze, streetFront, signFrame, signBracket, flyers, flyersFar, traffic };
+export { megacity, haze, streetFront, signFrame, signBracket, flyers, flyersFar, traffic, pedestrians };

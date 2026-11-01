@@ -5,7 +5,8 @@ import { addLight, colour } from './shared';
 
 /**
  * Everything that moves through the city on its own: flying cars in the sky
- * lanes and hover cars (plus the odd old auto-rickshaw) on the road.
+ * lanes, hover cars (plus the odd old auto-rickshaw) on the road, and people
+ * under glowing umbrellas on the pavement.
  *
  * Each lane has its own parallax, so far lanes drift and near lanes rush. A
  * vehicle spawns just outside the visible stretch of its lane and is removed
@@ -22,17 +23,18 @@ export type LaneSpec = {
   every: [number, number];
   depth: number;
   /** What can appear in this lane: a texture and how many frames it has. */
-  kinds: ReadonlyArray<{ texture: string; frame: number; anim?: string }>;
-  /** Headlights, tail-light trail, reflection in the wet road. */
-  lights: 'far' | 'sky' | 'road';
+  kinds: ReadonlyArray<{ texture: string; frame: number; anim?: string; glow?: number }>;
+  /** Headlights and tail-light trail (plus a road reflection), or an umbrella's glow. */
+  lights: 'far' | 'sky' | 'road' | 'umbrella';
   reflectY?: number;
 };
 
 type Vehicle = {
   sprite: Phaser.GameObjects.Sprite;
-  head: Phaser.GameObjects.Image;
-  tail: Phaser.GameObjects.Image;
-  trail: Phaser.GameObjects.Image;
+  head?: Phaser.GameObjects.Image;
+  tail?: Phaser.GameObjects.Image;
+  trail?: Phaser.GameObjects.Image;
+  umbrella?: Phaser.GameObjects.Image;
   beam?: Phaser.GameObjects.Image;
   siren?: [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
   mirror?: Phaser.GameObjects.Sprite;
@@ -91,13 +93,17 @@ export class Traffic {
     const light = (color: number, alpha: number, sx: number, sy: number, depth = lane.depth + 0.05) =>
       addLight(s, 0, 0, color, alpha, sx, sy, depth).setScrollFactor(lane.parallax);
     const far = lane.lights === 'far';
-    const v: Vehicle = {
-      sprite,
-      head: light(WARM, far ? 0.5 : 0.55, far ? 0.12 : 0.5, far ? 0.12 : 0.3),
-      tail: light(colour(introPalette.magenta), far ? 0.5 : 0.45, far ? 0.1 : 0.28, far ? 0.1 : 0.22),
-      trail: light(colour(introPalette.magenta), far ? 0.12 : 0.16, far ? 0.6 : 1.4, far ? 0.06 : 0.12, lane.depth - 0.05),
-      speed: Phaser.Math.FloatBetween(lane.speed[0], lane.speed[1]),
-    };
+    const speed = Phaser.Math.FloatBetween(lane.speed[0], lane.speed[1]);
+    const v: Vehicle =
+      lane.lights === 'umbrella'
+        ? { sprite, speed, umbrella: light(kind.glow ?? WARM, 0.3, 0.5, 0.22) }
+        : {
+            sprite,
+            speed,
+            head: light(WARM, far ? 0.5 : 0.55, far ? 0.12 : 0.5, far ? 0.12 : 0.3),
+            tail: light(colour(introPalette.magenta), far ? 0.5 : 0.45, far ? 0.1 : 0.28, far ? 0.1 : 0.22),
+            trail: light(colour(introPalette.magenta), far ? 0.12 : 0.16, far ? 0.6 : 1.4, far ? 0.06 : 0.12, lane.depth - 0.05),
+          };
     if (lane.lights === 'road') {
       v.beam = light(WARM, 0.22, 2.4, 0.32, 6);
       v.mirror = s.add
@@ -126,9 +132,10 @@ export class Traffic {
     const front = sprite.x + lane.dir * (half - 2);
     const back = sprite.x - lane.dir * (half - 2);
     const midY = sprite.y - sprite.height * 0.45;
-    v.head.setPosition(front, midY);
-    v.tail.setPosition(back, midY);
-    v.trail.setPosition(back - lane.dir * half * 0.9, midY);
+    v.head?.setPosition(front, midY);
+    v.tail?.setPosition(back, midY);
+    v.trail?.setPosition(back - lane.dir * half * 0.9, midY);
+    v.umbrella?.setPosition(sprite.x, sprite.y - sprite.height + 8);
     v.beam?.setPosition(front + lane.dir * 46, lane.y - 2);
     if (v.mirror) v.mirror.x = sprite.x;
     if (v.siren) {
@@ -139,16 +146,22 @@ export class Traffic {
   }
 
   private remove(v: Vehicle): void {
-    for (const o of [v.sprite, v.head, v.tail, v.trail, v.beam, v.mirror, ...(v.siren ?? [])]) o?.destroy();
+    for (const o of [v.sprite, v.head, v.tail, v.trail, v.umbrella, v.beam, v.mirror, ...(v.siren ?? [])]) o?.destroy();
   }
 }
 
 /** The lanes the street uses, back to front. */
-export const STREET_LANES = (depths: { far: number; sky: number; road: number }): LaneSpec[] => {
+export const STREET_LANES = (depths: { far: number; sky: number; road: number; pavement: number }): LaneSpec[] => {
   const far = [0, 1, 2].map((frame) => ({ texture: 'flyers-far', frame }));
   const sky = [0, 1, 2].map((frame) => ({ texture: 'flyers', frame }));
   const road = [0, 1, 2].map((frame) => ({ texture: 'traffic', frame }));
+  const people = [
+    { texture: 'pedestrians', frame: 0, anim: 'ped-cyan', glow: colour(introPalette.cyan) },
+    { texture: 'pedestrians', frame: 4, anim: 'ped-magenta', glow: colour(introPalette.magenta) },
+  ];
   return [
+    { y: 211, parallax: 1, dir: -1, speed: [24, 32], every: [5, 9], depth: depths.pavement, kinds: people, lights: 'umbrella' },
+    { y: 211, parallax: 1, dir: 1, speed: [22, 30], every: [6, 10], depth: depths.pavement, kinds: people, lights: 'umbrella' },
     { y: 36, parallax: 0.3, dir: 1, speed: [30, 48], every: [1.6, 3.4], depth: depths.far, kinds: far, lights: 'far' },
     { y: 52, parallax: 0.3, dir: -1, speed: [34, 52], every: [1.8, 3.8], depth: depths.far, kinds: far, lights: 'far' },
     { y: 40, parallax: 0.65, dir: -1, speed: [80, 120], every: [3.2, 6], depth: depths.sky, kinds: sky, lights: 'sky' },

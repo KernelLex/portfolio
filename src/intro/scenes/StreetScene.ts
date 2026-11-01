@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 import { CAFE_NAME, introPalette } from '../../config';
-import { CAFE_SIGN, PROMPTS, VOICE_NOTES } from '../../content/intro';
-import { playPickup, playWhoosh } from '../../lib/sound';
+import { BILLBOARD_MESSAGES, CAFE_SIGN, PROMPTS, VOICE_NOTES } from '../../content/intro';
+import { setMusicPlace } from '../../lib/music';
+import { playDoor, playPickup } from '../../lib/sound';
 import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { Billboard } from './Billboard';
 import { Controls } from './controls';
-import { blade, fascia, flicker, rooftop, ticker, wallBox, type Sign } from './Signage';
+import { Blade, LedSign, Ticker, fascia, flicker, flickerLights, type Animated } from './Signage';
 import { STREET_LANES, Traffic } from './Traffic';
-import { Walker } from './Walker';
+import { PLAYER_SPEED, Walker } from './Walker';
 import {
   ADD,
   PIXEL_FONT,
@@ -15,9 +16,8 @@ import {
   addLight,
   attachPostFX,
   colour,
-  ensureFallbacks,
+  iris,
   isTouch,
-  loadIntroAssets,
   mixColour,
   neonText,
   signText,
@@ -35,6 +35,10 @@ const FRONT_H = 190; // street-front.png
 const PLAYER_START_X = 70;
 const CAFE_X = 800;
 const DOOR_ZONE = 34;
+const DOOR_LEAF = 14;
+const DOOR_H = 44;
+/** Where the iris closes and opens: the middle of the cafe doorway. */
+const DOORWAY = { x: CAFE_X, y: BUILDING_BASE - 22 };
 
 /** Mirrors scripts/art/street.mjs: the cafe front and its glass. */
 const CAFE_W = 192;
@@ -48,36 +52,37 @@ const CLINIC_GREEN = '#49b85f';
 
 /**
  * Amogh's projects, mounted on the street-front buildings in scripts/art/
- * city.mjs - a lightbox on the brick flats, a rooftop board on the shop house,
- * another on the balcony block, a lit box with a ticker on the industrial
- * block, and a blade sign hung beside the cafe. `light` is where each one
- * washes the player in its colour.
+ * city.mjs: a lit box on the brick flats, rooftop boards on the shop house
+ * and the balcony block, a box with a ticker on the industrial block, and a
+ * blade sign beside the cafe. `light` is where each washes the player.
  */
-const PROJECT_SIGNS: ReadonlyArray<{ light: number; color: string; build: (s: Phaser.Scene, depth: number) => Sign }> = [
+const PROJECT_SIGNS: ReadonlyArray<{ light: number; color: string; build: (s: Phaser.Scene, depth: number) => LedSign | Blade }> = [
   {
     light: 46,
     color: introPalette.cyan,
-    build: (s, depth) => wallBox(s, { x: 46, y: 96, label: 'VERA ERP', color: introPalette.cyan, depth }),
+    build: (s, depth) => new LedSign(s, { x: 46, y: 96, messages: BILLBOARD_MESSAGES.vera, color: introPalette.cyan, depth }),
   },
   {
     light: 156,
     color: introPalette.magenta,
-    build: (s, depth) => rooftop(s, { x: 156, y: 0, roofY: 108, label: 'SECANT', color: introPalette.magenta, depth }),
+    build: (s, depth) =>
+      new LedSign(s, { x: 156, y: 0, roofY: 108, messages: BILLBOARD_MESSAGES.secant, color: introPalette.magenta, depth }),
   },
   {
-    light: 385,
+    light: 395,
     color: introPalette.violet,
-    build: (s, depth) => rooftop(s, { x: 385, y: 0, roofY: 76, label: 'HAZEN', color: introPalette.violet, depth, casing: 1 }),
+    build: (s, depth) =>
+      new LedSign(s, { x: 395, y: 0, roofY: 76, messages: BILLBOARD_MESSAGES.hazen, color: introPalette.violet, depth, casing: 1 }),
   },
   {
     light: 500,
     color: introPalette.lime,
-    build: (s, depth) => wallBox(s, { x: 500, y: 64, label: 'TRUECOMMIT', color: introPalette.lime, depth }),
+    build: (s, depth) => new LedSign(s, { x: 500, y: 64, messages: BILLBOARD_MESSAGES.truecommit, color: introPalette.lime, depth }),
   },
   {
     light: 688,
     color: introPalette.cyan,
-    build: (s, depth) => blade(s, { x: 688, y: 40, label: 'THROTTLE', color: introPalette.cyan, depth, wallSide: 'right' }),
+    build: (s, depth) => new Blade(s, { x: 688, y: 40, label: 'THROTTLE', color: introPalette.cyan, depth, wallSide: 'right' }),
   },
 ];
 
@@ -85,15 +90,15 @@ const PROJECT_SIGNS: ReadonlyArray<{ light: number; color: string; build: (s: Ph
 const SHOP_SIGNS: ReadonlyArray<{ x: number; label: string; color: string }> = [
   { x: 40, label: 'RAMEN', color: introPalette.accent },
   { x: 156, label: 'REPAIRS', color: introPalette.cyan },
-  { x: 265, label: '24/7 MART', color: introPalette.cyan },
-  { x: 385, label: 'BAR', color: introPalette.magenta },
+  { x: 275, label: '24/7 MART', color: introPalette.cyan },
+  { x: 395, label: 'CHAI & COFFEE', color: introPalette.accent },
   { x: 632, label: '+ CLINIC', color: CLINIC_GREEN },
   { x: 928, label: 'KEYS', color: introPalette.accent },
 ];
 const FASCIA_Y = 150;
 
 /** The Wispr Flow board, bolted across the glass tower. */
-const BILLBOARD_AT = { x: 266, bottomY: 124 };
+const BILLBOARD_AT = { x: 275, bottomY: 128 };
 
 /**
  * Street furniture in front of the player. Parallax above 1 is what sells the
@@ -113,15 +118,26 @@ const PROPS: ReadonlyArray<{ x: number; frame: number }> = [
 /** Grates that breathe. */
 const VENTS: ReadonlyArray<number> = [120, 470, 610];
 
+/** Drones patrolling the sky lanes: world x, screen y, parallax. */
+const DRONES: ReadonlyArray<[number, number, number]> = [
+  [130, 72, 0.45],
+  [340, 54, 0.5],
+  [560, 88, 0.42],
+  [780, 62, 0.5],
+];
+
 const DEPTH = {
   sky: 0,
+  searchlights: 0.3,
   megacity: 0.5,
   hazeFar: 0.6,
+  hologram: 0.7,
   skyline: 1,
   farFlyers: 1.4,
   hazeMid: 1.5,
   buildings: 2,
   skyFlyers: 2.5,
+  drones: 2.6,
   hazeNear: 2.7,
   street: 4,
   front: 4.5,
@@ -134,6 +150,7 @@ const DEPTH = {
   signs: 9.5,
   vents: 11,
   notes: 11.5,
+  pavement: 11.7,
   player: 12,
   road: 12.3,
   rainFar: 13,
@@ -142,17 +159,16 @@ const DEPTH = {
   hud: 20,
 } as const;
 
-export type IntroResult = { notesFound: number; notesTotal: number };
+export type IntroResult = { notesFound: number; notesTotal: number; taken: number[] };
 
 export type IntroSceneOptions = {
   /** Fired once the player has jacked in to the cafe PC. */
   onEnter: (result: IntroResult) => void;
-  /** Fired when the street is up, which clears React's boot watchdog. */
-  onReady: () => void;
   reducedMotion: boolean;
 };
 
 type Note = {
+  index: number;
   sprite: Phaser.GameObjects.Sprite;
   light: Phaser.GameObjects.Image;
   text: string;
@@ -163,23 +179,26 @@ export class StreetScene extends Phaser.Scene {
   private camW = BASE_VIEW_W;
 
   private layers: Array<{ sprite: Phaser.GameObjects.TileSprite; parallax: number }> = [];
+  private animated: Animated[] = [];
 
   private walker!: Walker;
   private controls!: Controls;
   private billboard!: Billboard;
   private traffic!: Traffic;
-  private tickers: Array<{ update: (dt: number) => void }> = [];
-  private door!: Phaser.GameObjects.Image;
+  private doors: Phaser.GameObjects.Image[] = [];
+  private hologram!: Phaser.GameObjects.Graphics;
   private prompt!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
   private counter!: Phaser.GameObjects.Text;
   private sparkle!: Phaser.GameObjects.Particles.ParticleEmitter;
 
   private notes: Note[] = [];
-  private found = 0;
+  private taken: number[] = [];
   private toasts = 0;
-  private entering = false;
+  /** True while a scripted sequence (in or out of the cafe) has the player. */
+  private busy = false;
   private hintDismissed = false;
+  private clock = 0;
   /** Fractional camera position. Only the rounded value reaches the camera. */
   private camX = 0;
   private lookAhead = 0;
@@ -189,19 +208,22 @@ export class StreetScene extends Phaser.Scene {
     this.opts = opts;
   }
 
-  preload(): void {
-    loadIntroAssets(this);
-  }
-
-  create(): void {
+  create(data: { entry?: 'start' | 'cafe' }): void {
     this.camW = this.scale.width;
-    ensureFallbacks(this);
+    this.layers = [];
+    this.animated = [];
+    this.notes = [];
+    this.doors = [];
+    this.toasts = 0;
+    this.busy = false;
+    this.hintDismissed = false;
+    this.taken = [...((this.registry.get('notesTaken') as number[] | undefined) ?? [])];
     this.cameras.main.setBounds(0, 0, WORLD_W, VIEW_H);
     this.cameras.main.setBackgroundColor(introPalette.night);
-    this.registry.set('notesFound', 0);
     this.makeAnims();
 
     this.buildCity();
+    this.buildSkyLife();
     this.buildSigns();
     this.buildCafe();
     this.walker = new Walker(this, {
@@ -217,7 +239,7 @@ export class StreetScene extends Phaser.Scene {
     this.buildProps();
     this.traffic = new Traffic(
       this,
-      STREET_LANES({ far: DEPTH.farFlyers, sky: DEPTH.skyFlyers, road: DEPTH.road }),
+      STREET_LANES({ far: DEPTH.farFlyers, sky: DEPTH.skyFlyers, road: DEPTH.road, pavement: DEPTH.pavement }),
       this.camW,
     );
     if (!this.opts.reducedMotion) {
@@ -227,28 +249,24 @@ export class StreetScene extends Phaser.Scene {
     this.buildHud();
     this.controls = new Controls(this);
     attachPostFX(this);
-    this.followCamera(1, 0);
+    setMusicPlace('street');
 
-    this.opts.onReady();
+    if (data?.entry === 'cafe') this.comeOutOfCafe();
+    else {
+      this.followCamera(1, 0);
+      iris(this, this.walker.x, GROUND_Y - 22, 'open', 700);
+    }
   }
 
   private makeAnims(): void {
-    if (!this.anims.exists('rickshaw-roll') && this.textures.get('rickshaw').frameTotal > 2) {
-      this.anims.create({
-        key: 'rickshaw-roll',
-        frames: this.anims.generateFrameNumbers('rickshaw', { start: 0, end: 1 }),
-        frameRate: 14,
-        repeat: -1,
-      });
-    }
-    if (!this.anims.exists('note-pulse') && this.textures.get('note').frameTotal > 4) {
-      this.anims.create({
-        key: 'note-pulse',
-        frames: this.anims.generateFrameNumbers('note', { start: 0, end: 3 }),
-        frameRate: 7,
-        repeat: -1,
-      });
-    }
+    const sheet = (key: string, texture: string, start: number, end: number, frameRate: number) => {
+      if (this.anims.exists(key) || this.textures.get(texture).frameTotal <= end + 1) return;
+      this.anims.create({ key, frames: this.anims.generateFrameNumbers(texture, { start, end }), frameRate, repeat: -1 });
+    };
+    sheet('rickshaw-roll', 'rickshaw', 0, 1, 14);
+    sheet('note-pulse', 'note', 0, 3, 7);
+    sheet('ped-cyan', 'pedestrians', 0, 3, 8);
+    sheet('ped-magenta', 'pedestrians', 4, 7, 8);
   }
 
   /* ---------------------------------------------------------------- city -- */
@@ -256,7 +274,7 @@ export class StreetScene extends Phaser.Scene {
   /**
    * Back to front: sky, megastructures, skyline, mid-rise blocks, then the
    * street front at the player's own depth. A wash of haze between each layer
-   * pushes the far ones back - that is most of what makes the city feel deep.
+   * pushes the far ones back - most of what makes the city feel deep.
    */
   private buildCity(): void {
     const layer = (y: number, h: number, key: string, depth: number, parallax: number) => {
@@ -295,18 +313,96 @@ export class StreetScene extends Phaser.Scene {
       .setCrop(0, FRONT_H - 70, WORLD_W, 70);
   }
 
+  /**
+   * What makes it read as the future: searchlights sweeping up from the
+   * megastructures, drones patrolling with their nav lights blinking, and a
+   * giant hologram turning slowly over the skyline.
+   */
+  private buildSkyLife(): void {
+    const still = this.opts.reducedMotion;
+
+    [
+      [70, 0xbfd4ff],
+      [300, 0xffd3a0],
+      [440, 0xbfd4ff],
+    ].forEach(([x, tint], i) => {
+      const beam = this.add
+        .image(x, 190, 'glow')
+        .setOrigin(0.5, 1)
+        .setScale(0.2, 5.4)
+        .setTint(tint)
+        .setAlpha(0.07)
+        .setBlendMode(ADD)
+        .setScrollFactor(0.12)
+        .setDepth(DEPTH.searchlights)
+        .setAngle(-24 + i * 20);
+      if (!still) {
+        this.tweens.add({ targets: beam, angle: 26 - i * 14, duration: 6500 + i * 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
+    });
+
+    for (const [x, y, parallax] of DRONES) {
+      const body = this.add.rectangle(x, y, 7, 2, 0x0c1120).setScrollFactor(parallax).setDepth(DEPTH.drones);
+      const red = addLight(this, x - 3, y, colour(introPalette.magenta), 0.6, 0.08, 0.08, DEPTH.drones).setScrollFactor(parallax);
+      const green = addLight(this, x + 3, y, colour(introPalette.lime), 0.6, 0.08, 0.08, DEPTH.drones).setScrollFactor(parallax);
+      if (still) continue;
+      this.tweens.add({
+        targets: [body, red, green],
+        x: `+=${Phaser.Math.Between(30, 60)}`,
+        y: `+=${Phaser.Math.Between(-6, 6)}`,
+        duration: Phaser.Math.Between(4000, 7000),
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      this.time.addEvent({
+        delay: 700,
+        loop: true,
+        callback: () => {
+          const on = red.alpha < 0.3;
+          red.setAlpha(on ? 0.7 : 0.1);
+          green.setAlpha(on ? 0.1 : 0.7);
+        },
+      });
+    }
+
+    this.hologram = this.add.graphics().setScrollFactor(0.18).setDepth(DEPTH.hologram);
+    addLight(this, 236, 118, colour(introPalette.cyan), 0.12, 0.5, 2.4, DEPTH.hologram).setScrollFactor(0.18);
+    this.drawHologram();
+  }
+
+  /** A wireframe globe and its ring, turning: meridians are ellipses narrowing with the spin. */
+  private drawHologram(): void {
+    const g = this.hologram;
+    const cx = 236;
+    const cy = 48;
+    const r = 26;
+    const spin = this.clock * 0.5;
+    const flicker = Math.sin(this.clock * 13) > 0.97 ? 0.4 : 1;
+    g.clear();
+    g.lineStyle(1, colour(introPalette.cyan), 0.4 * flicker);
+    g.strokeCircle(cx, cy, r);
+    for (let k = 0; k < 6; k++) {
+      const a = spin + (k * Math.PI) / 6;
+      g.strokeEllipse(cx, cy, Math.abs(Math.cos(a)) * r * 2, r * 2, 24);
+    }
+    for (const lat of [-0.55, 0, 0.55]) g.strokeEllipse(cx, cy + lat * r, Math.cos(lat) * r * 2, 5, 24);
+    g.lineStyle(1, colour(introPalette.magenta), 0.35 * flicker);
+    g.strokeEllipse(cx, cy + 2, r * 3.4, r * 0.7, 32);
+  }
+
   /* --------------------------------------------------------------- signs -- */
 
   private buildSigns(): void {
     for (const sign of PROJECT_SIGNS) {
       const built = sign.build(this, DEPTH.signs);
-      // and its colour pooling on the pavement below
-      built.lights.push(addLight(this, sign.light, GROUND_Y + 6, colour(sign.color), 0.22, 1.6, 0.6, DEPTH.lightPool));
-      if (!this.opts.reducedMotion) flicker(this, built);
+      this.animated.push(built);
+      built.sign.lights.push(addLight(this, sign.light, GROUND_Y + 6, colour(sign.color), 0.22, 1.6, 0.6, DEPTH.lightPool));
+      if (!this.opts.reducedMotion) flickerLights(this, built.sign);
     }
 
-    this.tickers.push(
-      ticker(this, { x: 500, y: 80, w: 92, text: 'REVENUE RECOVERY AGENT', color: introPalette.lime, depth: DEPTH.signs }),
+    this.animated.push(
+      new Ticker(this, { x: 500, y: 80, w: 92, text: 'REVENUE RECOVERY AGENT', color: introPalette.lime, depth: DEPTH.signs }),
     );
 
     for (const shop of SHOP_SIGNS) {
@@ -315,8 +411,8 @@ export class StreetScene extends Phaser.Scene {
     }
 
     // A cyan blade high on the cafe tower, catching the eye from down the street.
-    const net = blade(this, { x: 884, y: 18, label: 'NET', color: introPalette.cyan, depth: DEPTH.signs, wallSide: 'left' });
-    if (!this.opts.reducedMotion) flicker(this, net);
+    const net = new Blade(this, { x: 884, y: 18, label: 'NET', color: introPalette.cyan, depth: DEPTH.signs, wallSide: 'left' });
+    this.animated.push(net);
 
     this.billboard = new Billboard(this, {
       x: BILLBOARD_AT.x,
@@ -343,9 +439,20 @@ export class StreetScene extends Phaser.Scene {
       .setDepth(DEPTH.reflection)
       .setCrop(0, CAFE_H - 70, CAFE_W, 70);
 
-    // Warm light inside, seen when the door swings open.
-    this.add.rectangle(CAFE_X, BUILDING_BASE, 28, 44, amber, 1).setOrigin(0.5, 1).setDepth(DEPTH.cafe);
-    this.door = this.add.image(CAFE_X, BUILDING_BASE, 'door').setOrigin(0.5, 1).setDepth(DEPTH.door);
+    // Warm light inside, and the sliding doors in front of it. The leaves are
+    // masked to the opening, so they slide away into the wall rather than
+    // across it.
+    this.add.rectangle(CAFE_X, BUILDING_BASE, DOOR_LEAF * 2, DOOR_H, amber, 1).setOrigin(0.5, 1).setDepth(DEPTH.cafe);
+    const opening = this.make.graphics({ x: 0, y: 0 }, false);
+    opening.fillStyle(0xffffff).fillRect(CAFE_X - DOOR_LEAF, BUILDING_BASE - DOOR_H, DOOR_LEAF * 2, DOOR_H);
+    const mask = opening.createGeometryMask();
+    this.doors = [0, 1].map((frame) =>
+      this.add
+        .image(CAFE_X + (frame ? DOOR_LEAF / 2 : -DOOR_LEAF / 2), BUILDING_BASE, 'door', frame)
+        .setOrigin(0.5, 1)
+        .setDepth(DEPTH.door)
+        .setMask(mask),
+    );
 
     // The name is configurable, so shrink to fit rather than assume.
     const name = neonText(this, CAFE_X, top + 28, CAFE_NAME, introPalette.accent, 12).setDepth(DEPTH.cafeSign);
@@ -390,11 +497,25 @@ export class StreetScene extends Phaser.Scene {
     addLight(this, CAFE_X, BUILDING_BASE + 2, amber, 0.4, 1.2, 0.5, DEPTH.lightPool);
   }
 
+  private slideDoors(open: boolean): void {
+    playDoor();
+    this.doors.forEach((leaf, i) => {
+      const home = CAFE_X + (i ? DOOR_LEAF / 2 : -DOOR_LEAF / 2);
+      this.tweens.add({
+        targets: leaf,
+        x: open ? home + (i ? DOOR_LEAF : -DOOR_LEAF) : home,
+        duration: 320,
+        ease: open ? 'Cubic.easeOut' : 'Cubic.easeInOut',
+      });
+    });
+  }
+
   /* --------------------------------------------------------------- notes -- */
 
   private buildNotes(): void {
     const amber = colour(introPalette.accent);
-    for (const note of VOICE_NOTES) {
+    VOICE_NOTES.forEach((note, index) => {
+      if (this.taken.includes(index)) return;
       const y = GROUND_Y - (note.high ? 62 : 24);
       const sprite = this.add.sprite(note.x, y, 'note').setDepth(DEPTH.notes);
       if (this.anims.exists('note-pulse')) sprite.play('note-pulse');
@@ -410,8 +531,8 @@ export class StreetScene extends Phaser.Scene {
           delay: Math.random() * 400,
         });
       }
-      this.notes.push({ sprite, light, text: note.text });
-    }
+      this.notes.push({ index, sprite, light, text: note.text });
+    });
 
     this.sparkle = this.add
       .particles(0, 0, 'glow', {
@@ -456,12 +577,12 @@ export class StreetScene extends Phaser.Scene {
       },
     });
 
-    this.found += 1;
-    this.registry.set('notesFound', this.found);
-    const total = this.notes.length;
-    this.counter.setText(`${this.found}/${total}`);
+    this.taken.push(note.index);
+    this.registry.set('notesTaken', [...this.taken]);
+    const total = VOICE_NOTES.length;
+    this.counter.setText(`${this.taken.length}/${total}`);
     this.toast(note.text);
-    if (this.found === total) {
+    if (this.taken.length === total) {
       this.counter.setColor(introPalette.lime);
       this.time.delayedCall(1400, () => this.toast(`All ${total} voice notes found`));
     }
@@ -629,7 +750,11 @@ export class StreetScene extends Phaser.Scene {
       .setDepth(DEPTH.hud);
     this.add.image(16, 14, 'note', 0).setScrollFactor(0).setDepth(DEPTH.hud);
     this.counter = this.add
-      .text(28, 14, `0/${this.notes.length}`, { fontFamily: PIXEL_FONT, fontSize: '8px', color: '#e9ebf2' })
+      .text(28, 14, `${this.taken.length}/${VOICE_NOTES.length}`, {
+        fontFamily: PIXEL_FONT,
+        fontSize: '8px',
+        color: this.taken.length === VOICE_NOTES.length ? introPalette.lime : '#e9ebf2',
+      })
       .setOrigin(0, 0.5)
       .setResolution(2)
       .setScrollFactor(0)
@@ -646,10 +771,14 @@ export class StreetScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     const dt = Math.min(0.05, delta / 1000); // a tab-out must not teleport anyone
+    this.clock += dt;
     this.traffic.update(dt, this.cameras.main.scrollX);
     this.billboard.update(dt);
-    for (const t of this.tickers) t.update(dt);
-    if (this.entering) return;
+    if (!this.opts.reducedMotion) {
+      for (const a of this.animated) a.update(dt);
+      this.drawHologram();
+    }
+    if (this.busy) return;
 
     // Nothing here moves unless the player moves it.
     const input = this.controls.read();
@@ -692,40 +821,78 @@ export class StreetScene extends Phaser.Scene {
    * scroll makes sprites and backgrounds round inconsistently - which is
    * exactly what reads as jitter.
    */
-  private followCamera(dt: number, dir: number): void {
+  private followCamera(dt: number, dir: number, snap = false): void {
     this.lookAhead = Phaser.Math.Linear(this.lookAhead, dir * 42, Math.min(1, dt * 1.6));
     const target = Phaser.Math.Clamp(this.walker.x - this.camW / 3 + this.lookAhead, 0, Math.max(0, WORLD_W - this.camW));
-    this.camX = Phaser.Math.Linear(this.camX, target, Math.min(1, dt * 6));
+    this.camX = snap ? target : Phaser.Math.Linear(this.camX, target, Math.min(1, dt * 6));
     const scroll = Math.round(this.camX);
     this.cameras.main.scrollX = scroll;
     for (const { sprite, parallax } of this.layers) sprite.tilePositionX = Math.round(scroll * parallax);
   }
 
-  /* --------------------------------------------------------------- enter -- */
+  /* ---------------------------------------------------- in and out the door */
 
+  /** Doors slide open, the player walks up and in, they close, the view irises shut. */
   private enterCafe(): void {
-    if (this.entering) return;
-    this.entering = true;
-    this.walker.freeze();
-    playWhoosh();
-
+    if (this.busy) return;
+    this.busy = true;
+    const w = this.walker;
+    w.freeze();
     this.tweens.add({ targets: [this.prompt, this.hint], alpha: 0, duration: 200 });
-    this.tweens.add({ targets: this.door, scaleX: 0.12, x: CAFE_X - 11, duration: 260, ease: 'Back.easeIn' });
-    // Step up off the pavement and through the door.
-    this.tweens.add({
-      targets: [this.walker.sprite, this.walker.shadow, this.walker.reflection],
-      x: CAFE_X,
-      alpha: 0,
-      duration: 420,
-      delay: 140,
-      ease: 'Sine.easeIn',
-    });
-    this.tweens.add({ targets: this.walker.sprite, y: BUILDING_BASE + 2, scale: 0.92, duration: 420, delay: 140 });
+    this.slideDoors(true);
 
-    const cam = this.cameras.main;
-    cam.pan(CAFE_X, BUILDING_BASE - 40, 800, 'Sine.easeInOut');
-    cam.zoomTo(1.5, 800, 'Sine.easeIn');
-    this.time.delayedCall(350, () => cam.fadeOut(450, 0, 0, 0));
-    cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('cafe'));
+    const toDoor = Math.abs(CAFE_X - w.x);
+    w.stride(CAFE_X >= w.x ? 1 : -1);
+    this.tweens.add({
+      targets: w.sprite,
+      x: CAFE_X,
+      duration: (toDoor / PLAYER_SPEED) * 1000 + 80,
+      onUpdate: () => w.syncDressing(),
+      onComplete: () => {
+        this.tweens.add({ targets: w.sprite, y: BUILDING_BASE + 2, scale: 0.88, duration: 420, ease: 'Sine.easeIn', onUpdate: () => w.syncDressing() });
+        this.tweens.add({ targets: w.sprite, alpha: 0, duration: 220, delay: 240 });
+        this.tweens.add({ targets: [w.shadow, w.reflection], alpha: 0, duration: 300 });
+        this.time.delayedCall(500, () => this.slideDoors(false));
+        this.time.delayedCall(620, () => iris(this, DOORWAY.x, DOORWAY.y, 'close', 600, () => this.scene.start('cafe', { entry: 'door' })));
+      },
+    });
+  }
+
+  /** Back from the cafe: the view irises open on the doors, and out the player steps. */
+  private comeOutOfCafe(): void {
+    this.busy = true;
+    const w = this.walker;
+    w.freeze();
+    w.sprite.setPosition(CAFE_X, BUILDING_BASE + 2).setScale(0.88).setAlpha(0);
+    w.shadow.setAlpha(0);
+    w.reflection?.setAlpha(0);
+    w.syncDressing();
+    this.hint.setAlpha(0);
+    this.hintDismissed = true;
+    this.followCamera(1, -1, true);
+
+    iris(this, DOORWAY.x, DOORWAY.y, 'open', 650);
+    this.time.delayedCall(250, () => this.slideDoors(true));
+    this.time.delayedCall(450, () => {
+      w.stride(-1);
+      this.tweens.add({
+        targets: w.sprite,
+        x: CAFE_X - 18,
+        y: GROUND_Y,
+        scale: 1,
+        alpha: 1,
+        duration: 560,
+        ease: 'Sine.easeOut',
+        onUpdate: () => w.syncDressing(),
+        onComplete: () => {
+          w.rest();
+          this.slideDoors(false);
+          w.unfreeze();
+          this.busy = false;
+        },
+      });
+      this.tweens.add({ targets: w.shadow, alpha: 1, duration: 560 });
+      if (w.reflection) this.tweens.add({ targets: w.reflection, alpha: 0.2, duration: 560 });
+    });
   }
 }

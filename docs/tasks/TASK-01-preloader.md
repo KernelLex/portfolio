@@ -160,3 +160,54 @@ city; no prices in the cafe; and connecting to the PC should be a cyberpunk
   pulsing back down the line, then a collapse to black - which is where the
   BIOS starts. Reduced motion gets a still frame, no flashing. The style is
   borrowed, not the art or the words.
+
+## Revision: log off to the cafe, city music, a futuristic cafe (2 Nov)
+
+Amogh's direction: logging off should leave you in the cafe, free to walk
+out; every billboard animated like the Wispr board, and the Wispr board
+sharper; a night-city song on the sound toggle; a futuristic cafe and PCs;
+the bar becomes a cafe; no "printouts"; a smoother way in; something better
+than "no food near PCs"; a longer, better jack-in; more life in the city.
+
+- **Log off → the cafe.** The start menu's Log off restarts the game in the
+  cafe with the player still in seat 3. They stand up and can sit back down
+  or walk left to the EXIT and out to the street, where the doors open and
+  they step back onto the pavement. Voice notes already found stay found.
+  The browser's "replay intro" still starts from the top of the street.
+  A `BootScene` now loads everything once and starts whichever scene the
+  visit begins in.
+- **Doors and irises.** The cafe has sliding glass doors at both ends of the
+  trip. Going in: the doors part, the player steps into the light, an iris
+  closes on the doorway and opens again inside. Coming out is the reverse.
+- **Every sign animated.** VERA ERP, SECANT, HAZEN and TRUECOMMIT are LED
+  boards that roll through what each project is, with chasing bulbs and a
+  scan line; THROTTLE lights letter by letter. The Wispr Flow board is
+  bigger, set in Silkscreen at exactly 2× so every stroke lands on a whole
+  pixel, with no dot-matrix overlay or blurred shadows: waveform, dictation
+  typing itself out, then the name with level meters and a shine.
+- **City life.** Pedestrians under lit umbrellas on the pavement,
+  searchlights sweeping the clouds, drones, and a wireframe hologram globe
+  turning above the rooftops.
+- **Music.** A synthwave loop synthesised live with WebAudio (no files, nothing
+  to license): drums, bass, arpeggio, pad, a lead every other loop, and rain.
+  Inside the cafe it is muffled behind a low-pass filter; it stops for the
+  jack-in. It follows the sound toggle, which is still off by default and is
+  labelled "Music" in the intro.
+- **A futuristic cafe.** Hex-panel walls with neon tubes, a neon grid floor,
+  ring lights, frameless displays on glass PC cores, egg pods, a cashier in
+  an AR visor, a drinks machine, a server rack, a glowing planter. The wall
+  signs are holograms: top score, the cricket (still on), a VR pods ad, a
+  clock, WELCOME, and CYBER CUP TONIGHT where "no food near PCs" used to be.
+  The street's bar is now CHAI & COFFEE; the cafe sign reads
+  GAMING / VR PODS / NET.
+- **Jack-in, ~5s.** A red room with a hazard banner (LINK REQUEST), the band,
+  targeting brackets closing on the wrist with a scan line (SCANNING WRIST →
+  PORT FOUND), the port opening, the cable, LINK ESTABLISHED with data
+  streaming up the line and a sync bar to 100%, then an RGB slice glitch and
+  the collapse to black. Reduced motion still gets a single held frame.
+- **Touch:** holding near the left edge now walks left, so a phone can get
+  back to the cafe's exit.
+
+Verified in headless Chrome at 1600×900 and on a touch phone in landscape:
+the full flow (street → doors → cafe → seat → jack-in → desktop), and log off
+→ seat → stand up → exit → street → back in. No console errors.

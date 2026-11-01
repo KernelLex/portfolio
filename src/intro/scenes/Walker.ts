@@ -146,6 +146,29 @@ export class Walker {
     this.sprite.anims.stop();
   }
 
+  /** Hand control back after a scripted sequence. */
+  unfreeze(): void {
+    this.frozen = false;
+  }
+
+  /** During a scripted move: walk at full pace, facing `dir`. */
+  stride(dir: -1 | 1): void {
+    this.sprite.setFlipX(dir < 0);
+    if (this.scene.anims.exists('walk')) this.sprite.play('walk', true);
+    this.sprite.anims.timeScale = 1;
+  }
+
+  /** During a scripted move: stand on the idle breath. */
+  rest(): void {
+    this.play('idle');
+    this.sprite.anims.timeScale = 1;
+  }
+
+  /** Keep the shadow and mirror image in step with a scripted move. */
+  syncDressing(): void {
+    this.dress();
+  }
+
   update(dir: number, dt: number): void {
     if (this.frozen) return;
 

@@ -77,5 +77,5 @@ export const TRASH_EMPTY = 'Recycle Bin is empty.';
 
 export const START_MENU = {
   logOff: 'Log off',
-  logOffHint: 'back to the street',
+  logOffHint: 'back to the cafe',
 };

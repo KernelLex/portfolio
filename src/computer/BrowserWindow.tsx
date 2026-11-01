@@ -12,7 +12,7 @@ type Props = {
   reducedMotion: boolean;
   onMinimized: () => void;
   onClosed: () => void;
-  onLogOff: () => void;
+  onReplay: () => void;
 };
 
 const TASKBAR_BUTTON = '[data-taskbar="navigator"]';
@@ -26,7 +26,7 @@ const TASKBAR_BUTTON = '[data-taskbar="navigator"]';
  * the whole time, so the window reveals it rather than reflowing it 60 times
  * a second.
  */
-export default function BrowserWindow({ mode, launchFrom, reducedMotion, onMinimized, onClosed, onLogOff }: Props) {
+export default function BrowserWindow({ mode, launchFrom, reducedMotion, onMinimized, onClosed, onReplay }: Props) {
   const frameRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const previous = useRef<Props['mode'] | null>(null);
@@ -119,7 +119,7 @@ export default function BrowserWindow({ mode, launchFrom, reducedMotion, onMinim
     >
       <div ref={contentRef} className="absolute top-0 left-0 h-[100dvh] w-screen">
         <Suspense fallback={<div className="h-full w-full bg-space" />}>
-          <BrowserShell onMinimize={minimize} onClose={close} onReplayIntro={onLogOff} />
+          <BrowserShell onMinimize={minimize} onClose={close} onReplayIntro={onReplay} />
         </Suspense>
       </div>
     </div>

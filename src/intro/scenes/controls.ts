@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 
 /** Shorter than this, a touch counts as a tap (jump) rather than a hold (walk). */
 const TAP_MS = 200;
+/** A hold this close to the left edge walks left; anywhere else walks right. */
+const LEFT_ZONE = 0.3;
 
 export type InputFrame = {
   /** Horizontal intent: -1 left, 0 none, 1 right. */
@@ -22,12 +24,14 @@ const ENTER_CODES = new Set(['Enter', 'NumpadEnter']);
 /**
  * Keyboard and touch, read once per frame.
  *
- * Touch: hold anywhere to walk, a quick tap to jump. A touch that lands on an
- * interactive object (a prompt) belongs to that object and is ignored here.
+ * Touch: hold to walk (right, or left from the left edge), a quick tap to
+ * jump. A touch that lands on an interactive object (a prompt) belongs to
+ * that object and is ignored here.
  */
 export class Controls {
   private keys: Keys | null = null;
   private holding = false;
+  private holdDir: -1 | 1 = 1;
   private pressedAt = 0;
   private tapped = false;
   private upQueued = false;
@@ -51,10 +55,15 @@ export class Controls {
       kb.addCapture([K.LEFT, K.RIGHT, K.UP, K.DOWN, K.SPACE]);
     }
 
-    scene.input.on('pointerdown', (_p: Phaser.Input.Pointer, over: unknown[]) => {
+    const side = (p: Phaser.Input.Pointer): -1 | 1 => (p.x < scene.scale.width * LEFT_ZONE ? -1 : 1);
+    scene.input.on('pointerdown', (p: Phaser.Input.Pointer, over: unknown[]) => {
       if (over.length) return;
       this.holding = true;
+      this.holdDir = side(p);
       this.pressedAt = scene.time.now;
+    });
+    scene.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (this.holding) this.holdDir = side(p);
     });
     scene.input.on('pointerup', () => {
       if (this.holding && scene.time.now - this.pressedAt < TAP_MS) this.tapped = true;
@@ -67,8 +76,8 @@ export class Controls {
 
   read(): InputFrame {
     const k = this.keys;
-    const right = this.holding || (k !== null && (k.right.isDown || k.d.isDown));
-    const left = k !== null && (k.left.isDown || k.a.isDown);
+    const right = (this.holding && this.holdDir > 0) || (k !== null && (k.right.isDown || k.d.isDown));
+    const left = (this.holding && this.holdDir < 0) || (k !== null && (k.left.isDown || k.a.isDown));
     const dir: InputFrame['dir'] = right ? 1 : left ? -1 : 0;
 
     const up = this.upQueued || this.tapped;

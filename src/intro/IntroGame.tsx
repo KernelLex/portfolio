@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Game } from 'phaser';
 import { ROTATE_HINT } from '../content/intro';
+import { setMusicPlace } from '../lib/music';
+import type { IntroStart } from './scenes/BootScene';
 import type { IntroResult } from './scenes/StreetScene';
 import { VIEW_H, viewportWidth } from './viewport';
 
 type Props = {
+  /** The street from the top, or the cafe seat after logging off the PC. */
+  start: IntroStart;
   /**
-   * Called once the cafe PC has powered on and the camera is inside its
-   * screen - or with no result if the game could not start at all.
+   * Called once the jack-in has ended on black - or with no result if the
+   * game could not start at all.
    */
   onEnter: (result?: IntroResult) => void;
   reducedMotion: boolean;
@@ -29,7 +33,7 @@ const BOOT_WATCHDOG_MS = 6000;
  * a stray second Game would otherwise leave an orphaned canvas and a running
  * render loop behind.
  */
-export default function IntroGame({ onEnter, reducedMotion }: Props) {
+export default function IntroGame({ start, onEnter, reducedMotion }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [booted, setBooted] = useState(false);
 
@@ -62,8 +66,9 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
           /* fall back to monospace metrics */
         }
 
-        const [{ default: Phaser }, { StreetScene }, { CafeScene }, { LinkScene }] = await Promise.all([
+        const [{ default: Phaser }, { BootScene }, { StreetScene }, { CafeScene }, { LinkScene }] = await Promise.all([
           import('phaser'),
+          import('./scenes/BootScene'),
           import('./scenes/StreetScene'),
           import('./scenes/CafeScene'),
           import('./scenes/LinkScene'),
@@ -71,12 +76,12 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
 
         if (cancelled || !hostRef.current) return;
 
+        const ready = () => {
+          window.clearTimeout(watchdog);
+          if (!cancelled) setBooted(true);
+        };
         const sceneOptions = {
           onEnter: (result: IntroResult) => onEnterRef.current(result),
-          onReady: () => {
-            window.clearTimeout(watchdog);
-            if (!cancelled) setBooted(true);
-          },
           reducedMotion,
         };
 
@@ -97,9 +102,15 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
           },
           // Sound goes through our own muted-by-default WebAudio layer instead.
           audio: { noAudio: true },
-          // The street runs first and starts the cafe at the door; the cafe
-          // launches the jack-in over itself. Later in the list renders on top.
-          scene: [new StreetScene(sceneOptions), new CafeScene(sceneOptions), new LinkScene()],
+          // Boot loads everything and starts the street (or the cafe seat); the
+          // street and the cafe hand over to each other at the door, and the
+          // cafe launches the jack-in over itself. Later in the list renders on top.
+          scene: [
+            new BootScene(start, ready),
+            new StreetScene(sceneOptions),
+            new CafeScene(sceneOptions),
+            new LinkScene(),
+          ],
         });
       } catch (err) {
         window.clearTimeout(watchdog);
@@ -112,15 +123,18 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
       window.clearTimeout(watchdog);
       game?.destroy(true);
       game = null;
+      setMusicPlace(null);
     };
-  }, [reducedMotion]);
+  }, [start, reducedMotion]);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#070912]">
       <div ref={hostRef} className="h-full w-full" />
       {!booted && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
-          <span className="font-mono text-xs tracking-widest text-ink-muted">loading street…</span>
+          <span className="font-mono text-xs tracking-widest text-ink-muted">
+            {start.scene === 'cafe' ? 'logging off…' : 'loading street…'}
+          </span>
         </div>
       )}
       {/* A landscape game on an upright phone sits in a band; say how to fix that. */}

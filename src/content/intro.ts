@@ -29,7 +29,7 @@ export const BILLBOARD = {
 } as const;
 
 export const CAFE_SIGN = {
-  services: 'GAMING / INTERNET / PRINTOUTS',
+  services: 'GAMING / VR PODS / NET',
   open: 'OPEN 24 HRS',
 } as const;
 
@@ -38,16 +38,33 @@ export const SEAT_NUMBER = 3;
 
 export const CAFE_INTERIOR = {
   cashier: `Seat ${SEAT_NUMBER} is free!`,
-  houseRule: 'NO FOOD NEAR PCS',
   neon: 'GAME ZONE',
   scores: ['TOP SCORE', 'AMG 9999'],
+  tournament: ['CYBER CUP', 'TONIGHT'],
+  reception: 'WELCOME',
+  ad: ['VR PODS', 'NOW OPEN'],
   seatLabel: 'YOUR SEAT',
+} as const;
+
+/**
+ * What each of Amogh's street billboards cycles through. All from CLAUDE.md
+ * section 3: what each project is, nothing invented.
+ */
+export const BILLBOARD_MESSAGES = {
+  vera: ['VERA ERP', 'ONE PLACE', 'PRIVATE AI'],
+  secant: ['SECANT', 'ARCHITECTURE', 'IN 3D'],
+  hazen: ['HAZEN', 'LIGHTING', 'IN 3D'],
+  truecommit: ['TRUECOMMIT', '5 INVOICES', 'ALL PAID'],
 } as const;
 
 /** The jack-in cutscene's lettering. */
 export const LINK = {
+  request: 'LINK REQUEST',
+  scanning: 'SCANNING WRIST',
+  found: 'PORT FOUND',
   jacking: 'JACKING IN',
   established: 'LINK ESTABLISHED',
+  sync: 'SYNC',
   detail: `WRIST LINK  >  SEAT 0${SEAT_NUMBER}  >  HANDSHAKE OK`,
 } as const;
 
@@ -59,5 +76,8 @@ export const PROMPTS = {
   enter: { keys: 'Press  ^  to go in', touch: 'Tap to go in' },
   seat: { keys: 'Walk to the free seat', touch: 'Walk to the free seat' },
   sit: { keys: 'Press  ^  to sit', touch: 'Tap to sit' },
+  exit: { keys: 'Press  ^  to go out', touch: 'Tap to go out' },
+  /** Back in the seat after logging off the PC. */
+  loggedOff: { keys: 'Walk left to go out, or sit back down', touch: 'Hold the left side to walk back out' },
   link: { keys: 'Press  ^  to jack in', touch: 'Tap to jack in' },
 } as const;
