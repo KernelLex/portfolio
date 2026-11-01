@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 
 /**
- * The intro doubles as the preloader: while the player walks, the browser shell
- * chunk and the web fonts download. The boot screen's progress bar is tied to
- * this promise, so the bar reflects real work rather than a fake timer.
+ * The intro doubles as the preloader: while the player walks, the cafe PC, the
+ * browser shell and the web fonts download. The PC's boot splash ties its
+ * progress bar to this promise, so the bar reflects real work, not a timer.
  */
 let pending: Promise<void> | null = null;
 
 export function preloadSite(): Promise<void> {
   if (!pending) {
     pending = Promise.allSettled([
+      import('../computer/Computer'),
       import('../components/BrowserShell'),
       typeof document !== 'undefined' && 'fonts' in document
         ? document.fonts.ready

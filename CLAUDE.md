@@ -13,7 +13,7 @@ The challenge brief: *"Build the most creative portfolio of yourself with voice.
 
 **Concept: "Amogh's Internet."** The site is a custom browser called **Amogh Navigator** (name stored in `src/config.ts` as `BROWSER_NAME`, which may change). Each browser tab is its own page and tells one part of Amogh's story.
 
-**Entry experience:** a short playable pixel side-scroller through a **loud neon cyberpunk night city**. The player walks into a shop, the screen flashes white, and they land in a **calm, space-themed browser**. The contrast is intentional: *out of the noise, into my space.*
+**Entry experience:** a short playable pixel side-scroller through a **loud neon cyberpunk night city**. The player walks into a **cyber cafe**, sits at the one free PC and powers it on. The camera dives into the monitor, the PC boots into a **calm, space-themed desktop** (`OS_NAME` in `src/config.ts`), and opening the browser icon launches **Amogh Navigator**. The contrast is intentional: *out of the noise, into my space.*
 
 ### Hard deadlines
 - Challenge: 28 Oct – **4 Nov 2026** (submissions close)
@@ -202,7 +202,7 @@ The Wispr Flow API is enterprise/partner-only and not available. **Key fact: Wis
 
 ## 9. Build order
 
-1. **Intro game preloader + boot screen** → lands on a placeholder browser shell (TASK-01)
+1. **Intro game** (street → cyber cafe) → **cafe PC** (boot → desktop) → placeholder browser shell (TASK-01)
 2. **Browser shell:** sidebar, tabs, address bar, wallpaper, sounds, guide figure
 3. **Core pages:** Home lyric stage, Amoghpedia, The Story, Client Work, Prompt Lens, Ask Amogh, Voice Receipts
 4. **Extras:** Shorts, Side Builds, Amogh Control, retro easter egg, Incognito, Wrapped, Campaign
@@ -233,5 +233,5 @@ npm install
 npm run dev            # Vite dev server on :5173
 npm run build          # typecheck + production build
 npm run preview        # serve the production build
-npm run assets:intro   # regenerate the placeholder pixel art for the intro
+npm run assets:intro   # regenerate all the intro pixel art (scripts/art/)
 ```

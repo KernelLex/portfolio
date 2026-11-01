@@ -1,107 +1,108 @@
-# Intro city art
+# Intro art
 
-Every pixel in this folder is drawn by `scripts/gen-city-art.mjs`
+Every pixel in this folder is drawn by code in `scripts/art/`
 (`npm run assets:intro`). There is **no third-party art in this project** —
-nothing to license, nothing to credit, and the whole city regenerates
-deterministically from code.
+nothing to license, nothing to credit, and the whole intro regenerates
+deterministically.
 
-To swap in a bought or commissioned pixel pack instead: **drop files with the
-same names and dimensions into this folder.** No code changes needed. The scene
-loads purely by filename and falls back to flat colour blocks if a file is
-missing or fails to decode.
+| Module                       | Draws                                                            |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `scripts/art/core.mjs`       | PNG encoder, the palette ramps, Bayer dithering, outline and rim |
+| `scripts/art/street.mjs`     | sky, skyline, buildings, cables, street, props, cafe front, door, billboard, auto-rickshaw, voice note, glow |
+| `scripts/art/characters.mjs` | the player: idle, walk, jump, and the back view for sitting      |
+| `scripts/art/cafe.mjs`       | cafe wall and floor, desk, chair, people playing, counter, fan, wall decor |
+
+To swap in a bought or commissioned pack instead: **drop files with the same
+names and frame sizes into this folder.** No code changes needed. Both scenes
+load by filename and fall back to flat colour blocks if a file is missing.
 
 ## How the art is made
 
-Three rules keep it inside the medium rather than looking like rendered
-gradients:
+1. **Fixed ramps.** Eleven five-step colour ramps (night, concrete, amber,
+   cyan, magenta, violet, lime, skin, steel, yellow, green). Nothing uses a
+   colour outside them.
+2. **Ordered dithering.** Any value between two ramp steps is dithered with a
+   Bayer 8×8 matrix, never alpha-blended.
+3. **Rim light, then outline.** Sprites are drawn, given a catch-light down the
+   edge facing the light, then a dark keyline around the silhouette.
 
-1. **Fixed ramps.** Eight five-step colour ramps (night, concrete, amber, cyan,
-   magenta, violet, lime, skin). Nothing uses a colour outside them.
-2. **Ordered dithering.** Any value falling between two ramp steps is dithered
-   with a Bayer 8×8 matrix, never alpha-blended. This is what makes the skies,
-   facades and window glows read as pixel art.
-3. **Rim light, then outline.** Characters and street furniture are drawn, then
-   given an amber catch-light down the edge facing the shop, then a dark
-   keyline around the silhouette.
-
-Buildings are assembled from five hand-authored archetypes — tenement with fire
-escape, glazed tower with a neon banner, shop block with shutters and awnings,
-rooftop billboard with scaffolding, and a service block with ducting and vents —
-not from randomised rectangles.
-
-### Inspecting sprites
+Inspect any sprite enlarged:
 
 ```bash
-node scripts/gen-city-art.mjs --preview=9 --out=<dir> --only=player
+node scripts/gen-city-art.mjs --preview=8 --out=<dir> --only=player
 ```
 
-Writes nearest-neighbour upscales on an opaque backdrop so mistakes are visible.
-Dev aid only; previews are never published.
+## Coordinates
 
-## The scene's coordinate system
+Both scenes are authored 270px tall and scaled up by Phaser's `FIT` mode. The
+width follows the screen's aspect ratio (260–760px) — the four tiled street
+layers are 480 wide and repeat to fill whatever width the screen gives.
 
-The game is authored on a fixed **480 × 270** grid and scaled up by Phaser's
-`FIT` mode, so the pixels stay square on any display. Every size below is in
-that grid, not in screen pixels.
+| Street landmark       | y   | Cafe landmark            | y   |
+| --------------------- | --- | ------------------------ | --- |
+| Building base line    | 196 | Wall meets floor         | 176 |
+| Street graphic top    | 190 | Seated people (bottom)   | 189 |
+| Player's feet         | 212 | Desks stand on           | 202 |
+| Traffic wheels        | 252 | Chairs stand on          | 218 |
+|                       |     | Player's feet            | 240 |
 
-| Landmark             | y   |
-| -------------------- | --- |
-| Building base line   | 196 |
-| Street graphic top   | 190 |
-| Ground (player feet) | 212 |
+## Street
 
-## Files
+| File             | Size      | Frames      | Notes                                                                       |
+| ---------------- | --------- | ----------- | --------------------------------------------------------------------------- |
+| `sky.png`        | 480 × 270 | —           | Night gradient, stars, cloud bands lit from below. Tiles horizontally.      |
+| `skyline.png`    | 480 × 110 | —           | Distant towers, 0.25× parallax. Tiles.                                      |
+| `buildings.png`  | 480 × 170 | —           | Five building archetypes, 0.55× parallax. Tiles. The billboard stands on the shop block (x 140–236). |
+| `cables.png`     | 480 × 64  | —           | Overhead wires catching neon, 1.1× parallax. Tiles.                         |
+| `street.png`     | 480 × 80  | —           | Pavement, kerb, wet asphalt, puddles. 1×. Tiles.                            |
+| `props.png`      | 256 × 120 | 4 × 64×120  | Lamp, railing, bollards, crate. Foreground at 1.25×.                        |
+| `cafe-front.png` | 192 × 128 | —           | The cyber cafe. See anchors below.                                          |
+| `door.png`       | 28 × 44   | —           | Cafe door. Swings open via `scaleX`.                                        |
+| `billboard.png`  | 128 × 90  | —           | Rooftop LED billboard frame. The face (x 6–121, y 6–52) is drawn in-scene.  |
+| `rickshaw.png`   | 120 × 40  | 2 × 60×40   | A Bengaluru auto, facing right, two frames of wheel.                        |
+| `note.png`       | 72 × 16   | 4 × 18×16   | The collectible voice note: a mic, its sound rings pulsing.                 |
+| `glow.png`       | 64 × 64   | —           | Soft white disc, tinted for every light. Not pixel art by design.           |
 
-| File              | Size      | Scroll | Notes                                                                                                            |
-| ----------------- | --------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
-| `sky.png`         | 480 × 270 | 0.05×  | Full-viewport backdrop: dithered night gradient, stars, cloud bands lit from beneath. Must tile horizontally.      |
-| `skyline.png`     | 480 × 110 | 0.25×  | Distant silhouettes, hazed toward the base. Bottom edge on the building base line; transparent above the rooftops. |
-| `buildings.png`   | 480 × 170 | 0.55×  | Mid-ground archetypes. Bottom edge on the building base line; transparent above.                                   |
-| `cables.png`      | 480 × 64  | 1.10×  | Overhead power lines and two paper lanterns. Drawn at the top of the viewport. Sag is periodic so the tile loops.  |
-| `street.png`      | 480 × 80  | 1.00×  | Pavement (top 18px), kerb, wet asphalt, lane dashes, puddles. Top edge at y 190. Opaque.                           |
-| `props.png`       | 256 × 120 | 1.25×  | Spritesheet, **4 frames of 64 × 120**: 0 street lamp, 1 railing, 2 bollards + rubbish, 3 crate + weeds.            |
-| `shop.png`        | 160 × 120 | 1.00×  | Storefront. Origin bottom-centre at the ground line. See anchors below.                                            |
-| `door.png`        | 28 × 44   | 1.00×  | Closed door, centred on the shop. Swings open via `scaleX` — no separate open frame.                               |
-| `player-idle.png` | 128 × 44  | 1.00×  | Spritesheet, **4 frames of 32 × 44**, facing **right**. A slow breath, 4 fps. Origin bottom-centre.                |
-| `player-walk.png` | 256 × 44  | 1.00×  | Spritesheet, **8 frames of 32 × 44**, facing **right**. Frames 0 and 4 are the contact poses. See stride below.    |
-| `glow.png`        | 64 × 64   | —      | Soft white disc. Tinted, scaled and additively blended for every light in the city. Not pixel art by design.       |
+### Cafe front anchors
 
-The four tiled layers (`sky`, `skyline`, `buildings`, `street`) and `cables`
-**must tile seamlessly left-to-right**. Only the 480px width matters; the scene
-is 1400px wide and repeats each tile.
+Bottom-centre at the ground line. Within the 192 × 128 image:
 
-`props.png` frames are placed as individual world objects, not tiled, so they
-never visibly repeat. Frame 0 gets an amber light attached in the scene.
+- **Sign board**: x 8–184, y 18–48. The scene prints `CAFE_NAME` and the
+  services line on it.
+- **Windows**: x 8–78 and 114–184, y 60–110, each with three little screens at
+  x +8, +30, +52 (y +18). The scene lays a flickering glow over each one.
+- **Door recess**: x 80–112, y 81–128. `door.png` sits on top.
 
-## Stride — read this before replacing the walk sheet
+## Player
 
-The walk cycle covers **32px of ground per loop** (`STEP = 8` in the generator:
-the front foot swings between +8 and −8, twice per loop). `StreetScene` derives
-the animation frame rate from that number and the player's live speed, so one
-loop always covers exactly 32px however fast they are moving. That is the only
-thing stopping the feet from skating.
+| File              | Size     | Frames     | Notes                                                                 |
+| ----------------- | -------- | ---------- | --------------------------------------------------------------------- |
+| `player-idle.png` | 128 × 44 | 4 × 32×44  | A slow breath, facing right.                                          |
+| `player-walk.png` | 256 × 44 | 8 × 32×44  | Facing right. Frames 0 and 4 are the contact poses. See stride below. |
+| `player-jump.png` | 64 × 44  | 2 × 32×44  | 0 rising (tucked), 1 falling (legs reaching down).                    |
+| `player-sit.png`  | 64 × 44  | 2 × 32×44  | Back view. 0 standing, turned to the desk. 1 seated: head and shoulders only, at the bottom of the cell. |
 
-A replacement sheet with a different stride **must** update `STRIDE_PER_CYCLE`
-in `src/intro/scenes/StreetScene.ts` to match, or the feet will slide. Measure
-it as `2 × (front foot x at frame 0 − front foot x at frame 4)`.
+### Stride — read this before replacing the walk sheet
 
-## Shop anchors
+The walk cycle covers **32px of ground per loop** (`STEP = 8` in
+`characters.mjs`). `Walker.ts` derives the animation rate from that and the
+player's live speed, which is the only thing stopping the feet from skating.
+A replacement with a different stride must update `STRIDE_PER_CYCLE` in
+`src/intro/scenes/Walker.ts`.
 
-The shop is placed with its bottom-centre at the ground line, so its top-left
-corner lands at `(shopX - 80, 92)`. Within the 160 × 120 image:
+## Cafe interior
 
-- **Sign board**: x 10–150, y 22–46, ringed by a neon tube. The scene prints
-  `BROWSER_NAME` across it in amber, shrinking the font until it fits 130px.
-  Leave this area dark and empty in a replacement.
-- **Door recess**: x 66–94, y 73–120. `door.png` is drawn on top of it, and a
-  warm amber rectangle behind it is revealed when the door opens.
-- **Windows**: x 12–54 and x 106–148, y 61–101.
+| File               | Size      | Frames      | Notes                                                                 |
+| ------------------ | --------- | ----------- | --------------------------------------------------------------------- |
+| `cafe-wall.png`    | 480 × 270 | —           | Ceiling, RGB strip, panelled wall, wainscot, tiled floor. Tiles.      |
+| `cafe-desk.png`    | 64 × 52   | —           | A station facing the camera. Screen (x 18–45, y 2–19) is drawn in-scene. |
+| `cafe-chair.png`   | 26 × 30   | —           | Gaming chair from behind. Drawn in front of whoever sits in it.       |
+| `cafe-npc.png`     | 144 × 26  | 6 × 24×26   | Three people from behind, two frames each (lean in, work the mouse).  |
+| `cafe-counter.png` | 256 × 72  | 2 × 128×72  | Front counter and cashier. Frame 1 blinks.                            |
+| `cafe-fan.png`     | 256 × 20  | 4 × 64×20   | Ceiling fan, side on.                                                 |
+| `cafe-decor.png`   | 384 × 40  | 8 × 48×40   | 0 space poster, 1 sunset poster, 2 sign plate, 3 AC unit, 4 clock, 5 TV (picture drawn in-scene), 6 snack shelf, 7 rates board. |
 
 ## Palette
-
-The city is loud on purpose. The one colour that must survive into a
-replacement is the amber accent — it is the single visual thread connecting the
-neon street to the calm browser inside.
 
 | Role         | Hex       |
 | ------------ | --------- |
@@ -111,6 +112,9 @@ neon street to the calm browser inside.
 | Magenta      | `#FF5FA2` |
 | Violet       | `#8B6CFF` |
 | Lime         | `#B6F34B` |
+
+The amber accent is the one colour that must survive any replacement — it
+connects the neon street to the calm desktop and browser inside.
 
 ## Licensing rule
 

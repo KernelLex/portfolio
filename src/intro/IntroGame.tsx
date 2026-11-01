@@ -1,28 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Game } from 'phaser';
+import { ROTATE_HINT } from '../content/intro';
+import type { IntroResult } from './scenes/StreetScene';
 import { VIEW_H, viewportWidth } from './viewport';
 
 type Props = {
-  /** Called once the door zoom has finished playing. */
-  onEnter: () => void;
+  /**
+   * Called once the cafe PC has powered on and the camera is inside its
+   * screen - or with no result if the game could not start at all.
+   */
+  onEnter: (result?: IntroResult) => void;
   reducedMotion: boolean;
 };
 
 /**
- * Mounts the Phaser street scene and guarantees it is torn down again.
+ * If the street has not finished starting by now, something is wrong with
+ * WebGL, the assets or the engine - move the visitor along rather than leave
+ * them on a black rectangle.
+ */
+const BOOT_WATCHDOG_MS = 6000;
+
+/**
+ * Mounts the Phaser intro (the street, then the cafe) and guarantees it is
+ * torn down again.
  *
  * Phaser is imported lazily so the first paint never waits on it, and the whole
  * effect is written to survive React's double-invoked mount in development -
  * a stray second Game would otherwise leave an orphaned canvas and a running
  * render loop behind.
  */
-/**
- * If the scene has not finished starting by now, something is wrong with
- * WebGL, the assets or the engine - move the visitor along rather than leave
- * them on a black rectangle.
- */
-const BOOT_WATCHDOG_MS = 6000;
-
 export default function IntroGame({ onEnter, reducedMotion }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [booted, setBooted] = useState(false);
@@ -45,28 +51,38 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
 
     void (async () => {
       try {
-        // Phaser measures text at creation time, so the pixel font has to be
+        // Phaser measures text at creation time, so the fonts have to be
         // resident first or every sign is laid out with fallback metrics.
         try {
           await Promise.all([
             document.fonts.load('8px "Press Start 2P"'),
-            document.fonts.load('9px "JetBrains Mono"'),
+            document.fonts.load('8px "Silkscreen"'),
           ]);
         } catch {
           /* fall back to monospace metrics */
         }
 
-        const [{ default: Phaser }, { StreetScene }] = await Promise.all([
+        const [{ default: Phaser }, { StreetScene }, { CafeScene }] = await Promise.all([
           import('phaser'),
           import('./scenes/StreetScene'),
+          import('./scenes/CafeScene'),
         ]);
 
         if (cancelled || !hostRef.current) return;
 
+        const sceneOptions = {
+          onEnter: (result: IntroResult) => onEnterRef.current(result),
+          onReady: () => {
+            window.clearTimeout(watchdog);
+            if (!cancelled) setBooted(true);
+          },
+          reducedMotion,
+        };
+
         game = new Phaser.Game({
           type: Phaser.AUTO,
           parent: hostRef.current,
-          // Height is fixed so the scene's y coordinates stay valid; width
+          // Height is fixed so the scenes' y coordinates stay valid; width
           // follows the display's aspect so a wide screen sees more street
           // instead of black bars.
           width: viewportWidth(),
@@ -80,14 +96,8 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
           },
           // Sound goes through our own muted-by-default WebAudio layer instead.
           audio: { noAudio: true },
-          scene: new StreetScene({
-            onEnter: () => onEnterRef.current(),
-            onReady: () => {
-              window.clearTimeout(watchdog);
-              if (!cancelled) setBooted(true);
-            },
-            reducedMotion,
-          }),
+          // The street runs first; it starts the cafe itself at the door.
+          scene: [new StreetScene(sceneOptions), new CafeScene(sceneOptions)],
         });
       } catch (err) {
         window.clearTimeout(watchdog);
@@ -111,6 +121,10 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
           <span className="font-mono text-xs tracking-widest text-ink-muted">loading street…</span>
         </div>
       )}
+      {/* A landscape game on an upright phone sits in a band; say how to fix that. */}
+      <p className="pointer-events-none absolute inset-x-0 bottom-10 hidden px-6 text-center font-mono text-[11px] text-ink-muted portrait:pointer-coarse:block">
+        {ROTATE_HINT}
+      </p>
     </div>
   );
 }

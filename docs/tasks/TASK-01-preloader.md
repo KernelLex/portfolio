@@ -86,3 +86,47 @@ public/assets/intro/README.md
   viewer parked outside the shop forever.
 - **No audio files.** The sound toggle drives a small synthesised WebAudio layer
   (`src/lib/sound.ts`). Real samples can replace it behind the same API in TASK-02.
+
+---
+
+## Revision: the cyber cafe (1 Nov)
+
+Amogh's direction after seeing the first version: the shop becomes a **cyber
+cafe**. You walk in, sit at a computer, start it, use it like a normal PC, and
+open the browser from its desktop. Plus: make it look and play like a proper
+game, and make the billboard better.
+
+### What the flow is now
+
+1. **Street** (Phaser): walk to the cyber cafe. Collect up to five voice notes
+   (facts from CLAUDE.md; two need a jump). An auto-rickshaw passes. The
+   billboard is an animated LED screen: voice waveform, a line of dictation
+   typing itself, then the name.
+2. **Cafe** (Phaser): the cashier says which seat is free. Eight people are
+   already playing; every monitor runs its own tiny game, and the TV shows
+   cricket. Sit, power on, and the camera zooms into the monitor.
+3. **Cafe PC** (React): BIOS lines, a boot splash with a real-preload progress
+   bar, then a desktop: icons, draggable windows (readme, a terminal, recycle
+   bin), a start menu, a taskbar with a live clock.
+4. **Browser**: opening the icon grows the window out of it to full screen.
+   Minimise sends it to the taskbar; close returns to the desktop.
+
+### Paths
+
+- **Skip intro** → boot splash → desktop. The browser opens itself after 7s
+  idle, so nobody gets stuck.
+- **Returning visitor / reduced motion** → boot splash → desktop → the browser
+  opens itself almost immediately.
+- **Log off** (start menu) and **Replay intro** (browser) → back to the street.
+
+### Verified in a real browser
+
+Headless Chrome screenshots of every phase (desktop 1600×900 and a 390×844
+phone): full walk-through, jump and pickup, skip, returning visitor, minimise,
+terminal commands, tap-to-open on touch. Console clean throughout.
+
+Bugs those screenshots caught, all fixed: action-key taps lost between frames;
+the browser window stranded half-grown by React's double-invoked effects; the
+boot progress bar never drawing (Tailwind v4's `scale` property overriding the
+inline transform — the original boot screen had the same bug); the zoom into
+the monitor drifting off target; 5px pixel text rendering as mush.

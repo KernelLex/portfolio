@@ -8,6 +8,12 @@ export const BROWSER_NAME = 'Amogh Navigator';
 /** URL scheme used in the address bar, e.g. amogh://amoghpedia */
 export const URL_SCHEME = 'amogh';
 
+/** The cyber cafe at the end of the intro street. */
+export const CAFE_NAME = 'CYBER CAFE';
+
+/** The operating system on the cafe PC - named after Amogh's GitHub handle. */
+export const OS_NAME = 'KernelLex OS';
+
 /** Browser-side palette (CLAUDE.md 4). Mirrored as Tailwind tokens in index.css. */
 export const theme = {
   space: '#0B0E17',
@@ -38,11 +44,14 @@ export const storageKeys = {
   soundOn: 'amogh:sound-on',
 } as const;
 
-/** Timings for the intro -> browser handoff, in milliseconds. */
+/** Timings for the cafe PC's boot and the browser launch, in milliseconds. */
 export const timings = {
-  doorZoom: 600,
-  whiteFlash: 300,
+  /** The boot splash's progress bar is held to this window around real loading. */
   bootMin: 800,
   bootMax: 2500,
-  shellFadeIn: 500,
+  /** A first-time visitor left alone on the desktop gets the browser opened for them. */
+  desktopAutoOpen: 7000,
+  /** A returning visitor gets a beat on the desktop, then straight in. */
+  returningAutoOpen: 450,
+  windowOpen: 550,
 } as const;

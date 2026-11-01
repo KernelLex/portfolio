@@ -78,3 +78,26 @@ export function playClick(): void {
 export function playWhoosh(): void {
   tone({ freq: 520, to: 90, duration: 0.55, type: 'sawtooth', gain: 0.035 });
 }
+
+/** Rising two-note chime - a voice note picked up. */
+export function playPickup(): void {
+  tone({ freq: 660, to: 880, duration: 0.08, type: 'triangle', gain: 0.04 });
+  window.setTimeout(() => tone({ freq: 990, to: 1320, duration: 0.1, type: 'triangle', gain: 0.04 }), 70);
+}
+
+/** Small upward blip for a jump. */
+export function playJump(): void {
+  tone({ freq: 300, to: 520, duration: 0.09, type: 'square', gain: 0.018 });
+}
+
+/** The auto-rickshaw's double beep. */
+export function playHorn(): void {
+  tone({ freq: 420, duration: 0.08, type: 'square', gain: 0.02 });
+  window.setTimeout(() => tone({ freq: 420, duration: 0.1, type: 'square', gain: 0.02 }), 130);
+}
+
+/** A PC spinning up: a rising chirp over a click. */
+export function playPowerOn(): void {
+  tone({ freq: 140, to: 900, duration: 0.45, type: 'sine', gain: 0.035 });
+  tone({ freq: 1800, duration: 0.04, type: 'square', gain: 0.012 });
+}

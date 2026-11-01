@@ -14,7 +14,8 @@ export const VIEW_H = 270;
 /** 16:9, and the width every asset is authored and tiled at. */
 export const BASE_VIEW_W = 480;
 
-const MIN_VIEW_W = 400;
+/** Portrait phones get a narrower, closer view rather than a thin letterbox. */
+const MIN_VIEW_W = 260;
 const MAX_VIEW_W = 760;
 
 export function viewportWidth(): number {

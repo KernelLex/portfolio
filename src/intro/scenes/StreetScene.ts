@@ -1,8 +1,26 @@
 import Phaser from 'phaser';
-import { BROWSER_NAME, introPalette } from '../../config';
-import { playWhoosh } from '../../lib/sound';
+import { CAFE_NAME, introPalette } from '../../config';
+import { CAFE_SIGN, PROMPTS, VOICE_NOTES } from '../../content/intro';
+import { playHorn, playPickup, playWhoosh } from '../../lib/sound';
 import { BASE_VIEW_W, VIEW_H } from '../viewport';
-import { CityPostFX } from '../pipelines/CityPostFX';
+import { Billboard } from './Billboard';
+import { Controls } from './controls';
+import { Walker } from './Walker';
+import {
+  ADD,
+  PIXEL_FONT,
+  SIGN_FONT,
+  addLight,
+  attachPostFX,
+  colour,
+  ensureFallbacks,
+  isTouch,
+  loadIntroAssets,
+  mixColour,
+  neonText,
+  signText,
+  uiText,
+} from './shared';
 
 /* Every number below is in "pixel art pixels" (the 270-tall authoring grid),
  * not screen pixels. */
@@ -10,39 +28,39 @@ const WORLD_W = 960;
 const GROUND_Y = 212; // where the player's feet sit
 const STREET_TOP = 190;
 const BUILDING_BASE = 196;
+const ROAD_Y = 252; // where the traffic's wheels sit
 
 const PLAYER_START_X = 70;
-const SHOP_X = 790;
-const DOOR_ZONE = 36;
+const CAFE_X = 800;
+const DOOR_ZONE = 34;
+
+/** Mirrors scripts/art/street.mjs: the cafe front and its glass. */
+const CAFE_W = 192;
+const CAFE_H = 128;
+const WINDOW_X = [8, 114];
+const WINDOW_Y = 60;
+const WINDOW_SCREENS = [8, 30, 52];
 
 /**
- * Movement. Speed and stride are locked together: the walk sheet covers
- * STRIDE_PER_CYCLE pixels of ground per loop, so playing it at
- * (speed / STRIDE_PER_CYCLE) cycles per second is the only rate at which the
- * feet do not skate. WALK_FPS is that rate at full speed; the scene scales the
- * animation's timeScale by actual speed for everything in between.
+ * The billboard stands on the shop block in buildings.png (x 140-236, roof 96
+ * high), so it scrolls with that layer rather than with the street.
  */
-const PLAYER_SPEED = 88;
-const PLAYER_ACCEL = 420;
-const PLAYER_FRICTION = 620;
-const STRIDE_PER_CYCLE = 32; // must match STEP * 4 in scripts/gen-city-art.mjs
-const WALK_FRAME_COUNT = 8;
-const WALK_FPS = (PLAYER_SPEED / STRIDE_PER_CYCLE) * WALK_FRAME_COUNT;
-/** Below this the walk reads as a shuffle, so switch to the idle breath. */
-const MOVING_THRESHOLD = 5;
+const BILLBOARD_COLUMN = 188;
+const BILLBOARD_ROOF_Y = BUILDING_BASE - 96;
+const BUILDINGS_PARALLAX = 0.55;
 
 const IDLE_BEFORE_AUTOWALK = 2500;
 const IDLE_AT_DOOR_BEFORE_ENTER = 3000;
 
-const ADD = Phaser.BlendModes.ADD;
+const NEON = [introPalette.cyan, introPalette.magenta, introPalette.violet, introPalette.lime];
 
 /** Signs along the street. Easter eggs: every one is something Amogh built. */
 const SIGNS: ReadonlyArray<{ x: number; y: number; label: string; color: string }> = [
-  { x: 180, y: 126, label: 'VERA ERP', color: introPalette.cyan },
-  { x: 320, y: 96, label: 'SECANT', color: introPalette.magenta },
-  { x: 450, y: 134, label: 'HAZEN', color: introPalette.violet },
-  { x: 590, y: 100, label: 'TRUECOMMIT', color: introPalette.lime },
-  { x: 700, y: 138, label: 'THROTTLE', color: introPalette.cyan },
+  { x: 150, y: 128, label: 'VERA ERP', color: introPalette.cyan },
+  { x: 285, y: 106, label: 'SECANT', color: introPalette.magenta },
+  { x: 400, y: 136, label: 'HAZEN', color: introPalette.violet },
+  { x: 510, y: 100, label: 'TRUECOMMIT', color: introPalette.lime },
+  { x: 625, y: 134, label: 'THROTTLE', color: introPalette.cyan },
 ];
 
 /**
@@ -61,33 +79,37 @@ const PROPS: ReadonlyArray<{ x: number; frame: number }> = [
 ];
 
 /** Grates that breathe. Placed between the signs so the street is never still. */
-const VENTS: ReadonlyArray<number> = [250, 520, 680];
+const VENTS: ReadonlyArray<number> = [250, 470, 610];
 
 const DEPTH = {
   sky: 0,
   skyline: 1,
   buildings: 2,
+  billboard: 2.5,
   cables: 3,
   street: 4,
   reflection: 5,
   lightPool: 6,
-  shop: 7,
+  cafe: 7,
   door: 8,
-  shopSign: 9,
+  cafeSign: 9,
   signs: 10,
   vents: 11,
+  notes: 11.5,
   player: 12,
+  traffic: 12.5,
   rainFar: 13,
   props: 14,
   rainNear: 15,
   hud: 20,
-  flood: 30,
 } as const;
 
-export type StreetSceneOptions = {
-  /** Fired once the door zoom finishes - hand control back to React. */
-  onEnter: () => void;
-  /** Fired when the scene is up, which clears React's boot watchdog. */
+export type IntroResult = { notesFound: number; notesTotal: number };
+
+export type IntroSceneOptions = {
+  /** Fired once the PC in the cafe has powered on and the camera is inside it. */
+  onEnter: (result: IntroResult) => void;
+  /** Fired when the street is up, which clears React's boot watchdog. */
   onReady: () => void;
   reducedMotion: boolean;
 };
@@ -98,10 +120,14 @@ type SignParts = {
   baseAlpha: number[];
 };
 
-export class StreetScene extends Phaser.Scene {
-  private opts: StreetSceneOptions;
+type Note = {
+  sprite: Phaser.GameObjects.Sprite;
+  light: Phaser.GameObjects.Image;
+  text: string;
+};
 
-  /** Actual viewport width in game pixels - varies with the display aspect. */
+export class StreetScene extends Phaser.Scene {
+  private opts: IntroSceneOptions;
   private camW = BASE_VIEW_W;
 
   private sky!: Phaser.GameObjects.TileSprite;
@@ -110,114 +136,79 @@ export class StreetScene extends Phaser.Scene {
   private cables!: Phaser.GameObjects.TileSprite;
   private street!: Phaser.GameObjects.TileSprite;
 
-  private player!: Phaser.GameObjects.Sprite;
-  private playerReflection!: Phaser.GameObjects.Sprite;
-  private shadow!: Phaser.GameObjects.Ellipse;
+  private walker!: Walker;
+  private controls!: Controls;
+  private billboard!: Billboard;
   private door!: Phaser.GameObjects.Image;
-  private doorway!: Phaser.GameObjects.Rectangle;
   private prompt!: Phaser.GameObjects.Text;
   private hint!: Phaser.GameObjects.Text;
-  private footSplash?: Phaser.GameObjects.Particles.ParticleEmitter;
+  private counter!: Phaser.GameObjects.Text;
+  private sparkle!: Phaser.GameObjects.Particles.ParticleEmitter;
 
-  private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private keyD?: Phaser.Input.Keyboard.Key;
-  private keyA?: Phaser.Input.Keyboard.Key;
-  private keyEnter?: Phaser.Input.Keyboard.Key;
-  private keySpace?: Phaser.Input.Keyboard.Key;
+  private rickshaw!: Phaser.GameObjects.Sprite;
+  private rickshawMirror!: Phaser.GameObjects.Sprite;
+  private rickshawLights: Phaser.GameObjects.Image[] = [];
+  private rickshawLive = false;
 
-  private signs: SignParts[] = [];
-  private walking = false;
+  private notes: Note[] = [];
+  private found = 0;
+  private toasts = 0;
   private entering = false;
   private hintDismissed = false;
   private idleFor = 0;
   private atDoorFor = 0;
-  private velocity = 0;
   /** Fractional camera position. Only the rounded value reaches the camera. */
   private camX = 0;
   private lookAhead = 0;
-  private lastFootFrame = -1;
+  private layerOffset = 0;
 
-  constructor(opts: StreetSceneOptions) {
+  constructor(opts: IntroSceneOptions) {
     super('street');
     this.opts = opts;
   }
 
   preload(): void {
-    const base = 'assets/intro/';
-    for (const key of ['sky', 'skyline', 'buildings', 'cables', 'street', 'shop', 'door', 'glow']) {
-      this.load.image(key, base + key + '.png');
-    }
-    this.load.spritesheet('player-idle', base + 'player-idle.png', {
-      frameWidth: 32,
-      frameHeight: 44,
-    });
-    this.load.spritesheet('player-walk', base + 'player-walk.png', {
-      frameWidth: 32,
-      frameHeight: 44,
-    });
-    this.load.spritesheet('props', base + 'props.png', { frameWidth: 64, frameHeight: 120 });
-
-    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => {
-      console.warn('[intro] missing asset, using fallback:', file.key);
-    });
+    loadIntroAssets(this);
   }
 
   create(): void {
     this.camW = this.scale.width;
-    this.ensureFallbackTextures();
-    this.rainTexture(); // the footfall splash needs it even when rain is off
+    ensureFallbacks(this);
     this.cameras.main.setBounds(0, 0, WORLD_W, VIEW_H);
     this.cameras.main.setBackgroundColor(introPalette.night);
+    this.registry.set('notesFound', 0);
 
     this.buildParallax();
+    this.billboard = new Billboard(this, {
+      textureColumn: BILLBOARD_COLUMN,
+      roofY: BILLBOARD_ROOF_Y,
+      depth: DEPTH.billboard,
+      reducedMotion: this.opts.reducedMotion,
+    });
     this.buildSigns();
-    this.buildBillboard();
-    this.buildShop();
-    this.buildPlayer();
+    this.buildCafe();
+    this.walker = new Walker(this, {
+      x: PLAYER_START_X,
+      groundY: GROUND_Y,
+      minX: 24,
+      maxX: CAFE_X - 6,
+      depth: DEPTH.player,
+      reflection: { alpha: 0.2, tint: 0x7fa8e0 },
+      splashes: true,
+    });
+    this.buildNotes();
     this.buildProps();
+    this.buildRickshaw();
     if (!this.opts.reducedMotion) {
       this.buildRain();
       this.buildVents();
     }
     this.buildHud();
-    this.bindInput();
-    this.attachPostFX();
+    this.controls = new Controls(this);
+    attachPostFX(this);
+    this.followCamera(1, 0);
 
     this.opts.onReady();
-  }
-
-  /* ------------------------------------------------------------ fallback -- */
-
-  /** Flat colour stand-ins so the scene still runs if an asset fails to load. */
-  private ensureFallbackTextures(): void {
-    const make = (key: string, w: number, h: number, color: number) => {
-      if (this.textures.exists(key)) return;
-      const g = this.make.graphics({ x: 0, y: 0 }, false);
-      g.fillStyle(color, 1).fillRect(0, 0, w, h);
-      g.generateTexture(key, w, h);
-      g.destroy();
-    };
-    make('sky', BASE_VIEW_W, VIEW_H, 0x070912);
-    make('skyline', BASE_VIEW_W, 110, 0x0c1120);
-    make('buildings', BASE_VIEW_W, 170, 0x0a0f1c);
-    make('cables', BASE_VIEW_W, 64, 0x000000);
-    make('street', BASE_VIEW_W, 80, 0x0a0d16);
-    make('shop', 160, 120, 0x141b2c);
-    make('door', 28, 44, 0x1b2235);
-    make('glow', 64, 64, 0xffffff);
-    make('player-idle', 32, 44, 0x243253);
-    make('player-walk', 32, 44, 0x243253);
-    make('props', 64, 120, 0x05060d);
-  }
-
-  /** The bloom / scanline / vignette pass. Silently skipped without WebGL. */
-  private attachPostFX(): void {
-    try {
-      if (this.renderer.type !== Phaser.WEBGL) return;
-      this.cameras.main.setPostPipeline(CityPostFX);
-    } catch (err) {
-      console.warn('[intro] post-processing unavailable:', err);
-    }
   }
 
   /* ------------------------------------------------------------ parallax -- */
@@ -226,11 +217,7 @@ export class StreetScene extends Phaser.Scene {
     // Each layer is a viewport-sized tile sprite scrolled by hand, so no layer
     // needs a world-wide image and the loop is seamless at any world width.
     const layer = (y: number, h: number, key: string, depth: number) =>
-      this.add
-        .tileSprite(0, y, this.camW, h, key)
-        .setOrigin(0, 0)
-        .setScrollFactor(0)
-        .setDepth(depth);
+      this.add.tileSprite(0, y, this.camW, h, key).setOrigin(0, 0).setScrollFactor(0).setDepth(depth);
 
     this.sky = layer(0, VIEW_H, 'sky', DEPTH.sky);
     this.skyline = layer(BUILDING_BASE - 110, 110, 'skyline', DEPTH.skyline);
@@ -239,73 +226,32 @@ export class StreetScene extends Phaser.Scene {
     this.street = layer(STREET_TOP, 80, 'street', DEPTH.street);
   }
 
-  /* -------------------------------------------------------------- lights -- */
-
-  /** A soft tinted disc. Every light in the city is one of these. */
-  private light(
-    x: number,
-    y: number,
-    color: number,
-    alpha: number,
-    scaleX: number,
-    scaleY: number,
-    depth: number,
-  ): Phaser.GameObjects.Image {
-    return this.add
-      .image(x, y, 'glow')
-      .setTint(color)
-      .setAlpha(alpha)
-      .setScale(scaleX, scaleY)
-      .setBlendMode(ADD)
-      .setDepth(depth);
-  }
-
   /* --------------------------------------------------------------- signs -- */
 
   private buildSigns(): void {
-    for (const sign of SIGNS) {
-      this.signs.push(this.neonSign(sign.x, sign.y, sign.label, sign.color, 8));
-    }
+    for (const sign of SIGNS) this.neonSign(sign.x, sign.y, sign.label, sign.color);
   }
 
-  private neonSign(x: number, y: number, label: string, color: string, size: number): SignParts {
-    const num = Phaser.Display.Color.HexStringToColor(color).color;
-    const style = {
-      fontFamily: '"Press Start 2P", monospace',
-      fontSize: size + 'px',
-      color,
-    };
+  private neonSign(x: number, y: number, label: string, color: string): void {
+    const num = colour(color);
+    const text = neonText(this, 0, 0, label, color, 8);
+    // Text width includes its 6px glow padding on each side.
+    const w = text.width;
+    const h = text.height - 4;
 
-    const text = this.add.text(0, 0, label, style).setOrigin(0.5).setResolution(1);
-    const w = text.width + 12;
-    const h = text.height + 8;
-
-    const panel = this.add.rectangle(0, 0, w, h, 0x05070c, 0.8);
+    const panel = this.add.rectangle(0, 0, w, h, 0x05070c, 0.82);
     const edge = this.add.rectangle(0, 0, w, h).setStrokeStyle(1, num, 0.55);
-    const tube = this.add
-      .text(0, 0, label, style)
-      .setOrigin(0.5)
-      .setResolution(1)
-      .setAlpha(0.5)
-      .setScale(1.08)
-      .setBlendMode(ADD);
-    const arm = this.add.rectangle(0, h / 2 + 3, 2, 6, num, 0.4);
+    const bracket = this.add.rectangle(0, h / 2 + 3, 2, 6, num, 0.4);
+    const container = this.add.container(x, y, [panel, edge, bracket, text]).setDepth(DEPTH.signs);
 
-    const container = this.add.container(x, y, [panel, edge, arm, tube, text]).setDepth(DEPTH.signs);
+    // Halo round the sign, a pool of it on the wet street, and a smear between.
+    const halo = addLight(this, x, y, num, 0.28, w / 26, h / 18, DEPTH.signs - 1);
+    const pool = addLight(this, x, GROUND_Y + 6, num, 0.24, w / 22, 0.62, DEPTH.lightPool);
+    const smear = addLight(this, x, GROUND_Y + 32, num, 0.1, w / 46, 1.1, DEPTH.lightPool);
 
-    // Halo around the sign itself, a pool of it on the wet road, and a smear
-    // between the two.
-    const halo = this.light(x, y, num, 0.3, w / 26, h / 18, DEPTH.signs - 1);
-    const pool = this.light(x, GROUND_Y + 14, num, 0.26, w / 22, 0.5, DEPTH.lightPool);
-    const smear = this.light(x, GROUND_Y + 34, num, 0.1, w / 46, 1.1, DEPTH.lightPool);
-
-    const parts: SignParts = {
-      container,
-      lights: [halo, pool, smear],
-      baseAlpha: [0.3, 0.26, 0.1],
-    };
-    if (!this.opts.reducedMotion) this.flicker(parts);
-    return parts;
+    if (!this.opts.reducedMotion) {
+      this.flicker({ container, lights: [halo, pool, smear], baseAlpha: [0.28, 0.24, 0.1] });
+    }
   }
 
   /** Neon never sits still: a slow breathe plus the occasional dropout. */
@@ -337,177 +283,206 @@ export class StreetScene extends Phaser.Scene {
     });
   }
 
-  /** The one sign that is not Amogh's: a billboard for the people reading this. */
-  private buildBillboard(): void {
-    const x = 400;
-    const y = 58;
-    const num = Phaser.Display.Color.HexStringToColor(introPalette.accent).color;
+  /* ---------------------------------------------------------------- cafe -- */
 
-    const text = this.add
-      .text(0, 0, 'WISPR FLOW', {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '12px',
-        color: introPalette.accent,
-      })
-      .setOrigin(0.5)
-      .setResolution(1);
+  private buildCafe(): void {
+    const amber = colour(introPalette.accent);
+    const top = GROUND_Y - CAFE_H;
+    const left = CAFE_X - CAFE_W / 2;
 
-    const w = text.width + 28;
-    const h = text.height + 26;
-
-    const panel = this.add.rectangle(0, 0, w, h, 0x06080f, 0.92);
-    const edge = this.add.rectangle(0, 0, w, h).setStrokeStyle(1, num, 0.7);
-    const sub = this.add
-      .text(0, h / 2 - 9, 'SPEAK. IT WRITES.', {
-        fontFamily: '"Press Start 2P", monospace',
-        fontSize: '5px',
-        color: '#8b93a7',
-      })
-      .setOrigin(0.5)
-      .setResolution(1);
-    const legL = this.add.rectangle(-w / 4, h / 2 + 11, 2, 22, num, 0.22);
-    const legR = this.add.rectangle(w / 4, h / 2 + 11, 2, 22, num, 0.22);
-
-    this.add.container(x, y, [legL, legR, panel, edge, text, sub]).setDepth(DEPTH.signs);
-    this.light(x, y, num, 0.22, w / 30, h / 22, DEPTH.signs - 1);
-  }
-
-  /* ---------------------------------------------------------------- shop -- */
-
-  private buildShop(): void {
-    const shop = this.add.image(SHOP_X, GROUND_Y, 'shop').setOrigin(0.5, 1).setDepth(DEPTH.shop);
-    const amber = Phaser.Display.Color.HexStringToColor(introPalette.accent).color;
-
-    // The shopfront mirrored in the wet pavement.
+    this.add.image(CAFE_X, GROUND_Y, 'cafe-front').setOrigin(0.5, 1).setDepth(DEPTH.cafe);
     this.add
-      .image(SHOP_X, GROUND_Y + 1, 'shop')
+      .image(CAFE_X, GROUND_Y + 1, 'cafe-front')
       .setOrigin(0.5, 0)
       .setFlipY(true)
       .setAlpha(0.16)
       .setTint(0x7fa8e0)
       .setDepth(DEPTH.reflection);
 
-    // Warm interior light behind the door - revealed when the door swings open.
-    this.doorway = this.add
-      .rectangle(SHOP_X, GROUND_Y, 28, 44, amber, 1)
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.shop);
+    // Warm light inside, seen when the door swings open.
+    this.add.rectangle(CAFE_X, GROUND_Y, 28, 44, amber, 1).setOrigin(0.5, 1).setDepth(DEPTH.cafe);
+    this.door = this.add.image(CAFE_X, GROUND_Y, 'door').setOrigin(0.5, 1).setDepth(DEPTH.door);
 
-    this.door = this.add.image(SHOP_X, GROUND_Y, 'door').setOrigin(0.5, 1).setDepth(DEPTH.door);
+    // The sign. The name is configurable, so shrink to fit rather than assume.
+    const name = neonText(this, CAFE_X, top + 28, CAFE_NAME, introPalette.accent, 12).setDepth(DEPTH.cafeSign);
+    for (let size = 11; name.width > 176 && size >= 6; size--) name.setFontSize(size + 'px');
+    signText(this, CAFE_X, top + 41, CAFE_SIGN.services, introPalette.cyan).setDepth(DEPTH.cafeSign);
+    signText(this, left + 43, top + 120, CAFE_SIGN.rate, introPalette.accent).setDepth(DEPTH.cafeSign);
 
-    // The shop sign: BROWSER_NAME in the amber that carries into the browser.
-    const boardY = GROUND_Y - shop.height + 34;
-    const signStyle = {
-      fontFamily: '"Press Start 2P", monospace',
-      fontSize: '8px',
-      color: introPalette.accent,
-    };
-    const sign = this.add
-      .text(SHOP_X, boardY, BROWSER_NAME.toUpperCase(), signStyle)
-      .setOrigin(0.5)
-      .setResolution(1)
-      .setDepth(DEPTH.shopSign);
-
-    // The name is configurable, so shrink to fit rather than assume it fits.
-    let size = 8;
-    while (sign.width > 130 && size > 4) {
-      size -= 1;
-      sign.setFontSize(size + 'px');
-    }
-
-    const tube = this.add
-      .text(SHOP_X, boardY, BROWSER_NAME.toUpperCase(), { ...signStyle, fontSize: size + 'px' })
-      .setOrigin(0.5)
-      .setResolution(1)
-      .setAlpha(0.5)
-      .setScale(1.06)
-      .setBlendMode(ADD)
-      .setDepth(DEPTH.shopSign);
-
+    const open = neonText(this, left + 150, top + 103, CAFE_SIGN.open, introPalette.magenta, 8, SIGN_FONT).setDepth(
+      DEPTH.cafeSign,
+    );
     if (!this.opts.reducedMotion) {
-      this.tweens.add({
-        targets: tube,
-        alpha: { from: 0.3, to: 0.7 },
-        duration: 1800,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
+      this.time.addEvent({
+        delay: 300,
+        loop: true,
+        callback: () => open.setAlpha(Math.random() < 0.12 ? 0.25 : 1),
       });
     }
 
-    // Light from the sign, the windows, and the amber pool it throws onto the
-    // pavement - the last thing seen before the cut.
-    this.light(SHOP_X, boardY, amber, 0.3, 4.6, 0.7, DEPTH.shopSign - 1);
-    this.light(SHOP_X - 48, GROUND_Y - 42, amber, 0.2, 1.8, 1.2, DEPTH.shop - 1);
-    this.light(SHOP_X + 48, GROUND_Y - 42, amber, 0.2, 1.8, 1.2, DEPTH.shop - 1);
-    this.light(SHOP_X, GROUND_Y + 16, amber, 0.34, 5.5, 0.72, DEPTH.lightPool);
-    this.light(SHOP_X, GROUND_Y + 2, amber, 0.4, 1.2, 0.5, DEPTH.lightPool);
+    // The screens behind the glass glow and flicker like they are in use.
+    WINDOW_X.forEach((wx, w) => {
+      WINDOW_SCREENS.forEach((sx, n) => {
+        const glow = addLight(
+          this,
+          left + wx + sx + 5,
+          top + WINDOW_Y + 21,
+          colour(NEON[(n + (w ? 2 : 0)) % NEON.length]),
+          0.34,
+          0.34,
+          0.26,
+          DEPTH.cafeSign,
+        );
+        if (this.opts.reducedMotion) return;
+        this.tweens.add({
+          targets: glow,
+          alpha: { from: 0.2, to: 0.42 },
+          duration: 300 + Math.random() * 700,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Stepped',
+          easeParams: [3],
+        });
+      });
+    });
+
+    // Light from the sign and the windows, pooling on the pavement - the last
+    // thing seen before the cut.
+    addLight(this, CAFE_X, top + 33, amber, 0.3, 5.4, 0.8, DEPTH.cafeSign - 1);
+    addLight(this, CAFE_X, GROUND_Y + 12, amber, 0.32, 6.2, 0.8, DEPTH.lightPool);
+    addLight(this, CAFE_X, GROUND_Y + 2, amber, 0.4, 1.2, 0.5, DEPTH.lightPool);
   }
 
-  /* -------------------------------------------------------------- player -- */
+  /* --------------------------------------------------------------- notes -- */
 
-  private buildPlayer(): void {
-    const sheeted = this.textures.get('player-walk').frameTotal > 1;
-    if (sheeted && !this.anims.exists('walk')) {
+  private buildNotes(): void {
+    const amber = colour(introPalette.accent);
+    if (!this.anims.exists('note-pulse') && this.textures.get('note').frameTotal > 4) {
       this.anims.create({
-        key: 'walk',
-        frames: this.anims.generateFrameNumbers('player-walk', {
-          start: 0,
-          end: WALK_FRAME_COUNT - 1,
-        }),
-        frameRate: WALK_FPS,
-        repeat: -1,
-      });
-    }
-    if (this.textures.get('player-idle').frameTotal > 1 && !this.anims.exists('idle')) {
-      this.anims.create({
-        key: 'idle',
-        frames: this.anims.generateFrameNumbers('player-idle', { start: 0, end: 3 }),
-        frameRate: 4,
+        key: 'note-pulse',
+        frames: this.anims.generateFrameNumbers('note', { start: 0, end: 3 }),
+        frameRate: 7,
         repeat: -1,
       });
     }
 
-    // Mirrored in the wet pavement, dimmed and cooled.
-    this.playerReflection = this.add
-      .sprite(PLAYER_START_X, GROUND_Y + 1, 'player-idle')
-      .setOrigin(0.5, 0)
-      .setFlipY(true)
-      .setAlpha(0.2)
-      .setTint(0x7fa8e0)
-      .setDepth(DEPTH.reflection);
+    for (const note of VOICE_NOTES) {
+      const y = GROUND_Y - (note.high ? 62 : 24);
+      const sprite = this.add.sprite(note.x, y, 'note').setDepth(DEPTH.notes);
+      if (this.anims.exists('note-pulse')) sprite.play('note-pulse');
+      const light = addLight(this, note.x, y, amber, 0.3, 0.55, 0.55, DEPTH.notes - 0.1);
+      if (!this.opts.reducedMotion) {
+        this.tweens.add({
+          targets: [sprite, light],
+          y: y - 3,
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+          delay: Math.random() * 400,
+        });
+      }
+      this.notes.push({ sprite, light, text: note.text });
+    }
 
-    this.shadow = this.add
-      .ellipse(PLAYER_START_X, GROUND_Y - 1, 20, 5, 0x000000, 0.4)
-      .setDepth(DEPTH.player - 1);
-
-    this.player = this.add
-      .sprite(PLAYER_START_X, GROUND_Y, 'player-idle')
-      .setOrigin(0.5, 1)
-      .setDepth(DEPTH.player);
-    if (this.anims.exists('idle')) this.player.play('idle');
-
-    // Water kicked up on each footfall.
-    this.footSplash = this.add
-      .particles(0, 0, 'rain-drop', {
-        lifespan: 320,
-        speedY: { min: -60, max: -25 },
-        speedX: { min: -30, max: 30 },
-        gravityY: 340,
-        scaleX: 1,
-        scaleY: { start: 0.4, end: 0.1 },
-        alpha: { start: 0.4, end: 0 },
+    this.sparkle = this.add
+      .particles(0, 0, 'glow', {
+        lifespan: 520,
+        speed: { min: 30, max: 90 },
+        scale: { start: 0.14, end: 0 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [amber, colour(introPalette.cyan)],
         blendMode: ADD,
         emitting: false,
       })
-      .setDepth(DEPTH.player - 1);
+      .setDepth(DEPTH.hud - 1);
+  }
+
+  private collectNotes(): void {
+    const body = this.walker.bodySpan();
+    for (const note of this.notes) {
+      const { sprite } = note;
+      if (!sprite.active) continue;
+      if (Math.abs(sprite.x - this.walker.x) > 13) continue;
+      if (sprite.y + 6 < body.top || sprite.y - 6 > body.bottom) continue;
+      this.take(note);
+    }
+  }
+
+  private take(note: Note): void {
+    const { sprite, light } = note;
+    sprite.setActive(false);
+    playPickup();
+    this.sparkle.explode(12, sprite.x, sprite.y);
+    this.tweens.killTweensOf([sprite, light]);
+    this.tweens.add({
+      targets: [sprite, light],
+      y: sprite.y - 12,
+      alpha: 0,
+      scale: 1.6,
+      duration: 320,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        sprite.destroy();
+        light.destroy();
+      },
+    });
+
+    this.found += 1;
+    this.registry.set('notesFound', this.found);
+    const total = this.notes.length;
+    this.counter.setText(`${this.found}/${total}`);
+    this.toast(note.text);
+    if (this.found === total) {
+      this.counter.setColor(introPalette.lime);
+      this.time.delayedCall(1400, () => this.toast(`All ${total} voice notes found`));
+    }
+  }
+
+  /**
+   * A fact arrives as a toast along the bottom, over the empty road - never
+   * over the player or the signs - stacking upward while others still show.
+   */
+  private toast(text: string): void {
+    this.tweens.killTweensOf(this.hint);
+    this.hint.setAlpha(0);
+
+    const icon = this.add.image(0, 0, 'note', 0);
+    // Wraps on a narrow (portrait phone) viewport instead of running off it.
+    const label = uiText(this, 0, 0, text, { wrap: this.camW - 56 }).setOrigin(0, 0.5);
+    const inner = icon.width + 4 + label.width;
+    icon.x = -inner / 2 + icon.width / 2;
+    label.x = -inner / 2 + icon.width + 4;
+    const plate = this.add
+      .rectangle(0, 0, inner + 14, Math.max(18, label.height + 6), 0x05070c, 0.86)
+      .setStrokeStyle(1, colour(introPalette.accent), 0.45);
+
+    const y = VIEW_H - 18 - this.toasts * (label.height + 10);
+    const toast = this.add
+      .container(this.camW / 2, y + 10, [plate, icon, label])
+      .setScrollFactor(0)
+      .setDepth(DEPTH.hud)
+      .setAlpha(0);
+    this.toasts += 1;
+
+    this.tweens.add({ targets: toast, y, alpha: 1, duration: 240, ease: 'Back.easeOut' });
+    this.tweens.add({
+      targets: toast,
+      alpha: 0,
+      y: y + 6,
+      delay: 2600,
+      duration: 400,
+      onComplete: () => {
+        this.toasts -= 1;
+        toast.destroy();
+      },
+    });
   }
 
   /* --------------------------------------------------------------- props -- */
 
   private buildProps(): void {
-    const amber = Phaser.Display.Color.HexStringToColor(introPalette.accent).color;
-
+    const amber = colour(introPalette.accent);
     for (const prop of PROPS) {
       this.add
         .image(prop.x, VIEW_H + 6, 'props', prop.frame)
@@ -517,28 +492,88 @@ export class StreetScene extends Phaser.Scene {
 
       // Frame 0 is the street lamp: give it something to cast.
       if (prop.frame === 0) {
-        this.light(prop.x + 20, VIEW_H - 97, amber, 0.4, 1.3, 1.3, DEPTH.props - 1).setScrollFactor(
+        addLight(this, prop.x + 20, VIEW_H - 97, amber, 0.4, 1.3, 1.3, DEPTH.props - 1).setScrollFactor(
           FOREGROUND_PARALLAX,
         );
-        this.light(prop.x + 20, VIEW_H - 40, amber, 0.14, 2.2, 2.4, DEPTH.props - 1).setScrollFactor(
+        addLight(this, prop.x + 20, VIEW_H - 40, amber, 0.14, 2.2, 2.4, DEPTH.props - 1).setScrollFactor(
           FOREGROUND_PARALLAX,
         );
       }
     }
   }
 
-  /* ---------------------------------------------------------------- rain -- */
+  /* ------------------------------------------------------------ rickshaw -- */
 
-  private rainTexture(): void {
-    if (this.textures.exists('rain-drop')) return;
-    const g = this.make.graphics({ x: 0, y: 0 }, false);
-    g.fillStyle(0xc9d8ff, 1).fillRect(0, 0, 1, 6);
-    g.generateTexture('rain-drop', 1, 6);
-    g.destroy();
+  /** A Bengaluru auto passes on the near lane every so often, horn and all. */
+  private buildRickshaw(): void {
+    if (!this.anims.exists('rickshaw-roll') && this.textures.get('rickshaw').frameTotal > 2) {
+      this.anims.create({
+        key: 'rickshaw-roll',
+        frames: this.anims.generateFrameNumbers('rickshaw', { start: 0, end: 1 }),
+        frameRate: 14,
+        repeat: -1,
+      });
+    }
+
+    this.rickshaw = this.add
+      .sprite(-200, ROAD_Y, 'rickshaw')
+      .setOrigin(0.5, 1)
+      .setFlipX(true)
+      .setDepth(DEPTH.traffic)
+      .setVisible(false);
+    this.rickshawMirror = this.add
+      .sprite(-200, ROAD_Y + 1, 'rickshaw')
+      .setOrigin(0.5, 0)
+      .setFlip(true, true)
+      .setAlpha(0.18)
+      .setTint(0x7fa8e0)
+      .setDepth(DEPTH.reflection)
+      .setVisible(false);
+
+    const warm = 0xffe9a8;
+    this.rickshawLights = [
+      addLight(this, 0, 0, warm, 0.55, 0.9, 0.5, DEPTH.traffic + 0.1), // headlamp
+      addLight(this, 0, 0, warm, 0.22, 2.6, 0.35, DEPTH.lightPool), // beam on the road
+      addLight(this, 0, 0, colour(introPalette.magenta), 0.45, 0.35, 0.35, DEPTH.traffic + 0.1), // tail
+    ];
+    this.rickshawLights.forEach((l) => l.setVisible(false));
+
+    this.time.delayedCall(1800, () => this.spawnRickshaw());
   }
 
+  private spawnRickshaw(): void {
+    if (this.entering) return;
+    const x = this.cameras.main.scrollX + this.camW + 70;
+    for (const s of [this.rickshaw, this.rickshawMirror]) {
+      s.setPosition(x, s.y).setVisible(true);
+      if (this.anims.exists('rickshaw-roll')) s.play('rickshaw-roll');
+    }
+    this.rickshawLights.forEach((l) => l.setVisible(true));
+    this.rickshawLive = true;
+    playHorn();
+  }
+
+  private updateRickshaw(dt: number): void {
+    if (!this.rickshawLive) return;
+    const x = this.rickshaw.x - 170 * dt;
+    this.rickshaw.x = x;
+    this.rickshawMirror.x = x;
+    const [head, beam, tail] = this.rickshawLights;
+    head.setPosition(x - 31, ROAD_Y - 15);
+    beam.setPosition(x - 76, ROAD_Y - 3);
+    tail.setPosition(x + 30, ROAD_Y - 13);
+
+    if (x < this.cameras.main.scrollX - 90) {
+      this.rickshawLive = false;
+      for (const s of [this.rickshaw, this.rickshawMirror]) s.setVisible(false).stop();
+      this.rickshawLights.forEach((l) => l.setVisible(false));
+      this.time.delayedCall(Phaser.Math.Between(8000, 12000), () => this.spawnRickshaw());
+    }
+  }
+
+  /* ---------------------------------------------------------------- rain -- */
+
   private buildRain(): void {
-    this.rainTexture();
     const w = this.camW;
 
     // Far rain: slower, dimmer, behind the player.
@@ -615,274 +650,146 @@ export class StreetScene extends Phaser.Scene {
   /* ----------------------------------------------------------------- hud -- */
 
   private buildHud(): void {
-    const touch = this.sys.game.device.input.touch;
+    const touch = isTouch(this);
 
-    this.prompt = this.add
-      .text(SHOP_X, GROUND_Y + 20, touch ? 'Tap here to enter' : 'Press  ^  /  Enter  to enter', {
-        fontFamily: '"JetBrains Mono", monospace',
-        fontSize: '9px',
-        color: '#e9ebf2',
-        backgroundColor: 'rgba(5,7,12,0.78)',
-        padding: { x: 6, y: 4 },
-      })
-      .setOrigin(0.5)
-      .setResolution(2)
+    this.prompt = uiText(this, CAFE_X, GROUND_Y + 20, touch ? PROMPTS.enter.touch : PROMPTS.enter.keys, {
+      backing: true,
+    })
       .setDepth(DEPTH.hud)
       .setAlpha(0);
-
     this.prompt.setInteractive({ useHandCursor: true });
-    this.prompt.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      p.event.stopPropagation();
-      this.enterDoor();
-    });
+    this.prompt.on('pointerdown', () => this.enterCafe());
 
-    this.hint = this.add
-      .text(this.camW / 2, VIEW_H - 16, touch ? 'Tap and hold to walk' : 'Hold  >  or  D  to walk', {
-        fontFamily: '"JetBrains Mono", monospace',
-        fontSize: '9px',
-        color: '#8b93a7',
-      })
-      .setOrigin(0.5)
+    this.hint = uiText(this, this.camW / 2, VIEW_H - 16, touch ? PROMPTS.walk.touch : PROMPTS.walk.keys, {
+      color: '#8b93a7',
+    })
+      .setScrollFactor(0)
+      .setDepth(DEPTH.hud);
+
+    // Voice-note tally, top left (the frame's own controls sit top right).
+    this.add.image(16, 14, 'note', 0).setScrollFactor(0).setDepth(DEPTH.hud);
+    this.counter = this.add
+      .text(28, 14, `0/${this.notes.length}`, { fontFamily: PIXEL_FONT, fontSize: '8px', color: '#e9ebf2' })
+      .setOrigin(0, 0.5)
       .setResolution(2)
       .setScrollFactor(0)
       .setDepth(DEPTH.hud);
   }
 
-  /* --------------------------------------------------------------- input -- */
-
-  private bindInput(): void {
-    const kb = this.input.keyboard;
-    if (kb) {
-      this.cursors = kb.createCursorKeys();
-      this.keyD = kb.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-      this.keyA = kb.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-      this.keyEnter = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-      this.keySpace = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-
-      // Arrow keys and space would otherwise scroll the page behind the canvas.
-      kb.addCapture([
-        Phaser.Input.Keyboard.KeyCodes.LEFT,
-        Phaser.Input.Keyboard.KeyCodes.RIGHT,
-        Phaser.Input.Keyboard.KeyCodes.UP,
-        Phaser.Input.Keyboard.KeyCodes.SPACE,
-      ]);
-    }
-
-    this.input.on('pointerdown', () => {
-      this.markInput();
-      this.walking = true;
-    });
-    this.input.on('pointerup', () => {
-      this.walking = false;
-    });
-    this.input.on('gameout', () => {
-      this.walking = false;
-    });
-  }
-
   private markInput(): void {
     this.idleFor = 0;
-    if (!this.hintDismissed) {
-      this.hintDismissed = true;
-      this.tweens.add({ targets: this.hint, alpha: 0, duration: 450, ease: 'Sine.easeIn' });
-    }
+    if (this.hintDismissed) return;
+    this.hintDismissed = true;
+    this.tweens.add({ targets: this.hint, alpha: 0, duration: 450, delay: 1200, ease: 'Sine.easeIn' });
   }
 
-  /* --------------------------------------------------------------- update - */
+  /* -------------------------------------------------------------- update -- */
 
   update(_time: number, delta: number): void {
-    if (this.entering) return;
-
     const dt = Math.min(0.05, delta / 1000); // a tab-out must not teleport anyone
-    const pressedRight =
-      this.walking || this.cursors?.right?.isDown === true || this.keyD?.isDown === true;
-    const pressedLeft = this.cursors?.left?.isDown === true || this.keyA?.isDown === true;
-    const pressedEnter =
-      this.cursors?.up?.isDown === true ||
-      this.keyEnter?.isDown === true ||
-      this.keySpace?.isDown === true;
+    this.updateRickshaw(dt);
 
-    if (pressedRight || pressedLeft || pressedEnter) this.markInput();
-
-    this.idleFor += delta;
-    // Nobody should be able to get stuck on the first screen. This also covers
-    // the visitor who never touches anything: idleFor just keeps climbing.
-    const autoWalk = this.idleFor > IDLE_BEFORE_AUTOWALK;
-
-    let dir = 0;
-    if (pressedRight) dir = 1;
-    else if (pressedLeft) dir = -1;
-    else if (autoWalk) dir = 1;
-
-    this.movePlayer(dir, dt);
-    this.animatePlayer();
-    this.syncPlayerDressing();
-
-    const inDoorZone = Math.abs(this.player.x - SHOP_X) < DOOR_ZONE;
-    this.prompt.setAlpha(
-      Phaser.Math.Linear(this.prompt.alpha, inDoorZone ? 1 : 0, Math.min(1, dt * 8)),
-    );
-
-    if (inDoorZone && pressedEnter) {
-      this.enterDoor();
+    if (this.entering) {
+      this.billboard.update(dt, this.layerOffset);
       return;
     }
 
+    const input = this.controls.read();
+    if (input.active) this.markInput();
+    this.idleFor += delta;
+
+    const atDoor = Math.abs(this.walker.x - CAFE_X) < DOOR_ZONE && !this.walker.airborne;
+    if (atDoor && (input.up || input.enter)) {
+      this.enterCafe();
+      return;
+    }
+    if (input.up) this.walker.jump();
+
+    // Nobody should get stuck on the first screen, including the visitor who
+    // never touches anything: idleFor just keeps climbing.
+    const dir = input.dir !== 0 ? input.dir : this.idleFor > IDLE_BEFORE_AUTOWALK ? 1 : 0;
+    this.walker.update(dir, dt);
+    this.collectNotes();
+    this.lightPlayer();
+
+    this.prompt.setAlpha(Phaser.Math.Linear(this.prompt.alpha, atDoor ? 1 : 0, Math.min(1, dt * 8)));
+
     // A passive viewer who reaches the door should still see the whole flow.
-    if (inDoorZone && !pressedRight && !pressedLeft) {
-      this.atDoorFor += delta;
-      if (this.atDoorFor > IDLE_AT_DOOR_BEFORE_ENTER) {
-        this.enterDoor();
-        return;
-      }
-    } else {
-      this.atDoorFor = 0;
+    this.atDoorFor = atDoor && input.dir === 0 ? this.atDoorFor + delta : 0;
+    if (this.atDoorFor > IDLE_AT_DOOR_BEFORE_ENTER) {
+      this.enterCafe();
+      return;
     }
 
     this.followCamera(dt, dir);
+    this.billboard.update(dt, this.layerOffset);
   }
 
-  /** Weighted movement - nothing in this scene snaps from nought to full. */
-  private movePlayer(dir: number, dt: number): void {
-    if (dir !== 0) {
-      this.velocity = Phaser.Math.Clamp(
-        this.velocity + dir * PLAYER_ACCEL * dt,
-        -PLAYER_SPEED,
-        PLAYER_SPEED,
-      );
-    } else {
-      const drop = PLAYER_FRICTION * dt;
-      this.velocity =
-        Math.abs(this.velocity) <= drop ? 0 : this.velocity - Math.sign(this.velocity) * drop;
-    }
-
-    if (this.velocity === 0) return;
-
-    const minX = 24;
-    const maxX = SHOP_X - 6;
-    const next = this.player.x + this.velocity * dt;
-    this.player.x = Phaser.Math.Clamp(next, minX, maxX);
-    // Walking into either end should stop, not grind at full speed.
-    if (this.player.x !== next) this.velocity = 0;
+  /** Walking under a sign washes the player in its colour. */
+  private lightPlayer(): void {
+    let strength = 0;
+    let tint = 0xffffff;
+    const consider = (x: number, color: number, reach: number, power: number) => {
+      const k = Math.max(0, 1 - Math.abs(this.walker.x - x) / reach) * power;
+      if (k > strength) {
+        strength = k;
+        tint = color;
+      }
+    };
+    for (const sign of SIGNS) consider(sign.x, colour(sign.color), 110, 0.5);
+    consider(CAFE_X, colour(introPalette.accent), 160, 0.6);
+    this.walker.sprite.setTint(mixColour(0xffffff, mixColour(tint, 0xffffff, 0.4), strength));
   }
 
   /**
-   * Playback rate tracks ground speed, so one loop of the cycle always covers
-   * exactly STRIDE_PER_CYCLE pixels however fast the player is going. This is
-   * the whole fix for skating feet.
-   */
-  private animatePlayer(): void {
-    const speed = Math.abs(this.velocity);
-    const anims = this.player.anims;
-
-    if (speed > MOVING_THRESHOLD) {
-      if (anims.currentAnim?.key !== 'walk' && this.anims.exists('walk')) this.player.play('walk');
-      anims.timeScale = speed / PLAYER_SPEED;
-      this.player.setFlipX(this.velocity < 0);
-      this.splashOnFootfall();
-      return;
-    }
-
-    if (anims.currentAnim?.key !== 'idle' && this.anims.exists('idle')) {
-      this.player.play('idle');
-      this.lastFootFrame = -1;
-    }
-    anims.timeScale = 1;
-  }
-
-  /** Shadow and mirror image track the player every frame. */
-  private syncPlayerDressing(): void {
-    this.shadow.x = this.player.x;
-
-    const ref = this.playerReflection;
-    ref.setTexture(this.player.texture.key, this.player.frame.name);
-    ref.setFlipY(true);
-    ref.setFlipX(this.player.flipX);
-    ref.x = this.player.x;
-  }
-
-  /** Kick up water on the two contact frames of the walk cycle. */
-  private splashOnFootfall(): void {
-    const frame = Number(this.player.frame.name);
-    if (Number.isNaN(frame)) return;
-    if ((frame === 0 || frame === 4) && frame !== this.lastFootFrame) {
-      this.footSplash?.explode(3, this.player.x, GROUND_Y - 1);
-    }
-    this.lastFootFrame = frame;
-  }
-
-  /**
-   * The camera tracks a fractional position but only ever hands the camera a
-   * whole number. Phaser's roundPixels snaps sprites to whole pixels, so a
-   * fractional scroll makes sprites and backgrounds round inconsistently -
-   * which is exactly what reads as jitter.
+   * The camera tracks a fractional position but only ever hands the camera
+   * whole numbers. roundPixels snaps sprites to whole pixels, so a fractional
+   * scroll makes sprites and backgrounds round inconsistently - which is
+   * exactly what reads as jitter.
    */
   private followCamera(dt: number, dir: number): void {
-    const cam = this.cameras.main;
-    // Lead the camera in the direction of travel so the player is not centred
-    // on their own nose while walking.
+    // Lead the direction of travel so the player is not centred on their nose.
     this.lookAhead = Phaser.Math.Linear(this.lookAhead, dir * 42, Math.min(1, dt * 1.6));
     const target = Phaser.Math.Clamp(
-      this.player.x - this.camW / 3 + this.lookAhead,
+      this.walker.x - this.camW / 3 + this.lookAhead,
       0,
       Math.max(0, WORLD_W - this.camW),
     );
-
     this.camX = Phaser.Math.Linear(this.camX, target, Math.min(1, dt * 6));
-    cam.scrollX = Math.round(this.camX);
+    const scroll = Math.round(this.camX);
+    this.cameras.main.scrollX = scroll;
 
-    this.sky.tilePositionX = Math.round(this.camX * 0.05);
-    this.skyline.tilePositionX = Math.round(this.camX * 0.25);
-    this.buildings.tilePositionX = Math.round(this.camX * 0.55);
-    this.cables.tilePositionX = Math.round(this.camX * 1.1);
-    this.street.tilePositionX = Math.round(this.camX);
+    this.layerOffset = Math.round(scroll * BUILDINGS_PARALLAX);
+    this.sky.tilePositionX = Math.round(scroll * 0.05);
+    this.skyline.tilePositionX = Math.round(scroll * 0.25);
+    this.buildings.tilePositionX = this.layerOffset;
+    this.cables.tilePositionX = Math.round(scroll * 1.1);
+    this.street.tilePositionX = scroll;
   }
 
-  /* ------------------------------------------------------------- door ----- */
+  /* --------------------------------------------------------------- enter -- */
 
-  private enterDoor(): void {
+  private enterCafe(): void {
     if (this.entering) return;
     this.entering = true;
-    this.walking = false;
-    this.velocity = 0;
-
+    this.walker.freeze();
     playWhoosh();
 
-    this.player.stop();
     this.tweens.add({ targets: [this.prompt, this.hint], alpha: 0, duration: 200 });
-
-    // The door swings inward and the player steps through.
+    this.tweens.add({ targets: this.door, scaleX: 0.12, x: CAFE_X - 11, duration: 260, ease: 'Back.easeIn' });
     this.tweens.add({
-      targets: this.door,
-      scaleX: 0.12,
-      x: SHOP_X - 11,
-      duration: 260,
-      ease: 'Back.easeIn',
-    });
-    this.tweens.add({
-      targets: [this.player, this.playerReflection, this.shadow],
-      x: SHOP_X,
+      targets: [this.walker.sprite, this.walker.shadow, this.walker.reflection],
+      x: CAFE_X,
       alpha: 0,
       duration: 420,
-      delay: 160,
+      delay: 140,
       ease: 'Sine.easeIn',
     });
 
     const cam = this.cameras.main;
-    cam.pan(SHOP_X, GROUND_Y - 24, 600, 'Sine.easeInOut');
-    cam.zoomTo(4.5, 600, 'Sine.easeInOut');
-
-    // The interior light grows to fill the frame, handing off to the flash.
-    // Lifted above the rain so nothing streaks across it.
-    this.doorway.setDepth(DEPTH.flood);
-    this.tweens.add({
-      targets: this.doorway,
-      scaleX: 9,
-      scaleY: 4.5,
-      duration: 600,
-      ease: 'Quad.easeIn',
-    });
-
-    this.time.delayedCall(600, () => this.opts.onEnter());
+    cam.pan(CAFE_X, GROUND_Y - 30, 800, 'Sine.easeInOut');
+    cam.zoomTo(1.5, 800, 'Sine.easeIn');
+    this.time.delayedCall(350, () => cam.fadeOut(450, 0, 0, 0));
+    cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => this.scene.start('cafe'));
   }
 }
