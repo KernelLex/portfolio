@@ -13,7 +13,7 @@ The challenge brief: *"Build the most creative portfolio of yourself with voice.
 
 **Concept: "Amogh's Internet."** The site is a custom browser called **Amogh Navigator** (name stored in `src/config.ts` as `BROWSER_NAME`, which may change). Each browser tab is its own page and tells one part of Amogh's story.
 
-**Entry experience:** a short playable pixel side-scroller through a **loud neon cyberpunk night city**. The player walks into a **cyber cafe**, sits at the one free PC and powers it on. The camera dives into the monitor, the PC boots into a **calm, space-themed desktop** (`OS_NAME` in `src/config.ts`), and opening the browser icon launches **Amogh Navigator**. The contrast is intentional: *out of the noise, into my space.*
+**Entry experience:** a short playable pixel side-scroller through a **loud neon cyberpunk night city**. The player walks into a **cyber cafe**, sits at the one free PC and **jacks in**: a red alarm, then a cinematic close-up of a cable shooting from the wrist into the PC. The PC boots into a **calm, space-themed desktop** (`OS_NAME` in `src/config.ts`), and opening the browser icon launches **Amogh Navigator**. The contrast is intentional: *out of the noise, into my space.*
 
 ### Hard deadlines
 - Challenge: 28 Oct – **4 Nov 2026** (submissions close)

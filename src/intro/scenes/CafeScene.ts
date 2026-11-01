@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { introPalette } from '../../config';
 import { CAFE_INTERIOR, PROMPTS, SEAT_NUMBER, VOICE_NOTES } from '../../content/intro';
-import { playClick, playPowerOn } from '../../lib/sound';
+import { playClick } from '../../lib/sound';
 import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { Controls } from './controls';
+import type { LinkSceneData } from './LinkScene';
 import type { IntroSceneOptions } from './StreetScene';
 import { Walker } from './Walker';
 import { addLight, attachPostFX, colour, isTouch, neonText, signText, uiText } from './shared';
@@ -25,9 +26,6 @@ const SCREEN_CY = SCREEN.y + SCREEN.h / 2;
 /** The TV's picture, on frame 5 of cafe-decor.png placed at (238, 68). */
 const TV = { x: 218, y: 56, w: 40, h: 24 };
 
-const IDLE_BEFORE_AUTOWALK = 2500;
-const IDLE_BEFORE_SIT = 2200;
-const IDLE_BEFORE_POWER = 2500;
 const SCREEN_FPS = 12;
 
 type Game = 'race' | 'shooter' | 'code' | 'platformer' | 'strategy' | 'video';
@@ -79,7 +77,7 @@ const DEPTH = {
   hud: 20,
 } as const;
 
-type Phase = 'walking' | 'sitting' | 'seated' | 'booting';
+type Phase = 'walking' | 'sitting' | 'seated' | 'linking';
 type Rect = { x: number; y: number; w: number; h: number };
 
 export class CafeScene extends Phaser.Scene {
@@ -96,10 +94,9 @@ export class CafeScene extends Phaser.Scene {
   private hint!: Phaser.GameObjects.Text;
 
   private phase: Phase = 'walking';
-  private seatScreen: 'off' | 'boot' | 'cursor' = 'off';
+  private seatScreen: 'off' | 'boot' = 'off';
   private clock = 0;
   private screenTick = 0;
-  private idleFor = 0;
   private hintDismissed = false;
   private camX = 0;
 
@@ -135,8 +132,6 @@ export class CafeScene extends Phaser.Scene {
       reflection: { alpha: 0.12, tint: 0x9fb4e0 },
       splashes: false,
     });
-    // Carry the momentum in from the street.
-    this.walker.velocity = 70;
 
     this.buildMarker();
     this.buildHud();
@@ -161,8 +156,8 @@ export class CafeScene extends Phaser.Scene {
       this.add.image(x, y, 'cafe-decor', frame).setDepth(DEPTH.decor);
 
     piece(7, 110, 82).setScale(1.3, 1);
-    signText(this, 110, 74, CAFE_INTERIOR.rates[0], introPalette.accent).setDepth(DEPTH.decor);
-    signText(this, 110, 87, CAFE_INTERIOR.rates[1], '#b3bdd6').setDepth(DEPTH.decor);
+    signText(this, 110, 74, CAFE_INTERIOR.scores[0], introPalette.accent).setDepth(DEPTH.decor);
+    signText(this, 110, 87, CAFE_INTERIOR.scores[1], '#b3bdd6').setDepth(DEPTH.decor);
 
     piece(6, 172, 100);
     piece(5, 238, 68);
@@ -332,14 +327,14 @@ export class CafeScene extends Phaser.Scene {
     }
     this.glows.forEach((g, i) => g.setAlpha(0.24 + Math.sin(this.clock * 5 + i * 1.7) * 0.05));
 
-    if (this.phase === 'booting' || this.phase === 'sitting') return;
+    if (this.phase !== 'walking' && this.phase !== 'seated') return;
 
+    // Nothing in the cafe moves unless the player moves it.
     const input = this.controls.read();
     if (input.active) this.markInput();
-    this.idleFor += delta;
 
     if (this.phase === 'seated') {
-      if (input.up || input.enter || this.idleFor > IDLE_BEFORE_POWER) this.powerOn();
+      if (input.up || input.enter) this.jackIn();
       return;
     }
 
@@ -350,23 +345,12 @@ export class CafeScene extends Phaser.Scene {
     }
     if (input.up) this.walker.jump();
 
-    // Left alone, head for the free seat - and stop there.
-    let dir: number = input.dir;
-    if (dir === 0 && this.idleFor > IDLE_BEFORE_AUTOWALK) {
-      const dx = SEAT_X - this.walker.x;
-      dir = Math.abs(dx) > 3 ? Math.sign(dx) : 0;
-    }
-    this.walker.update(dir, dt);
+    this.walker.update(input.dir, dt);
     this.prompt.setAlpha(Phaser.Math.Linear(this.prompt.alpha, atSeat ? 1 : 0, Math.min(1, dt * 8)));
-    if (atSeat && input.dir === 0 && this.idleFor > IDLE_BEFORE_SIT) {
-      this.sit();
-      return;
-    }
     this.followCamera(dt);
   }
 
   private markInput(): void {
-    this.idleFor = 0;
     if (this.hintDismissed) return;
     this.hintDismissed = true;
     this.tweens.add({ targets: this.hint, alpha: 0, duration: 450, delay: 1500 });
@@ -375,7 +359,7 @@ export class CafeScene extends Phaser.Scene {
   /** Tapping the prompt does whatever the prompt says. */
   private act(): void {
     if (this.phase === 'walking' && Math.abs(this.walker.x - SEAT_X) < SEAT_ZONE) this.sit();
-    else if (this.phase === 'seated') this.powerOn();
+    else if (this.phase === 'seated') this.jackIn();
   }
 
   private followCamera(dt: number): void {
@@ -410,80 +394,37 @@ export class CafeScene extends Phaser.Scene {
 
         const touch = isTouch(this);
         this.prompt
-          .setText(touch ? PROMPTS.power.touch : PROMPTS.power.keys)
+          .setText(touch ? PROMPTS.link.touch : PROMPTS.link.keys)
           .setPosition(SEAT_X, SCREEN.y - 14);
         this.tweens.add({ targets: this.prompt, alpha: 1, duration: 220 });
-        this.idleFor = 0;
         this.phase = 'seated';
       },
     });
   }
 
-  /** Power LED, a CRT line blooming into a black screen, then into it. */
-  private powerOn(): void {
-    this.phase = 'booting';
-    playPowerOn();
+  /**
+   * The PC wakes under the alarm - power LED, a lit screen - and the jack-in
+   * cutscene plays over it. That ends on black, which is where the React boot
+   * sequence begins.
+   */
+  private jackIn(): void {
+    this.phase = 'linking';
     this.tweens.add({ targets: this.prompt, alpha: 0, duration: 150 });
 
     this.add.rectangle(SEAT_X + 20, 185, 2, 1, C.lime).setOrigin(0, 0).setDepth(DEPTH.screens);
     addLight(this, SEAT_X + 21, 185, C.lime, 0.5, 0.2, 0.2, DEPTH.screenGlow);
     addLight(this, SEAT_X, SCREEN_CY, C.pale, 0.12, 0.7, 0.5, DEPTH.screenGlow);
-
-    const line = this.add
-      .rectangle(SEAT_X - 1, SCREEN_CY, SCREEN.w, 1, 0xffffff)
-      .setDepth(DEPTH.screens + 0.2);
-    this.tweens.add({
-      targets: line,
-      scaleY: SCREEN.h,
-      alpha: { from: 1, to: 0 },
-      duration: 240,
-      ease: 'Quad.easeOut',
-      onComplete: () => line.destroy(),
-    });
     this.seatScreen = 'boot';
     this.drawScreens();
-    this.time.delayedCall(520, () => this.diveIn());
-  }
 
-  /**
-   * Zoom until the monitor fills the frame. It ends on a black screen with a
-   * cursor in the corner, which is exactly how the React boot sequence opens -
-   * the cut lands on the same picture.
-   */
-  private diveIn(): void {
-    const cam = this.cameras.main;
-    const z0 = cam.zoom;
-    const z1 = Math.max(this.camW / SCREEN.w, VIEW_H / SCREEN.h) * 1.06;
-    const from = { x: cam.scrollX + cam.width / 2, y: cam.scrollY + cam.height / 2 };
-    const to = { x: SEAT_X - 0.5, y: SCREEN_CY };
-
-    // Zoom towards a point: scaling the offset from the target by z0/z keeps
-    // the monitor where it sits on screen while the room grows around it, and
-    // the (1 - k) factor walks it to dead centre by the end. Zooming in log
-    // space makes the rate of growth feel even. Phaser's separate pan and zoom
-    // tweens drift the target off screen halfway through.
-    this.tweens.addCounter({
-      from: 0,
-      to: 1,
-      duration: 1000,
-      ease: 'Sine.easeIn',
-      onUpdate: (tween) => {
-        const k = tween.getValue() ?? 1;
-        const z = Math.exp(Math.log(z0) + (Math.log(z1) - Math.log(z0)) * k);
-        const pull = (z0 / z) * (1 - k);
-        cam.setZoom(z);
-        cam.centerOn(to.x + (from.x - to.x) * pull, to.y + (from.y - to.y) * pull);
+    const data: LinkSceneData = {
+      reducedMotion: this.opts.reducedMotion,
+      done: () => {
+        const found = Number(this.registry.get('notesFound')) || 0;
+        this.opts.onEnter({ notesFound: found, notesTotal: VOICE_NOTES.length });
       },
-    });
-    this.tweens.add({ targets: [this.walker.sprite, this.seatChair], alpha: 0, duration: 420, delay: 120 });
-    this.time.delayedCall(560, () => {
-      this.seatScreen = 'cursor';
-      this.drawScreens();
-    });
-    this.time.delayedCall(1030, () => {
-      const found = Number(this.registry.get('notesFound')) || 0;
-      this.opts.onEnter({ notesFound: found, notesTotal: VOICE_NOTES.length });
-    });
+    };
+    this.scene.launch('link', data);
   }
 
   /* ------------------------------------------------------------- screens -- */
@@ -509,10 +450,9 @@ export class CafeScene extends Phaser.Scene {
       if (Math.sin(t * 2.5) > 0) g.fillStyle(C.amber).fillRect(r.x + r.w - 2, r.y + r.h, 1, 1);
       return;
     }
+    // booting: a blinking cursor and the first lines of the BIOS
     if (Math.floor(t * 4) % 2 === 0) g.fillStyle(C.steel).fillRect(r.x + 2, r.y + 2, 2, 1);
-    if (this.seatScreen === 'boot') {
-      g.fillStyle(0x6a7593).fillRect(r.x + 2, r.y + 5, 14, 1).fillRect(r.x + 2, r.y + 7, 9, 1);
-    }
+    g.fillStyle(0x6a7593).fillRect(r.x + 2, r.y + 5, 14, 1).fillRect(r.x + 2, r.y + 7, 9, 1);
   }
 
   private drawGame(g: Phaser.GameObjects.Graphics, game: Game, r: Rect, t: number, seed: number): void {

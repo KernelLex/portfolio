@@ -24,6 +24,12 @@ const SHEETS: ReadonlyArray<[string, number, number]> = [
   ['cafe-counter', 128, 72],
   ['cafe-fan', 64, 20],
   ['cafe-decor', 48, 40],
+  ['sign-frame', 16, 16],
+  ['flyers', 64, 18],
+  ['flyers-far', 20, 6],
+  ['traffic', 88, 30],
+  ['link-arm', 150, 64],
+  ['link-port', 110, 96],
 ];
 
 const IMAGES: ReadonlyArray<string> = [
@@ -39,6 +45,11 @@ const IMAGES: ReadonlyArray<string> = [
   'cafe-wall',
   'cafe-desk',
   'cafe-chair',
+  'megacity',
+  'haze',
+  'street-front',
+  'link-plug',
+  'sign-bracket',
 ];
 
 /** Flat colour stand-ins, so a missing file degrades instead of breaking the scene. */
@@ -66,6 +77,17 @@ const FALLBACKS: ReadonlyArray<[string, number, number, number]> = [
   ['cafe-counter', 128, 72, 0x121a2e],
   ['cafe-fan', 64, 20, 0x080b16],
   ['cafe-decor', 48, 40, 0x121a2e],
+  ['megacity', 480, 210, 0x0c1120],
+  ['haze', 4, 128, 0xffffff],
+  ['street-front', 960, 190, 0x141b2c],
+  ['sign-frame', 16, 16, 0x1e2840],
+  ['sign-bracket', 16, 16, 0x0c1120],
+  ['flyers', 64, 18, 0x8b6cff],
+  ['flyers-far', 20, 6, 0x121a2e],
+  ['traffic', 88, 30, 0x8b6cff],
+  ['link-arm', 150, 64, 0x223052],
+  ['link-port', 110, 96, 0x0c1120],
+  ['link-plug', 20, 12, 0xb3bdd6],
 ];
 
 /**

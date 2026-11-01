@@ -31,6 +31,7 @@ void main() {
 
   // Chromatic aberration, scaled by distance so the centre stays clean.
   float ca = 0.0024 * r2;
+  float alpha = texture2D(uMainSampler, uv).a;
   vec3 col;
   col.r = texture2D(uMainSampler, uv + off * ca).r;
   col.g = texture2D(uMainSampler, uv).g;
@@ -57,9 +58,11 @@ void main() {
 
   // Grain, to stop the large flat skies banding.
   float n = fract(sin(dot(uv * uResolution + uTime, vec2(12.9898, 78.233))) * 43758.5453);
-  col += (n - 0.5) * 0.016;
+  col += (n - 0.5) * 0.016 * alpha;
 
-  gl_FragColor = vec4(col, 1.0);
+  // Keep the source alpha, so an overlay scene (the jack-in cutscene) stays
+  // see-through wherever it has not drawn anything.
+  gl_FragColor = vec4(col, alpha);
 }
 `;
 

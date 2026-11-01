@@ -31,7 +31,6 @@ export const BILLBOARD = {
 export const CAFE_SIGN = {
   services: 'GAMING / INTERNET / PRINTOUTS',
   open: 'OPEN 24 HRS',
-  rate: 'RS.30/HR',
 } as const;
 
 /** The player's seat, numbered left to right. The PC's BIOS repeats it. */
@@ -41,8 +40,15 @@ export const CAFE_INTERIOR = {
   cashier: `Seat ${SEAT_NUMBER} is free!`,
   houseRule: 'NO FOOD NEAR PCS',
   neon: 'GAME ZONE',
-  rates: ['RATES', 'RS30/HR'],
+  scores: ['TOP SCORE', 'AMG 9999'],
   seatLabel: 'YOUR SEAT',
+} as const;
+
+/** The jack-in cutscene's lettering. */
+export const LINK = {
+  jacking: 'JACKING IN',
+  established: 'LINK ESTABLISHED',
+  detail: `WRIST LINK  >  SEAT 0${SEAT_NUMBER}  >  HANDSHAKE OK`,
 } as const;
 
 /** Shown under the game on a phone held upright. */
@@ -53,5 +59,5 @@ export const PROMPTS = {
   enter: { keys: 'Press  ^  to go in', touch: 'Tap to go in' },
   seat: { keys: 'Walk to the free seat', touch: 'Walk to the free seat' },
   sit: { keys: 'Press  ^  to sit', touch: 'Tap to sit' },
-  power: { keys: 'Press  ^  to power on', touch: 'Tap to power on' },
+  link: { keys: 'Press  ^  to jack in', touch: 'Tap to jack in' },
 } as const;

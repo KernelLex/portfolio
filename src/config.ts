@@ -49,8 +49,6 @@ export const timings = {
   /** The boot splash's progress bar is held to this window around real loading. */
   bootMin: 800,
   bootMax: 2500,
-  /** A first-time visitor left alone on the desktop gets the browser opened for them. */
-  desktopAutoOpen: 7000,
   /** A returning visitor gets a beat on the desktop, then straight in. */
   returningAutoOpen: 450,
   windowOpen: 550,

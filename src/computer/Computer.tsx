@@ -35,8 +35,7 @@ const WINDOW_WIDTH: Record<WindowAppId, number> = { readme: 440, terminal: 560, 
 
 /**
  * The cafe PC: boot, then a desktop that behaves like one. Its whole job is to
- * be the way into the browser, so a visitor who just sits there gets the
- * browser opened for them - nobody should get stuck, here or on the street.
+ * be the way into the browser, which the visitor opens themselves.
  */
 export default function Computer({ entry, intro, reducedMotion, onLogOff }: Props) {
   const [stage, setStage] = useState<'boot' | 'desktop'>('boot');
@@ -47,7 +46,6 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff }: Prop
 
   const browserRef = useRef<BrowserState>('closed');
   browserRef.current = browser;
-  const interacted = useRef(false);
   const zTop = useRef(20);
 
   // Returning visitors get the browser opened for them.
@@ -91,15 +89,13 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff }: Prop
     setWindows((ws) => ws.filter((w) => w.id !== id));
   }, []);
 
-  // Left alone on the desktop, the browser opens itself.
+  // A returning visitor has done the walk already: open the browser for them.
+  // Everyone else opens it themselves - nothing on this PC moves on its own.
   useEffect(() => {
-    if (stage !== 'desktop') return;
-    const delay = quick ? timings.returningAutoOpen : timings.desktopAutoOpen;
+    if (stage !== 'desktop' || !quick) return;
     const t = window.setTimeout(() => {
-      if (browserRef.current === 'closed' && (quick || !interacted.current)) {
-        openBrowser(rectOf('[data-app="navigator"]'));
-      }
-    }, delay);
+      if (browserRef.current === 'closed') openBrowser(rectOf('[data-app="navigator"]'));
+    }, timings.returningAutoOpen);
     return () => window.clearTimeout(t);
   }, [stage, quick, openBrowser]);
 
@@ -109,15 +105,7 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff }: Prop
   ];
 
   return (
-    <div
-      className="fixed inset-0 overflow-hidden bg-black text-ink"
-      onPointerDown={() => {
-        interacted.current = true;
-      }}
-      onKeyDown={() => {
-        interacted.current = true;
-      }}
-    >
+    <div className="fixed inset-0 overflow-hidden bg-black text-ink">
       <Wallpaper />
 
       {stage === 'desktop' && (

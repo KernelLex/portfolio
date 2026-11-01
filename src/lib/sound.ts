@@ -96,8 +96,20 @@ export function playHorn(): void {
   window.setTimeout(() => tone({ freq: 420, duration: 0.1, type: 'square', gain: 0.02 }), 130);
 }
 
-/** A PC spinning up: a rising chirp over a click. */
-export function playPowerOn(): void {
-  tone({ freq: 140, to: 900, duration: 0.45, type: 'sine', gain: 0.035 });
-  tone({ freq: 1800, duration: 0.04, type: 'square', gain: 0.012 });
+/** Two low pulses: something is about to happen. */
+export function playAlarm(): void {
+  tone({ freq: 220, to: 160, duration: 0.16, type: 'sawtooth', gain: 0.03 });
+  window.setTimeout(() => tone({ freq: 220, to: 160, duration: 0.16, type: 'sawtooth', gain: 0.03 }), 220);
 }
+
+/** The cable whipping out of the wrist. */
+export function playCableOut(): void {
+  tone({ freq: 300, to: 1400, duration: 0.42, type: 'triangle', gain: 0.025 });
+}
+
+/** The plug seating: a hard click and a bright chime. */
+export function playJackIn(): void {
+  tone({ freq: 1600, duration: 0.03, type: 'square', gain: 0.03 });
+  window.setTimeout(() => tone({ freq: 880, to: 1760, duration: 0.25, type: 'sine', gain: 0.04 }), 40);
+}
+

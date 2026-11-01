@@ -11,6 +11,8 @@ deterministically.
 | `scripts/art/street.mjs`     | sky, skyline, buildings, cables, street, props, cafe front, door, billboard, auto-rickshaw, voice note, glow |
 | `scripts/art/characters.mjs` | the player: idle, walk, jump, and the back view for sitting      |
 | `scripts/art/cafe.mjs`       | cafe wall and floor, desk, chair, people playing, counter, fan, wall decor |
+| `scripts/art/city.mjs`       | megastructures, haze, the street-front row of buildings and shops, sign casings and brackets, flying cars, road cars |
+| `scripts/art/link.mjs`       | the jack-in close-up: forearm with wrist port, the PC's I/O panel, the plug |
 
 To swap in a bought or commissioned pack instead: **drop files with the same
 names and frame sizes into this folder.** No code changes needed. Both scenes
@@ -18,9 +20,9 @@ load by filename and fall back to flat colour blocks if a file is missing.
 
 ## How the art is made
 
-1. **Fixed ramps.** Eleven five-step colour ramps (night, concrete, amber,
-   cyan, magenta, violet, lime, skin, steel, yellow, green). Nothing uses a
-   colour outside them.
+1. **Fixed ramps.** Thirteen five-step colour ramps (night, concrete, amber,
+   cyan, magenta, violet, lime, skin, steel, yellow, green, brick, teal).
+   Nothing uses a colour outside them.
 2. **Ordered dithering.** Any value between two ramp steps is dithered with a
    Bayer 8×8 matrix, never alpha-blended.
 3. **Rim light, then outline.** Sprites are drawn, given a catch-light down the
@@ -73,6 +75,37 @@ Bottom-centre at the ground line. Within the 192 × 128 image:
   x +8, +30, +52 (y +18). The scene lays a flickering glow over each one.
 - **Door recess**: x 80–112, y 81–128. `door.png` sits on top.
 
+## The city around the street
+
+| File               | Size      | Frames      | Notes                                                                 |
+| ------------------ | --------- | ----------- | --------------------------------------------------------------------- |
+| `megacity.png`     | 480 × 210 | —           | Colossal towers on the horizon, 0.12× parallax, behind a haze wash. Tiles. |
+| `haze.png`         | 4 × 128   | —           | Alpha ramp, tinted and stretched in-scene between the layers. Not pixel art by design. |
+| `street-front.png` | 960 × 190 | —           | The row of buildings right behind the pavement, at the player's depth. Bottom on the building base line (196). |
+| `sign-frame.png`   | 32 × 16   | 2 × 16×16   | Nine-slice sign casings (4px borders): 0 steel, 1 brass.             |
+| `sign-bracket.png` | 16 × 16   | —           | Wall bracket for projecting blade signs.                              |
+| `flyers.png`       | 192 × 18  | 3 × 64×18   | Sky traffic: 0 sedan, 1 flying taxi, 2 police spinner (frame 2 flashes in-scene). |
+| `flyers-far.png`   | 60 × 6    | 3 × 20×6    | The same three, distant.                                              |
+| `traffic.png`      | 264 × 30  | 3 × 88×30   | Road hover cars: 0 sedan, 1 wedge pickup, 2 sports. All face right.   |
+
+### Street-front layout
+
+Eight buildings, each with a shop on the ground floor (screen y 146–196):
+
+| x       | Building                      | Shop       | Mounted sign (StreetScene)        |
+| ------- | ----------------------------- | ---------- | --------------------------------- |
+| 0–112   | brick flats, fire escape      | ramen      | VERA ERP lightbox                 |
+| 112–200 | low shop house, rooftop clutter | repairs  | SECANT on a rooftop scaffold      |
+| 200–330 | glass office tower            | 24/7 mart  | the Wispr Flow LED billboard      |
+| 330–440 | balconies, laundry, plants    | bar        | HAZEN on a rooftop scaffold       |
+| 440–560 | industrial, ducts, vents      | garage     | TRUECOMMIT lightbox + ticker      |
+| 560–704 | brick flats with AC units     | clinic     | THROTTLE blade sign, beside the cafe |
+| 704–896 | the cafe tower                | (cafe-front.png) | CYBER CAFE, NET blade high up |
+| 896–960 | narrow block                  | keys       | —                                 |
+
+Change a building's position or height in `city.mjs` and the sign positions in
+`StreetScene.ts` have to follow.
+
 ## Player
 
 | File              | Size     | Frames     | Notes                                                                 |
@@ -101,6 +134,14 @@ A replacement with a different stride must update `STRIDE_PER_CYCLE` in
 | `cafe-counter.png` | 256 × 72  | 2 × 128×72  | Front counter and cashier. Frame 1 blinks.                            |
 | `cafe-fan.png`     | 256 × 20  | 4 × 64×20   | Ceiling fan, side on.                                                 |
 | `cafe-decor.png`   | 384 × 40  | 8 × 48×40   | 0 space poster, 1 sunset poster, 2 sign plate, 3 AC unit, 4 clock, 5 TV (picture drawn in-scene), 6 snack shelf, 7 rates board. |
+
+## Jack-in close-up
+
+| File            | Size      | Frames      | Notes                                                                 |
+| --------------- | --------- | ----------- | --------------------------------------------------------------------- |
+| `link-arm.png`  | 450 × 64  | 3 × 150×64  | Forearm entering from the left. 0 wrist closed, 1 panel sliding back, 2 port open and glowing. The cable leaves at (99, 24). |
+| `link-port.png` | 220 × 96  | 2 × 110×96  | The PC's I/O panel. 0 socket waiting (amber), 1 connected (cyan). The plug seats at (36, 54). |
+| `link-plug.png` | 20 × 12   | —           | The plug on the end of the cable.                                     |
 
 ## Palette
 

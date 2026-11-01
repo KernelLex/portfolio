@@ -25,22 +25,20 @@ const LINE_FONTS = [PIXEL_FONT, SIGN_FONT];
 const CURSOR_H = [7, 6];
 
 export type BillboardOptions = {
-  /** Column of buildings.png the billboard stands on. */
-  textureColumn: number;
-  /** Screen y of that building's roof. */
-  roofY: number;
+  /** World x of the billboard's centre. */
+  x: number;
+  /** Where its supports meet the building. */
+  bottomY: number;
   depth: number;
   reducedMotion: boolean;
 };
 
 /**
- * Rooftop LED billboard for the challenge's host: a voice waveform, a line
- * of dictation typing itself out, then the name. It rides the mid-building
- * parallax layer, so the scene passes it the layer's offset each frame
- * instead of letting the camera move it - that keeps it locked to its roof.
+ * LED billboard for the challenge's host, bolted to the glass tower on the
+ * street front: a voice waveform, a line of dictation typing itself out,
+ * then the name.
  */
 export class Billboard {
-  private root: Phaser.GameObjects.Container;
   private face: Phaser.GameObjects.Container;
   private bars: Phaser.GameObjects.Graphics;
   private listening: Phaser.GameObjects.Text;
@@ -131,17 +129,14 @@ export class Billboard {
     const frame = scene.add.image(0, 0, 'billboard').setOrigin(0, 0);
     const cyanEdge = addLight(scene, ART_W / 2, FACE.y + FACE.h / 2, cyan, 0.06, 2.2, 0.9, 0);
 
-    this.root = scene.add
-      .container(0, opts.roofY - ART_H, [this.halo, frame, ...lamps, cyanEdge, this.face, grid, ...this.bulbs])
-      .setScrollFactor(0)
+    scene.add
+      .container(opts.x - ART_W / 2, opts.bottomY - ART_H, [this.halo, frame, ...lamps, cyanEdge, this.face, grid, ...this.bulbs])
       .setDepth(opts.depth);
 
     this.show(opts.reducedMotion ? 'brand' : SEQUENCE[0].mode);
   }
 
-  /** `layerOffset` is the mid-building layer's tilePositionX this frame. */
-  update(dt: number, layerOffset: number): void {
-    this.root.x = this.opts.textureColumn - layerOffset - ART_W / 2;
+  update(dt: number): void {
     if (this.opts.reducedMotion) return;
 
     const ms = dt * 1000;

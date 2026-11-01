@@ -130,3 +130,33 @@ the browser window stranded half-grown by React's double-invoked effects; the
 boot progress bar never drawing (Tailwind v4's `scale` property overriding the
 inline transform — the original boot screen had the same bug); the zoom into
 the monitor drifting off target; 5px pixel text rendering as mush.
+
+---
+
+## Revision: a whole city, and the jack-in (1 Nov)
+
+Amogh's direction: nothing should move on its own; billboards should hang on
+buildings like real ones; more buildings, futuristic cars, a whole cyberpunk
+city; no prices in the cafe; and connecting to the PC should be a cyberpunk
+"personal link" moment, presented like the Among Us red reveal screen.
+
+- **Nothing moves on its own.** No auto-walk, no auto-entry, no auto-sit, and
+  the desktop no longer opens the browser by itself for first-time visitors.
+  Only a returning visitor gets the browser opened for them.
+- **A street-front row** at the player's depth: eight buildings, each with a
+  shop on the ground floor. The signs used to float at a different depth from
+  the buildings and slid across them; now every one is mounted - lightboxes,
+  rooftop scaffolds, a blade sign on brackets, shop fascias - and lit.
+- **Depth:** megastructures on the horizon, then skyline, then mid-rise, then
+  the street front, with a haze wash between each layer.
+- **Traffic:** two sky lanes of distant flyers, two nearer lanes (sedan,
+  flying taxi, police spinner with flashing lights), and two road lanes of
+  hover cars in opposite directions, with the auto-rickshaw among them.
+- **No prices:** the storefront rate, the in-cafe rates board (now a high
+  score board) and the BIOS line are gone.
+- **The jack-in** (`LinkScene`): a red alarm flash and shake, black bars
+  slamming in around a red striped band, the wrist port opening, the cable
+  whipping across into the PC's socket, sparks, LINK ESTABLISHED, data
+  pulsing back down the line, then a collapse to black - which is where the
+  BIOS starts. Reduced motion gets a still frame, no flashing. The style is
+  borrowed, not the art or the words.

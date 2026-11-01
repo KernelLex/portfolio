@@ -1,5 +1,5 @@
 import { BROWSER_NAME, OS_NAME } from '../config';
-import { CAFE_SIGN, SEAT_NUMBER } from './intro';
+import { SEAT_NUMBER } from './intro';
 
 /**
  * Words on the cafe PC. The BIOS lines are props for a fictional machine; the
@@ -19,11 +19,12 @@ export function bootLines(notes?: { found: number; total: number }): string[] {
   const seat = String(SEAT_NUMBER).padStart(2, '0');
   const lines = [
     'KernelLex BIOS  -  cyber cafe build',
-    `Seat ${seat}  -  ${CAFE_SIGN.rate}`,
+    `Seat ${seat}`,
     '',
     'Memory check .............. OK',
     'Graphics .................. OK',
     'Network ................... OK',
+    'Wrist link ................ CONNECTED',
     'Voice input ............... Wispr ready',
   ];
   if (notes) lines.push(`Voice notes found ......... ${notes.found}/${notes.total}`);

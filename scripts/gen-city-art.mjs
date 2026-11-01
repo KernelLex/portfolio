@@ -21,16 +21,26 @@ import { upscale } from './art/core.mjs';
 import * as street from './art/street.mjs';
 import * as people from './art/characters.mjs';
 import * as cafe from './art/cafe.mjs';
+import * as city from './art/city.mjs';
+import { linkArm, linkPort, linkPlug } from './art/link.mjs';
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'assets', 'intro');
 
 const assets = {
-  // the street
+  // the street and the city around it
   'sky.png': street.sky,
+  'megacity.png': city.megacity,
+  'haze.png': city.haze,
   'skyline.png': street.skyline,
   'buildings.png': street.buildings,
   'cables.png': street.cables,
   'street.png': street.street,
+  'street-front.png': city.streetFront,
+  'sign-frame.png': city.signFrame,
+  'sign-bracket.png': city.signBracket,
+  'flyers.png': city.flyers,
+  'flyers-far.png': city.flyersFar,
+  'traffic.png': city.traffic,
   'props.png': street.props,
   'cafe-front.png': street.cafeFront,
   'door.png': street.door,
@@ -51,6 +61,10 @@ const assets = {
   'cafe-counter.png': cafe.counter,
   'cafe-fan.png': cafe.fan,
   'cafe-decor.png': cafe.decor,
+  // the jack-in close-up
+  'link-arm.png': linkArm,
+  'link-port.png': linkPort,
+  'link-plug.png': linkPlug,
 };
 
 const arg = (name) => {

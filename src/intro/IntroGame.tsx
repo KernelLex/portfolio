@@ -62,10 +62,11 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
           /* fall back to monospace metrics */
         }
 
-        const [{ default: Phaser }, { StreetScene }, { CafeScene }] = await Promise.all([
+        const [{ default: Phaser }, { StreetScene }, { CafeScene }, { LinkScene }] = await Promise.all([
           import('phaser'),
           import('./scenes/StreetScene'),
           import('./scenes/CafeScene'),
+          import('./scenes/LinkScene'),
         ]);
 
         if (cancelled || !hostRef.current) return;
@@ -96,8 +97,9 @@ export default function IntroGame({ onEnter, reducedMotion }: Props) {
           },
           // Sound goes through our own muted-by-default WebAudio layer instead.
           audio: { noAudio: true },
-          // The street runs first; it starts the cafe itself at the door.
-          scene: [new StreetScene(sceneOptions), new CafeScene(sceneOptions)],
+          // The street runs first and starts the cafe at the door; the cafe
+          // launches the jack-in over itself. Later in the list renders on top.
+          scene: [new StreetScene(sceneOptions), new CafeScene(sceneOptions), new LinkScene()],
         });
       } catch (err) {
         window.clearTimeout(watchdog);

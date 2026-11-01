@@ -114,6 +114,9 @@ const R = {
   // The two halves of a Bengaluru auto-rickshaw.
   yellow: ['#5a4a10', '#9a7d16', '#d4ad1f', '#f2cf3a', '#fff08a'].map(hex),
   green: ['#0f3a1e', '#1d6332', '#2e8f47', '#49b85f', '#8fe39a'].map(hex),
+  // Street-front materials, so the near row is not all one blue-grey.
+  brick: ['#1a0f14', '#2b161c', '#3d1f24', '#54302c', '#6e4a3a'].map(hex),
+  teal: ['#071a1c', '#0d2a2e', '#143b40', '#1f5257', '#2f6e73'].map(hex),
 };
 
 const NEON = [R.cyan, R.magenta, R.violet, R.lime];
