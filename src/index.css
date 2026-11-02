@@ -316,6 +316,40 @@
 }
 
 /* The profile's avatar: the street's pixel character at 4x, breathing, inside a slowly turning ring. */
+/* The Player Profile's character: breathes (the head dips a pixel) and blinks. */
+.avatar-head {
+  animation: avatar-breathe 1.8s steps(1) infinite;
+}
+
+.avatar-eyes {
+  animation: avatar-blink 5.2s steps(1) infinite;
+}
+
+.avatar-lids {
+  opacity: 0;
+  animation: avatar-lids 5.2s steps(1) infinite;
+}
+
+@keyframes avatar-breathe {
+  50% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes avatar-blink {
+  95%,
+  98% {
+    opacity: 0;
+  }
+}
+
+@keyframes avatar-lids {
+  95%,
+  98% {
+    opacity: 1;
+  }
+}
+
 .profile-ring {
   background: conic-gradient(from 0deg, rgb(245 163 92 / 0.9), transparent 25%, rgb(84 232 224 / 0.6) 50%, transparent 75%, rgb(245 163 92 / 0.9));
   mask: radial-gradient(circle, transparent 66%, black 67%, black 69%, transparent 70%);
@@ -458,6 +492,10 @@
 
 .title-motion .title-rise {
   animation: title-rise 600ms ease-out var(--d) both;
+}
+
+.title-motion .title-name-letter {
+  animation: title-name-drop 560ms cubic-bezier(0.2, 1.6, 0.4, 1) var(--delay, 0ms) both;
 }
 
 .title-motion .title-slide {
@@ -632,6 +670,13 @@
   from {
     opacity: 0;
     transform: translateY(12px);
+  }
+}
+
+@keyframes title-name-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.9em) scale(1.5);
   }
 }
 

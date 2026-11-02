@@ -14,6 +14,7 @@ export const GUIDE = {
   next: 'Next',
   reopen: 'Ask Byte for help',
   drag: 'Drag me anywhere',
+  hi: (name: string) => `Hi ${name}!`,
   clickMe: 'Click me for help',
   tapMe: 'Tap me for help',
   askLabel: 'Ask Byte where something is',

@@ -24,10 +24,11 @@ import { RESUME } from '../../content/links';
 import { ACHIEVEMENTS, INVENTORY, LOADOUT, PROFILE as P, QUESTS, STATS } from '../../content/profile';
 import { playClick } from '../../lib/sound';
 import { useReducedMotion } from '../../lib/useReducedMotion';
+import AvatarSprite from './AvatarSprite';
 
 const SLOT_ICONS: ReadonlyArray<LucideIcon> = [MonitorSmartphone, Database, BrainCircuit, Server];
 const ITEM_ICONS: ReadonlyArray<LucideIcon> = [Printer, Server, Rocket];
-const PHOTO = { pixel: `${import.meta.env.BASE_URL}photo/amogh-pixel.png`, real: `${import.meta.env.BASE_URL}photo/amogh.webp` };
+const PHOTO = `${import.meta.env.BASE_URL}photo/amogh.webp`;
 
 const PANEL = 'relative rounded-2xl border border-white/[0.08] bg-surface/60 backdrop-blur-sm';
 const HEADING = 'mb-4 flex items-center gap-2 font-mono text-[11px] tracking-[0.22em] text-accent uppercase';
@@ -54,7 +55,7 @@ function Counter({ value, reduced }: { value: number; reduced: boolean }) {
 // The photo style outlives the tab, until the page reloads.
 let savedReal = false;
 
-/** His photo, pixel art first, with a switch to the real one and back. */
+/** Amogh as a game character first, with a switch to his real photo and back. */
 function Portrait() {
   const [real, setReal] = useState(savedReal);
   const choose = (value: boolean) => () => {
@@ -68,8 +69,10 @@ function Portrait() {
       <div className="relative mx-auto grid h-56 w-56 place-items-center">
         <span aria-hidden="true" className="profile-ring absolute inset-0 rounded-full" />
         <div className="relative h-44 w-44 overflow-hidden bg-space [clip-path:circle(50%)]">
-          <img src={PHOTO.pixel} alt={real ? '' : P.photo.alt} aria-hidden={real} className={`absolute inset-0 h-full w-full object-cover [image-rendering:pixelated] transition-opacity duration-500 ${real ? 'opacity-0' : 'opacity-100'}`} />
-          <img src={PHOTO.real} alt={real ? P.photo.alt : ''} aria-hidden={!real} loading="lazy" className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${real ? 'opacity-100' : 'opacity-0'}`} />
+          <div aria-hidden={real} className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,#7a5598,#33264f_52%,#151227_86%)] transition-opacity duration-500 ${real ? 'opacity-0' : 'opacity-100'}`}>
+            <AvatarSprite label={P.photo.alt} className="absolute -bottom-1 left-1/2 h-48 w-48 -translate-x-1/2" />
+          </div>
+          <img src={PHOTO} alt={real ? P.photo.alt : ''} aria-hidden={!real} loading="lazy" className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${real ? 'opacity-100' : 'opacity-0'}`} />
         </div>
       </div>
       <div role="group" aria-label={P.photo.label} className="mx-auto mt-3 flex w-fit overflow-hidden rounded-lg border border-white/[0.12]">
@@ -88,6 +91,23 @@ function Portrait() {
 export default function Profile() {
   const { open } = useBrowser();
   const reduced = useReducedMotion();
+  const questsRef = useRef<HTMLOListElement>(null);
+
+  // The quest log scrolls sideways only, so a mouse wheel moves it sideways
+  // too; at either end, the page scrolls on as usual.
+  useEffect(() => {
+    const el = questsRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= max - 1)) return;
+      e.preventDefault();
+      el.scrollLeft = Math.min(max, Math.max(0, el.scrollLeft + e.deltaY));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   return (
     <div className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] space-y-5 px-4 pt-2 pb-16 sm:px-8 xl:px-12">
@@ -230,10 +250,10 @@ export default function Profile() {
           </h2>
           <p className="mb-4 font-mono text-[10.5px] text-ink-muted">{P.questHint}</p>
         </div>
-        <ol className="relative flex snap-x gap-3 overflow-x-auto pb-3 [scrollbar-width:thin]">
+        <ol ref={questsRef} className="relative flex snap-x gap-4 overflow-x-auto overflow-y-hidden pb-4 [scrollbar-width:thin]">
           <span aria-hidden="true" className="pointer-events-none absolute top-[1.15rem] right-4 left-4 h-px bg-gradient-to-r from-accent/60 via-accent/30 to-accent/60" />
           {QUESTS.map((q, i) => (
-            <li key={q.title} className="relative w-52 shrink-0 snap-start">
+            <li key={q.title} className="relative flex w-64 shrink-0 snap-start flex-col">
               <span className="relative z-10 mx-auto mb-3 grid h-9 w-9 place-items-center rounded-full border-2 border-accent bg-space font-mono text-xs text-accent">
                 {String(i + 1).padStart(2, '0')}
               </span>
@@ -245,11 +265,11 @@ export default function Profile() {
                   playClick();
                   open(q.to);
                 }}
-                className="hud-ticks group relative block h-full w-full rounded-xl border border-white/[0.08] bg-space/50 p-4 text-left transition-colors hover:border-accent/40"
+                className="hud-ticks group relative block w-full flex-1 rounded-xl border border-white/[0.08] bg-space/50 p-5 pb-8 text-left transition-colors hover:border-accent/40"
               >
-                {q.when && <span className="font-mono text-[10px] text-accent">{q.when}</span>}
-                <span className="block text-sm font-medium text-ink">{q.title}</span>
-                <span className="mt-1 block text-xs leading-snug text-ink-muted">{q.detail}</span>
+                {q.when && <span className="font-mono text-[11px] text-accent">{q.when}</span>}
+                <span className="block text-[15px] font-medium text-ink">{q.title}</span>
+                <span className="mt-1.5 block text-[13px] leading-relaxed text-ink-muted">{q.detail}</span>
                 {q.to && <ChevronRight className="absolute right-3 bottom-3 h-4 w-4 text-ink-muted transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />}
               </button>
             </li>

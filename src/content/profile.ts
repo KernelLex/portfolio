@@ -28,7 +28,7 @@ export const PROFILE = {
     inventory: 'Inventory',
     languages: 'Languages',
   },
-  questHint: 'Click a quest to open it',
+  questHint: 'Scroll sideways · click a quest to open it',
   photo: { alt: 'Amogh P', label: 'Photo style', pixel: 'Pixel', real: 'Real' },
 } as const;
 

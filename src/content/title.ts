@@ -14,6 +14,14 @@ export const TITLE = {
     { id: 'explore', label: 'START GAME', hint: 'Explore on your own' },
     { id: 'tour', label: 'GUIDED TOUR', hint: 'Byte walks you through it' },
   ],
+  /** Arcade name entry, by voice: the Wispr-into-text moment, right at the start. */
+  player: {
+    label: 'PLAYER NAME',
+    placeholder: 'SAY YOUR NAME',
+    inputLabel: 'Your name: hold your Wispr key and say it, or type it',
+    hint: 'Hold your Wispr key and say your name. Typing works too.',
+    hello: 'HELLO,',
+  },
   press: 'PRESS ENTER',
   pressTouch: 'TAP TO START',
   controls: '↑ ↓ to choose · Enter to start',

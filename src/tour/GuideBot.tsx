@@ -3,6 +3,7 @@ import { ChevronRight, ListChecks, Mic, Send, X } from 'lucide-react';
 import { GUIDE, TIPS, tourLines } from '../content/guide';
 import { VOICE } from '../content/voice';
 import { toggleFullscreen } from '../lib/fullscreen';
+import { playerName } from '../lib/player';
 import { downloadResume } from '../lib/resume';
 import { playClick, playTick } from '../lib/sound';
 import { useReducedMotion } from '../lib/useReducedMotion';
@@ -131,7 +132,11 @@ export default function GuideBot() {
   // Phones have no Ctrl+B to mention.
   const touch = coarse();
   const tip = TIPS[g.place];
-  const text = g.said ?? (g.mode === 'tour' ? lines[g.line] : tip ? (touch ? tip.touch : tip.keys) : null);
+  const line = g.said ?? (g.mode === 'tour' ? lines[g.line] : tip ? (touch ? tip.touch : tip.keys) : null);
+  // A visitor who said their name on the title screen is greeted with it, once, on the street.
+  const name = playerName();
+  const greet = name && line && !g.said && g.place === 'street' && (g.mode === 'explore' || g.line === 0);
+  const text = greet ? `${GUIDE.hi(name)} ${line}` : line;
   const showBubble = Boolean(g.open && text);
 
   useEffect(() => {

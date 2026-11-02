@@ -5,6 +5,7 @@ import { enterFullscreen } from '../lib/fullscreen';
 import { playClick, playSting, playWhoosh } from '../lib/sound';
 import BotSprite from '../tour/BotSprite';
 import { INTRO_FILES } from './assets';
+import NameEntry from './NameEntry';
 
 type Props = {
   onStart: (mode: StartMode) => void;
@@ -51,6 +52,7 @@ function preload(onProgress: (k: number) => void): () => void {
 }
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
+const coarse = () => window.matchMedia('(pointer: coarse)').matches;
 
 /** Sparks off the neon, drifting up through the rain. Placed once, at random. */
 function Embers() {
@@ -112,14 +114,18 @@ export default function TitleScreen({ onStart, reducedMotion }: Props) {
     [leaving, onStart, reducedMotion],
   );
 
+  const move = useCallback((delta: -1 | 1) => {
+    playClick();
+    setChoice((c) => (c + delta + TITLE.menu.length) % TITLE.menu.length);
+  }, []);
+
   useEffect(() => {
     if (!ready) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement | null)?.closest('input, textarea')) return;
       if (['ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(e.code)) {
         e.preventDefault();
-        playClick();
-        setChoice((c) => (c + (e.code === 'ArrowUp' || e.code === 'KeyW' ? -1 : 1) + TITLE.menu.length) % TITLE.menu.length);
+        move(e.code === 'ArrowUp' || e.code === 'KeyW' ? -1 : 1);
       } else if (e.code === 'Enter' || e.code === 'Space' || e.code === 'NumpadEnter') {
         e.preventDefault();
         start(choice);
@@ -127,7 +133,7 @@ export default function TitleScreen({ onStart, reducedMotion }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ready, choice, start]);
+  }, [ready, choice, start, move]);
 
   const moving = !reducedMotion;
   const lit = Math.round(progress * BLOCKS);
@@ -193,7 +199,11 @@ export default function TitleScreen({ onStart, reducedMotion }: Props) {
                 {TITLE.tagline}
               </p>
 
-              <ul className="mt-[7vh] space-y-3">
+              <div className="title-rise mt-[4vh]" style={vars({ '--d': '1150ms' })}>
+                <NameEntry onMove={move} onEnter={() => start(choice)} autoFocus={!coarse()} moving={moving} />
+              </div>
+
+              <ul className="mt-[4vh] space-y-3">
                 {TITLE.menu.map((item, i) => {
                   const on = i === choice;
                   return (

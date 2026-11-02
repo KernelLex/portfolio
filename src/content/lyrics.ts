@@ -1,6 +1,8 @@
 /** The kinetic lyric stage on New Tab: its demo line, its words, and its moods. */
 export const LYRICS = {
   demo: 'Six months. Zero clients. Then everything changed.',
+  /** The first line, for a visitor who said their name on the title screen. */
+  welcome: (name: string) => `Welcome to my internet, ${name}!`,
   label: 'Lyric stage',
   demoTag: 'Demo',
   visitorTag: 'Your words',

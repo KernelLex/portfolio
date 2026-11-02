@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { CornerDownLeft, Mic, RotateCcw } from 'lucide-react';
 import HudCorners from '../../components/HudCorners';
 import { LYRICS, type Mood } from '../../content/lyrics';
+import { playerName } from '../../lib/player';
 import { playClick } from '../../lib/sound';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { useWisprInput } from '../../voice/useWisprInput';
@@ -23,6 +24,9 @@ const MOODS: ReadonlyArray<[Mood, string]> = [
   ['low', 'radial-gradient(ellipse 80% 70% at 50% 100%, rgb(60 90 200 / 0.2), transparent 70%), radial-gradient(ellipse 50% 50% at 20% 10%, rgb(20 30 70 / 0.5), transparent 70%)'],
   ['calm', 'radial-gradient(ellipse 80% 70% at 25% 75%, rgb(84 232 224 / 0.13), transparent 70%), radial-gradient(ellipse 60% 60% at 80% 15%, rgb(139 108 255 / 0.08), transparent 70%)'],
 ];
+
+// The welcome plays through once per visit.
+let welcomed = false;
 
 /**
  * The hero of New Tab: whatever the visitor says through Wispr Flow (or types,
@@ -61,7 +65,9 @@ export default function LyricStage() {
         onPhrase: (phrase) => phrase.mood && setMood(phrase.mood),
         onDone: () => {
           setPlaying(false);
-          if (!fromVisitor) demoTimer.current = window.setTimeout(() => playRef.current(LYRICS.demo, false), DEMO_GAP_MS);
+          if (fromVisitor) return;
+          welcomed = true;
+          demoTimer.current = window.setTimeout(() => playRef.current(LYRICS.demo, false), DEMO_GAP_MS);
         },
       });
     },
@@ -71,7 +77,9 @@ export default function LyricStage() {
   playRef.current = play;
 
   useEffect(() => {
-    playRef.current(LYRICS.demo, false);
+    // A visitor who said their name at the start hears it first, until it has played through once.
+    const name = welcomed ? '' : playerName();
+    playRef.current(name ? LYRICS.welcome(name) : LYRICS.demo, false);
     return () => {
       window.clearTimeout(demoTimer.current);
       show.current?.stop();
