@@ -47,7 +47,7 @@ While building Vera ERP, another client wanted a custom HR module for his own ER
 
 ## This website
 - Amogh Navigator: an interactive portfolio built as a made-up browser, entered through a playable cyberpunk city and a cyber cafe PC.
-- Built with React, TypeScript, Phaser, three.js and GSAP, and built by voice: every prompt was dictated through Wispr Flow to Claude Code. The Voice Receipts tab shows them.
+- Built with React, TypeScript, Phaser, three.js and GSAP, and built by voice: every prompt was dictated through Wispr Flow to Claude Code.
 
 ## Side builds
 I love building small projects: to learn, to solve my own problems, or just for fun. Some of them:

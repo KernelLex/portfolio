@@ -33,9 +33,9 @@ export type Section = { id: string; title: string; body: string[] };
 export const ARTICLE = {
   title: 'Amogh P',
   subtitle: 'From Amoghpedia, the free encyclopedia nobody asked for',
-  tabs: { label: 'Article views', article: 'Article', talk: 'Talk', history: 'View history' },
-  /** Where "Talk" and "View history" lead: the AI twin, and the voice build log. */
-  tabLinks: { talk: 'ask', history: 'receipts' } satisfies Record<string, PageId>,
+  tabs: { label: 'Article views', article: 'Article', talk: 'Talk' },
+  /** Where "Talk" leads: the AI twin. */
+  tabLinks: { talk: 'ask' } satisfies Record<string, PageId>,
   // TODO(Amogh): approve or cut the joke lines - this banner, the {cn} in Personal life, the footer.
   banner: {
     title: 'This article has multiple issues.',
@@ -124,7 +124,7 @@ export const ARTICLE = {
       ],
     },
   ] satisfies Section[],
-  seeAlsoPages: ['story', 'work', 'side-builds', 'ask', 'receipts'] satisfies PageId[],
+  seeAlsoPages: ['story', 'work', 'side-builds', 'shorts', 'ask'] satisfies PageId[],
 };
 
 export const INFOBOX = {

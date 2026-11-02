@@ -1,14 +1,13 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { storageKeys } from './config';
 import type { ComputerEntry } from './computer/Computer';
 import type { IntroStart } from './intro/scenes/BootScene';
 import type { IntroResult } from './intro/scenes/StreetScene';
-import { readFlag, writeFlag } from './lib/storage';
 import { preloadSite } from './lib/useSitePreload';
 import { useReducedMotion } from './lib/useReducedMotion';
 import { playClick } from './lib/sound';
 import SoundToggle from './components/SoundToggle';
 import IntroGame from './intro/IntroGame';
+import GuideBot from './tour/GuideBot';
 
 // Lazy, and fetched while the intro plays - so the game is the preloader.
 const Computer = lazy(() => import('./computer/Computer'));
@@ -17,11 +16,13 @@ type Phase = 'intro' | 'computer';
 
 const FROM_THE_TOP: IntroStart = { scene: 'street', taken: [] };
 
-/** Reduced motion and returning visitors go straight to the cafe PC. */
+/**
+ * Every visit starts on the street, so everyone gets the whole walk in.
+ * Only a visitor who asked their system for reduced motion skips the game.
+ */
 function initialPhase(): Phase {
   if (typeof window === 'undefined') return 'computer';
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'computer';
-  return readFlag(storageKeys.introSeen, false) ? 'computer' : 'intro';
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'computer' : 'intro';
 }
 
 /**
@@ -43,7 +44,6 @@ export default function App() {
   }, []);
 
   const sitDown = useCallback((how: ComputerEntry, result?: IntroResult) => {
-    writeFlag(storageKeys.introSeen, true);
     setEntry(how);
     setIntro(result);
     setVisit((v) => v + 1);
@@ -83,6 +83,8 @@ export default function App() {
           />
         </Suspense>
       )}
+
+      <GuideBot />
 
       {phase === 'intro' && (
         <div className="absolute top-3 right-3 z-40 flex items-center gap-2">

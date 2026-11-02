@@ -1,12 +1,11 @@
 # Amogh Navigator API
 
-Two small endpoints that call Claude, for Prompt Lens and Ask Amogh. The site works
+One small endpoint that calls Claude, for Ask Amogh. The site works
 without this server (it labels its answers "offline mode"), so it is optional for
 local development.
 
 | Endpoint | Body | Returns |
 | --- | --- | --- |
-| `POST /api/prompt-lens` | `{ text, mode }` (mode: coding, research, writing, image, general) | `{ prompt }` |
 | `POST /api/ask` | `{ message, history: [{ role, content }] }` | `{ reply, suggestedTab }` |
 | `GET /api/health` | | `{ ok, model }` |
 
@@ -14,8 +13,10 @@ local development.
 - Refusals fall back to another model server-side (`fallbacks: "default"`); one that still
   refuses comes back as a 422 with a short message.
 - Ask Amogh answers only from `../content/life-story.md` (`LIFE_STORY_PATH` to override),
-  with the rules in `prompts/ask-amogh.md`. Prompt Lens follows `prompts/prompt-lens.md`.
-- Rate limit: `RATE_LIMIT` requests per IP per `RATE_WINDOW_SECONDS` (default 20 per 10 min).
+  with the rules in `prompts/ask-amogh.md`.
+- Spend limits: `RATE_LIMIT` requests per IP per `RATE_WINDOW_SECONDS` (default 20 per 10 min), and
+  `DAILY_LIMIT` for the whole site per day (default 300). Past either, the site answers from its
+  offline FAQ. Also set a monthly spend limit on the key in the Anthropic console.
 - CORS: only the origins in `ALLOWED_ORIGINS`.
 
 ## Run locally
@@ -42,4 +43,4 @@ at the repo root (also gitignored), and run `npm run dev`.
    the built frontend (`npm run build`, static files in `dist/`).
 4. Set the environment: `ANTHROPIC_API_KEY`, `LLM_MODEL`, `ALLOWED_ORIGINS` (the public site
    URL), and build the frontend with `VITE_API_URL` set to the API's public URL.
-5. Deploy. Check `GET /api/health`, then try both pages on the live site.
+5. Deploy. Check `GET /api/health`, then try Ask Amogh on the live site.

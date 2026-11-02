@@ -1,7 +1,5 @@
 import { useEffect, useReducer } from 'react';
-import { storageKeys } from '../config';
 import type { PageId } from '../content/pages';
-import { readJSON, writeJSON } from '../lib/storage';
 import { parseAddress } from './address';
 
 export type Tab = {
@@ -87,34 +85,20 @@ function reducer(state: TabsState, action: TabAction): TabsState {
   }
 }
 
-/** Saved tabs may be stale or hand-edited: keep only what still makes sense. */
-function validTab(value: unknown): Tab[] {
-  if (!value || typeof value !== 'object') return [];
-  const { id, history, index } = value as Record<string, unknown>;
-  if (typeof id !== 'string' || !/^t\d+$/.test(id) || !Array.isArray(history)) return [];
-  const kept = history.filter((h): h is string => typeof h === 'string' && parseAddress(h) !== null);
-  if (!kept.length) return [];
-  const at = typeof index === 'number' && Number.isInteger(index) ? index : kept.length - 1;
-  return [{ id, history: kept, index: Math.min(Math.max(at, 0), kept.length - 1), reloads: 0 }];
-}
+const fresh = (): TabsState => addTab({ tabs: [], active: '', next: 1 }, HOME);
 
-function restore(): TabsState {
-  const saved = readJSON(storageKeys.tabs) as { tabs?: unknown; active?: unknown } | null;
-  const tabs = Array.isArray(saved?.tabs) ? saved.tabs.flatMap(validTab).slice(-MAX_TABS) : [];
-  if (!tabs.length) return addTab({ tabs: [], active: '', next: 1 }, HOME);
-  const active = tabs.find((t) => t.id === saved?.active)?.id ?? tabs[tabs.length - 1].id;
-  return { tabs, active, next: 1 + Math.max(...tabs.map((t) => Number(t.id.slice(1)))) };
-}
+/**
+ * Tabs live in memory only: logging off the PC and back on keeps them, and a
+ * reload starts clean, with the walk in from the street.
+ */
+let remembered: TabsState | null = null;
 
-/** The browser's tabs, each with its own history, remembered between visits. */
+/** The browser's tabs, each with its own history. */
 export function useTabs() {
-  const [state, dispatch] = useReducer(reducer, undefined, restore);
+  const [state, dispatch] = useReducer(reducer, undefined, () => remembered ?? fresh());
 
   useEffect(() => {
-    writeJSON(storageKeys.tabs, {
-      tabs: state.tabs.map(({ id, history, index }) => ({ id, history, index })),
-      active: state.active,
-    });
+    remembered = state;
   }, [state]);
 
   const tab = state.tabs.find((t) => t.id === state.active) ?? state.tabs[0];

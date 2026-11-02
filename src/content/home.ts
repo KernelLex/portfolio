@@ -8,5 +8,5 @@ export const HOME = {
   lead: 'Every tab is one part of my story. Say something to the stage, or pick a tab below.',
   speedDial: 'Speed dial',
   elsewhere: 'Elsewhere',
-  tiles: ['amoghpedia', 'story', 'work', 'prompt-lens', 'ask', 'receipts'] satisfies PageId[],
+  tiles: ['story', 'work', 'amoghpedia', 'shorts', 'side-builds', 'ask'] satisfies PageId[],
 } as const;

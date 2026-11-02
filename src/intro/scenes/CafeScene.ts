@@ -4,7 +4,8 @@ import { CAFE_INTERIOR, PROMPTS, SEAT_NUMBER, VOICE_NOTES } from '../../content/
 import { setMusicPlace } from '../../lib/music';
 import { playClick, playDoor } from '../../lib/sound';
 import { BASE_VIEW_W, VIEW_H } from '../viewport';
-import { Controls } from './controls';
+import { guide, narrated, touring } from '../../tour/guide';
+import { Controls, type InputFrame } from './controls';
 import type { LinkSceneData } from './LinkScene';
 import type { IntroSceneOptions } from './StreetScene';
 import { PLAYER_SPEED, Walker } from './Walker';
@@ -163,7 +164,10 @@ export class CafeScene extends Phaser.Scene {
     setMusicPlace('cafe');
 
     if (data?.entry === 'pc') this.standUp();
-    else this.walkIn();
+    else {
+      guide.at('cafe');
+      this.walkIn();
+    }
     this.drawScreens();
   }
 
@@ -456,9 +460,12 @@ export class CafeScene extends Phaser.Scene {
 
     if (this.phase !== 'walking' && this.phase !== 'seated') return;
 
-    // Nothing in the cafe moves unless the player moves it.
-    const input = this.controls.read();
-    if (input.active) this.markInput();
+    // Nothing in the cafe moves unless the player (or the walkthrough) moves it.
+    const input = touring() ? this.pilotInput() : this.controls.read();
+    if (input.active) {
+      this.markInput();
+      if (guide.get().mode === 'choose') guide.explore();
+    }
 
     if (this.phase === 'seated') {
       if (input.up || input.enter) this.jackIn();
@@ -485,6 +492,14 @@ export class CafeScene extends Phaser.Scene {
     this.exitPrompt.setAlpha(Phaser.Math.Linear(this.exitPrompt.alpha, atExit ? 1 : 0, fade));
     this.hint.setAlpha(Phaser.Math.Linear(this.hint.alpha, this.clock < this.hintUntil ? 1 : 0, dt * 3));
     this.followCamera(dt);
+  }
+
+  /** The walkthrough walks to seat 3 and sits; it jacks in once Byte has said its piece. */
+  private pilotInput(): InputFrame {
+    if (this.phase === 'seated') return { dir: 0, up: narrated(), enter: false, active: true };
+    const dx = SEAT_X - this.walker.x;
+    const there = Math.abs(dx) < 4;
+    return { dir: there ? 0 : dx > 0 ? 1 : -1, up: there, enter: false, active: true };
   }
 
   private markInput(): void {
@@ -545,7 +560,9 @@ export class CafeScene extends Phaser.Scene {
     this.camX = Phaser.Math.Clamp(SEAT_X - this.camW / 2, 0, Math.max(0, ROOM_W - this.camW));
     this.cameras.main.scrollX = Math.round(this.camX);
 
+    guide.at('link');
     const rise = () => {
+      guide.at('cafe');
       this.seatScreen = 'off';
       this.drawScreens();
       playClick();
@@ -660,6 +677,7 @@ export class CafeScene extends Phaser.Scene {
    */
   private jackIn(): void {
     this.phase = 'linking';
+    guide.at('link');
     this.tweens.add({ targets: this.sitPrompt, alpha: 0, duration: 150 });
 
     this.add.rectangle(SEAT_X + 20, 185, 2, 1, C.lime).setOrigin(0, 0).setDepth(DEPTH.screens);

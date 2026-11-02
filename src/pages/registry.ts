@@ -1,6 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
 import {
-  Aperture,
   BookOpen,
   Briefcase,
   Clapperboard,
@@ -8,7 +7,6 @@ import {
   Globe,
   House,
   MessageCircle,
-  Receipt,
   Route,
   Wrench,
   type LucideIcon,
@@ -34,9 +32,7 @@ const ICONS: Record<PageId, LucideIcon> = {
   amoghpedia: BookOpen,
   story: Route,
   work: Briefcase,
-  'prompt-lens': Aperture,
   ask: MessageCircle,
-  receipts: Receipt,
   shorts: Clapperboard,
   'side-builds': Wrench,
   control: Gauge,
@@ -52,9 +48,7 @@ const BUILT: Partial<Record<PageId, LazyExoticComponent<ComponentType>>> = {
   amoghpedia: lazy(() => import('./amoghpedia/Amoghpedia')),
   story: lazy(() => import('./story/Story')),
   work: lazy(() => import('./work/Work')),
-  'prompt-lens': lazy(() => import('./prompt-lens/PromptLens')),
   ask: lazy(() => import('./ask/Ask')),
-  receipts: lazy(() => import('./receipts/Receipts')),
   shorts: lazy(() => import('./shorts/Shorts')),
   'side-builds': lazy(() => import('./side-builds/SideBuilds')),
   control: lazy(() => import('./control/Control')),
@@ -91,4 +85,4 @@ export function titleOf(raw: string): string {
 }
 
 /** The phone's bottom bar; everything else sits behind "More". */
-export const MOBILE_MAIN: ReadonlyArray<PageId> = ['home', 'story', 'work', 'prompt-lens', 'ask'];
+export const MOBILE_MAIN: ReadonlyArray<PageId> = ['home', 'story', 'work', 'amoghpedia', 'ask'];

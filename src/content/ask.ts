@@ -73,14 +73,12 @@ export const FAQ: ReadonlyArray<Faq> = [
   {
     keywords: ['wispr', 'voice', 'dictate', 'dictation', 'speak', 'speaking'],
     answer:
-      "I built this whole site by voice: every prompt was dictated through Wispr Flow. The proof is in Voice Receipts. Why Wispr, in my own words? That part isn't in my memory yet, so ask the real Amogh.",
-    tab: 'receipts',
+      "I built this whole site by voice: every prompt was dictated through Wispr Flow. Why Wispr, in my own words? That part isn't in my memory yet, so ask the real Amogh.",
   },
   {
     keywords: ['built this', 'this site', 'stack', 'how was', 'portfolio', 'navigator'],
     answer:
-      "This site is a browser I made up, Amogh Navigator: React and TypeScript, Phaser for the city outside, three.js for the stars, GSAP for motion. I dictated it to Claude Code through Wispr Flow, and the receipts are public.",
-    tab: 'receipts',
+      "This site is a browser I made up, Amogh Navigator: React and TypeScript, Phaser for the city outside, three.js for the stars, GSAP for motion. I dictated it to Claude Code through Wispr Flow, and the whole history is public on GitHub.",
   },
   {
     keywords: ['truecommit', 'razorpay', 'hackathon', 'hackathons', 'buildathon'],
@@ -104,11 +102,6 @@ export const FAQ: ReadonlyArray<Faq> = [
     answer:
       "I trade on Zerodha Kite (still learning stop-losses and GTT orders), 3D print on a Bambu Lab P1S, run my own home server, and I have an idea for a jewelry business.",
     tab: 'amoghpedia',
-  },
-  {
-    keywords: ['prompt lens', 'prompt'],
-    answer: 'Prompt Lens turns a messy spoken idea into a structured prompt. Ramble at it and see.',
-    tab: 'prompt-lens',
   },
   {
     keywords: ['contact', 'hire', 'linkedin', 'github', 'email', 'reach'],

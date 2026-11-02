@@ -111,9 +111,6 @@ export default function Amoghpedia() {
           <button type="button" onClick={() => open(ARTICLE.tabLinks.talk)} className="rounded-md px-2.5 py-1 text-ink-muted transition-colors hover:text-accent">
             {ARTICLE.tabs.talk}
           </button>
-          <button type="button" onClick={() => open(ARTICLE.tabLinks.history)} className="rounded-md px-2.5 py-1 text-ink-muted transition-colors hover:text-accent">
-            {ARTICLE.tabs.history}
-          </button>
         </nav>
         <h1 className="font-display text-5xl leading-none text-ink sm:text-6xl">{ARTICLE.title}</h1>
         <p className="mt-3 text-sm text-ink-muted italic">{ARTICLE.subtitle}</p>

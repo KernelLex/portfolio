@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { storageKeys } from '../config';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { playClick, playSwoosh } from '../lib/sound';
-import { readFlag, writeFlag } from '../lib/storage';
+import { TOUR } from '../content/guide';
 import { useReducedMotion } from '../lib/useReducedMotion';
+import { guide, useGuide } from '../tour/guide';
 import { parseAddress, type Address } from './address';
 import AddressBar from './AddressBar';
 import { BrowserContext, type BrowserApi } from './BrowserContext';
-import Guide from './Guide';
 import LiveWallpaper from './LiveWallpaper';
 import MobileBar from './MobileBar';
 import MobileHeader from './MobileHeader';
@@ -26,8 +25,6 @@ type Props = {
 };
 
 const HOME = parseAddress('home') as Address;
-/** First visit: let the window finish opening before the guide says hello. */
-const GUIDE_DELAY_MS = 1100;
 
 /**
  * Amogh Navigator: an icon rail of pages, tabs that each keep their own
@@ -39,7 +36,6 @@ export default function BrowserShell({ visible, onMinimize, onClose, onReplayInt
   const { tabs, tab, dispatch } = useTabs();
   const current = currentOf(tab);
   const address = useMemo(() => parseAddress(current) ?? HOME, [current]);
-  const [tip, setTip] = useState<number | null>(null);
 
   const open = useCallback((to: string) => dispatch({ type: 'open', to }), [dispatch]);
   const navigate = useCallback((to: string) => dispatch({ type: 'navigate', to }), [dispatch]);
@@ -54,19 +50,17 @@ export default function BrowserShell({ visible, onMinimize, onClose, onReplayInt
     heard.current = { count: tabs.length, at };
   }, [tabs.length, tab.id, current]);
 
+  // The walkthrough opens each tab as Byte talks about it.
+  const tour = useGuide();
   useEffect(() => {
-    if (!visible || readFlag(storageKeys.guideSeen, false)) return;
-    const t = window.setTimeout(() => setTip((v) => v ?? 0), GUIDE_DELAY_MS);
-    return () => window.clearTimeout(t);
-  }, [visible]);
+    if (tour.mode !== 'tour' || tour.place !== 'browser') return;
+    const step = TOUR.browser[tour.line];
+    if (step) open(step.page);
+  }, [tour.mode, tour.place, tour.line, open]);
 
   const showTips = useCallback(() => {
     playClick();
-    setTip(0);
-  }, []);
-  const closeTips = useCallback(() => {
-    writeFlag(storageKeys.guideSeen, true);
-    setTip(null);
+    guide.explore();
   }, []);
 
   const tabProps = {
@@ -117,7 +111,6 @@ export default function BrowserShell({ visible, onMinimize, onClose, onReplayInt
           <MobileBar {...menuProps} />
         </div>
 
-        {tip !== null && <Guide step={tip} onStep={setTip} onClose={closeTips} reducedMotion={reducedMotion} />}
       </div>
     </BrowserContext.Provider>
   );

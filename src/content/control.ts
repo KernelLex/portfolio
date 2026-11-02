@@ -1,4 +1,4 @@
-import { RECEIPTS } from './receipts';
+import { LIVE } from './links';
 import { SIDE_BUILDS } from './sideBuilds';
 import { CLIENT_WORK, NOVA_PRODUCTS } from './work';
 
@@ -25,5 +25,5 @@ export const GAUGES = [
   { label: 'Side builds', value: SIDE_BUILDS.length },
   { label: 'Roles before graduating', value: 7 },
   { label: 'Languages spoken', value: 5 },
-  { label: 'Voice receipts', value: RECEIPTS.length },
+  { label: 'Live sites', value: Object.keys(LIVE).length },
 ];

@@ -8,9 +8,7 @@ export const PAGE_IDS = [
   'amoghpedia',
   'story',
   'work',
-  'prompt-lens',
   'ask',
-  'receipts',
   'shorts',
   'side-builds',
   'control',
@@ -50,21 +48,10 @@ export const PAGES: Record<PageId, PageCopy> = {
     blurb: 'Case studies: Vera ERP, HRMS, Secant, Hazen Lights and more.',
     aliases: ['client work', 'clients', 'client', 'work', 'case studies', 'case study', 'portfolio', 'vera', 'vera erp', 'erp', 'hrms', 'secant', 'hazen', 'hazen lights', 'websites', 'nova', 'nova erp', 'nova crm', 'nova hrms', 'crm'],
   },
-  'prompt-lens': {
-    title: 'Prompt Lens',
-    short: 'Prompts',
-    blurb: 'Ramble an idea out loud, get an engineered prompt back.',
-    aliases: ['prompt lens', 'prompt', 'prompts', 'lens', 'prompt tool'],
-  },
   ask: {
     title: 'Ask Amogh',
     blurb: 'Chat with my AI twin. It is an AI, not me.',
     aliases: ['ask amogh', 'ask', 'ai twin', 'twin', 'chat', 'chatbot', 'talk to amogh', 'talk to you'],
-  },
-  receipts: {
-    title: 'Voice Receipts',
-    blurb: 'Proof this site was built by voice.',
-    aliases: ['voice receipts', 'receipts', 'receipt', 'build log', 'proof', 'transcripts', 'dictation'],
   },
   shorts: {
     title: 'Shorts',

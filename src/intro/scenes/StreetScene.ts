@@ -5,7 +5,8 @@ import { setMusicPlace } from '../../lib/music';
 import { playDoor, playPickup } from '../../lib/sound';
 import { BASE_VIEW_W, VIEW_H } from '../viewport';
 import { Billboard } from './Billboard';
-import { Controls } from './controls';
+import { guide, narrated, touring } from '../../tour/guide';
+import { Controls, type InputFrame } from './controls';
 import { Blade, LedSign, Ticker, fascia, flicker, flickerLights, type Animated } from './Signage';
 import { PEOPLE_KINDS, STREET_LANES, Traffic } from './Traffic';
 import { PLAYER_SPEED, Walker } from './Walker';
@@ -250,6 +251,7 @@ export class StreetScene extends Phaser.Scene {
     this.controls = new Controls(this);
     attachPostFX(this);
     setMusicPlace('street');
+    guide.at('street');
 
     if (data?.entry === 'cafe') this.comeOutOfCafe();
     else {
@@ -780,9 +782,13 @@ export class StreetScene extends Phaser.Scene {
     }
     if (this.busy) return;
 
-    // Nothing here moves unless the player moves it.
-    const input = this.controls.read();
-    if (input.active) this.markInput();
+    // Nothing here moves unless the player (or the walkthrough) moves it.
+    const input = touring() ? this.pilotInput() : this.controls.read();
+    if (input.active) {
+      this.markInput();
+      // Walking off without choosing is choosing to explore.
+      if (guide.get().mode === 'choose') guide.explore();
+    }
 
     const atDoor = Math.abs(this.walker.x - CAFE_X) < DOOR_ZONE && !this.walker.airborne;
     if (atDoor && (input.up || input.enter)) {
@@ -796,6 +802,13 @@ export class StreetScene extends Phaser.Scene {
     this.lightPlayer();
     this.prompt.setAlpha(Phaser.Math.Linear(this.prompt.alpha, atDoor ? 1 : 0, Math.min(1, dt * 8)));
     this.followCamera(dt, input.dir);
+  }
+
+  /** The walkthrough's hands on the controls: walk to the cafe, and go in once Byte has said its piece. */
+  private pilotInput(): InputFrame {
+    const dx = CAFE_X - this.walker.x;
+    const there = Math.abs(dx) < DOOR_ZONE / 2;
+    return { dir: there ? 0 : dx > 0 ? 1 : -1, up: there && narrated(), enter: false, active: true };
   }
 
   /** Walking under a sign washes the player in its colour. */

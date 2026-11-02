@@ -3,6 +3,7 @@ import { timings } from '../config';
 import { bootLines } from '../content/desktop';
 import type { IntroResult } from '../intro/scenes/StreetScene';
 import { playClick, playWhoosh } from '../lib/sound';
+import { guide, useGuide } from '../tour/guide';
 import AppWindow from './AppWindow';
 import { APPS, appMeta, rectOf, type AppId, type WindowAppId } from './apps';
 import BootSequence from './BootSequence';
@@ -102,6 +103,17 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff, onRepl
     }, timings.returningAutoOpen);
     return () => window.clearTimeout(t);
   }, [stage, quick, openBrowser]);
+
+  // Tell Byte where the visitor is.
+  useEffect(() => {
+    guide.at(stage === 'boot' ? 'boot' : browser === 'open' ? 'browser' : 'desktop');
+  }, [stage, browser]);
+
+  // The walkthrough opens the browser once Byte has introduced the PC.
+  const tour = useGuide();
+  useEffect(() => {
+    if (tour.mode === 'tour' && tour.place === 'desktop' && tour.narrated) openBrowser(rectOf('[data-app="navigator"]'));
+  }, [tour.mode, tour.place, tour.narrated, openBrowser]);
 
   const running = [
     ...(browser !== 'closed' ? [{ app: appMeta('navigator'), minimized: browser === 'minimized' }] : []),

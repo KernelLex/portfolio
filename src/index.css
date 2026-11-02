@@ -188,19 +188,28 @@
   }
 }
 
-/* The intro's pixel character, as the browser's guide: its idle breath at 2x. */
-@utility guide-sprite {
-  width: 64px;
-  height: 88px;
-  background-size: 256px 88px;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-  animation: guide-idle 1.6s steps(4) infinite;
+/* Byte hovers, and blinks now and then. */
+.bot-hover {
+  animation: bot-hover 2.4s ease-in-out infinite alternate;
 }
 
-@keyframes guide-idle {
+.bot-eye {
+  animation: bot-blink 4.6s steps(1) infinite;
+}
+
+@keyframes bot-hover {
   to {
-    background-position: -256px 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes bot-blink {
+  96% {
+    opacity: 1;
+  }
+  97%,
+  100% {
+    opacity: 0.1;
   }
 }
 

@@ -1,12 +1,13 @@
 """
 The portfolio's backend: two small endpoints that call Claude.
 
-  POST /api/prompt-lens  {text, mode}       -> {prompt}
   POST /api/ask          {message, history} -> {reply, suggestedTab}
   GET  /api/health
 
 The API key lives only here (ANTHROPIC_API_KEY). The frontend works without
-this server too: it falls back to offline answers, labelled as such.
+this server too: it falls back to offline answers, labelled as such. Spend is
+bounded three ways: per-IP and daily request caps here, and a monthly limit
+set on the key in the Anthropic console.
 """
 
 import json
@@ -42,13 +43,13 @@ load_env_file(HERE / ".env")
 MODEL = os.environ.get("LLM_MODEL", "claude-opus-5-5")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT", "20"))
 RATE_WINDOW = int(os.environ.get("RATE_WINDOW_SECONDS", "600"))
+DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "300"))
 ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 LIFE_STORY = Path(os.environ.get("LIFE_STORY_PATH", HERE.parent / "content" / "life-story.md"))
 
-PROMPT_LENS_SYSTEM = (HERE / "prompts" / "prompt-lens.md").read_text(encoding="utf-8")
 ASK_SYSTEM = (HERE / "prompts" / "ask-amogh.md").read_text(encoding="utf-8") + "\n" + LIFE_STORY.read_text(encoding="utf-8")
 
-TABS = ["story", "work", "prompt-lens", "receipts", "amoghpedia", "side-builds", "none"]
+TABS = ["story", "work", "amoghpedia", "side-builds", "shorts", "none"]
 ASK_SCHEMA = {
     "type": "object",
     "properties": {
@@ -64,9 +65,17 @@ app.add_middleware(CORSMiddleware, allow_origins=ORIGINS, allow_methods=["GET", 
 
 # Per-IP sliding window, in memory: enough to stop anyone burning the credits.
 hits: dict[str, deque[float]] = defaultdict(deque)
+# And a ceiling for the whole site per day, so a crowd cannot either. Past it,
+# the site quietly falls back to its offline answers.
+today = {"day": "", "count": 0}
 
 
 def rate_limit(request: Request) -> None:
+    day = time.strftime("%Y-%m-%d")
+    if today["day"] != day:
+        today.update(day=day, count=0)
+    if today["count"] >= DAILY_LIMIT:
+        raise HTTPException(status_code=429, detail="The AI twin is resting for today. Try again tomorrow.")
     ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "?")
     now = time.monotonic()
     window = hits[ip]
@@ -75,6 +84,7 @@ def rate_limit(request: Request) -> None:
     if len(window) >= RATE_LIMIT:
         raise HTTPException(status_code=429, detail="Too many requests. Try again in a few minutes.")
     window.append(now)
+    today["count"] += 1
 
 
 @cache
@@ -117,11 +127,6 @@ def ask_claude(system: str, messages: list[dict], max_tokens: int, output_format
     return text
 
 
-class PromptLensIn(BaseModel):
-    text: str = Field(min_length=1, max_length=4000)
-    mode: Literal["coding", "research", "writing", "image", "general"] = "general"
-
-
 class Turn(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=2000)
@@ -135,13 +140,6 @@ class AskIn(BaseModel):
 @app.get("/api/health")
 def health() -> dict:
     return {"ok": True, "model": MODEL}
-
-
-@app.post("/api/prompt-lens")
-def prompt_lens(body: PromptLensIn, request: Request) -> dict:
-    rate_limit(request)
-    content = f"Mode: {body.mode}\n\nWhat they said:\n{body.text}"
-    return {"prompt": ask_claude(PROMPT_LENS_SYSTEM, [{"role": "user", "content": content}], max_tokens=2000)}
 
 
 @app.post("/api/ask")
@@ -161,7 +159,7 @@ def ask(body: AskIn, request: Request) -> dict:
     else:
         messages.append({"role": "user", "content": body.message})
 
-    raw = ask_claude(ASK_SYSTEM, messages, max_tokens=1500, output_format={"type": "json_schema", "schema": ASK_SCHEMA})
+    raw = ask_claude(ASK_SYSTEM, messages, max_tokens=800, output_format={"type": "json_schema", "schema": ASK_SCHEMA})
     data = json.loads(raw)
     tab = data.get("suggestedTab")
     return {"reply": data["reply"], "suggestedTab": tab if tab in TABS and tab != "none" else None}
