@@ -4,7 +4,8 @@ The portfolio's backend: two small endpoints that call Claude.
   POST /api/ask          {message, history} -> {reply, suggestedTab}
   GET  /api/health
 
-The API key lives only here (ANTHROPIC_API_KEY). The frontend works without
+In production this one server also serves the built site (../dist), so the
+site and the API share an address. The API key lives only here (ANTHROPIC_API_KEY). The frontend works without
 this server too: it falls back to offline answers, labelled as such. Spend is
 bounded three ways: per-IP and daily request caps here, and a monthly limit
 set on the key in the Anthropic console.
@@ -22,6 +23,7 @@ from typing import Literal
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 HERE = Path(__file__).parent
@@ -163,3 +165,10 @@ def ask(body: AskIn, request: Request) -> dict:
     data = json.loads(raw)
     tab = data.get("suggestedTab")
     return {"reply": data["reply"], "suggestedTab": tab if tab in TABS and tab != "none" else None}
+
+
+# One server for everything: the built site at /, the API beside it. Mounted
+# last, so the /api routes above match first.
+DIST = Path(os.environ.get("SITE_DIR", HERE.parent / "dist"))
+if DIST.is_dir():
+    app.mount("/", StaticFiles(directory=DIST, html=True), name="site")

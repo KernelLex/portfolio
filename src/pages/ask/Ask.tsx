@@ -107,7 +107,7 @@ export default function Ask() {
   };
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pt-6 pb-6 sm:px-8 sm:pt-8">
+    <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col 2xl:max-w-4xl px-4 pt-6 pb-6 sm:px-8 sm:pt-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] tracking-[0.25em] text-accent uppercase">{ASK.eyebrow}</p>

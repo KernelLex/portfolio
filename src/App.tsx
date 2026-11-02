@@ -3,6 +3,7 @@ import type { ComputerEntry } from './computer/Computer';
 import type { IntroStart } from './intro/scenes/BootScene';
 import type { IntroResult } from './intro/scenes/StreetScene';
 import { preloadSite } from './lib/useSitePreload';
+import { useSkin } from './lib/skin';
 import { useReducedMotion } from './lib/useReducedMotion';
 import { playClick } from './lib/sound';
 import SoundToggle from './components/SoundToggle';
@@ -27,6 +28,7 @@ const FROM_THE_TOP: IntroStart = { scene: 'street', taken: [] };
  */
 export default function App() {
   const reducedMotion = useReducedMotion();
+  const skin = useSkin();
   // Every visit starts at the title screen, then the street, so everyone gets the whole walk in.
   const [phase, setPhase] = useState<Phase>('title');
   const [entry, setEntry] = useState<ComputerEntry>('fresh');
@@ -95,6 +97,7 @@ export default function App() {
       )}
 
       <GuideBot />
+      {skin === 'pixel' && phase === 'computer' && <div aria-hidden="true" className="pixel-crt" />}
 
       {phase === 'intro' && (
         <div className="absolute top-3 right-3 z-40 flex items-center gap-2">

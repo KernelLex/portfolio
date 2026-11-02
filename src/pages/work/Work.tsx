@@ -59,7 +59,7 @@ function Card({ study }: { study: CaseStudy }) {
 
 function Grid() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8">
+    <div className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] px-4 pt-6 pb-16 sm:px-8 sm:pt-8 xl:px-12">
       <header className="max-w-2xl">
         <p className="font-mono text-[11px] tracking-[0.25em] text-accent uppercase">amogh://work</p>
         <h1 className="mt-2 font-display text-5xl text-ink sm:text-6xl">{WORK.title}</h1>
@@ -112,7 +112,7 @@ function Study({ slug }: { slug: string }) {
   const label = 'mb-2 font-mono text-[10.5px] tracking-[0.2em] text-accent/90 uppercase';
 
   return (
-    <article className="mx-auto w-full max-w-4xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8">
+    <article className="mx-auto w-full max-w-5xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8 xl:max-w-6xl xl:px-12 2xl:max-w-7xl">
       <button
         type="button"
         onClick={() => navigate('work')}
@@ -137,40 +137,44 @@ function Study({ slug }: { slug: string }) {
         </div>
       </header>
 
-      {study.video && <ClipPlayer clip={study.video} className="mt-8" />}
+      {/* The video beside the story on wide screens, under it on narrow ones. */}
+      <div className={`mt-8 grid gap-8 ${study.video ? 'lg:grid-cols-[minmax(0,1fr)_17rem] xl:grid-cols-[minmax(0,1fr)_19rem]' : ''}`}>
+        <div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <section className={block}>
+              <h2 className={label}>{WORK.sections.problem}</h2>
+              <p className="text-[15px] leading-relaxed text-ink/90">{study.problem}</p>
+            </section>
+            <section className={block}>
+              <h2 className={label}>{WORK.sections.result}</h2>
+              <p className="text-[15px] leading-relaxed text-ink/90">{study.result}</p>
+            </section>
+            <section className={`${block} md:col-span-2`}>
+              <h2 className={label}>{WORK.sections.built}</h2>
+              <ul className="space-y-2.5 text-[15px] leading-relaxed text-ink/90">
+                {study.built.map((line) => (
+                  <li key={line} className="flex gap-3">
+                    <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <section className={block}>
-          <h2 className={label}>{WORK.sections.problem}</h2>
-          <p className="text-[15px] leading-relaxed text-ink/90">{study.problem}</p>
-        </section>
-        <section className={block}>
-          <h2 className={label}>{WORK.sections.result}</h2>
-          <p className="text-[15px] leading-relaxed text-ink/90">{study.result}</p>
-        </section>
-        <section className={`${block} md:col-span-2`}>
-          <h2 className={label}>{WORK.sections.built}</h2>
-          <ul className="space-y-2.5 text-[15px] leading-relaxed text-ink/90">
-            {study.built.map((line) => (
-              <li key={line} className="flex gap-3">
-                <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-                {line}
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="mt-6">
+            <h2 className={label}>{WORK.sections.stack}</h2>
+            <ul className="flex flex-wrap gap-2">
+              {study.stack.map((tech) => (
+                <li key={tech} className="rounded-lg border border-white/[0.08] px-2.5 py-1 font-mono text-[11px] text-ink-muted">
+                  {tech}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+        {study.video && <ClipPlayer clip={study.video} className="lg:sticky lg:top-6 lg:self-start" />}
       </div>
-
-      <section className="mt-6">
-        <h2 className={label}>{WORK.sections.stack}</h2>
-        <ul className="flex flex-wrap gap-2">
-          {study.stack.map((tech) => (
-            <li key={tech} className="rounded-lg border border-white/[0.08] px-2.5 py-1 font-mono text-[11px] text-ink-muted">
-              {tech}
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <nav className="mt-10 flex flex-wrap items-center gap-3 border-t border-white/[0.08] pt-6">
         <button type="button" onClick={() => navigate(`work/${prev.slug}`)} className="inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink">

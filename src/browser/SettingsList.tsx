@@ -1,5 +1,6 @@
-import { Film, SquareX, type LucideIcon } from 'lucide-react';
+import { Film, Gamepad2, SquareX, type LucideIcon } from 'lucide-react';
 import { SETTINGS } from '../content/browser';
+import { setSkin, useSkin } from '../lib/skin';
 import { playClick } from '../lib/sound';
 
 export type SettingsActions = {
@@ -14,6 +15,7 @@ type Props = SettingsActions & {
 
 /** The settings menu's contents, shared by the sidebar popover and the phone's "More" sheet. */
 export default function SettingsList({ onReplayIntro, onCloseAll, onDone }: Props) {
+  const skin = useSkin();
   const item = (Icon: LucideIcon, label: string, run: () => void) => (
     <li>
       <button
@@ -34,6 +36,7 @@ export default function SettingsList({ onReplayIntro, onCloseAll, onDone }: Prop
   return (
     <>
       <ul className="p-1.5">
+        {item(Gamepad2, skin === 'pixel' ? SETTINGS.pixelOn : SETTINGS.pixelOff, () => setSkin(skin === 'pixel' ? 'smooth' : 'pixel'))}
         {item(Film, SETTINGS.replay, onReplayIntro)}
         {item(SquareX, SETTINGS.closeAll, onCloseAll)}
       </ul>

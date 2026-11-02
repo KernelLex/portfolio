@@ -55,7 +55,7 @@ export default function Profile() {
   const reduced = useReducedMotion();
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 px-4 pt-2 pb-16 sm:px-8">
+    <div className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] space-y-5 px-4 pt-2 pb-16 sm:px-8 xl:px-12">
       {/* --- the character card --------------------------------------------- */}
       <section className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         <div className={`${PANEL} overflow-hidden p-6`}>

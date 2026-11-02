@@ -24,7 +24,7 @@ void main() {
   gl_Position = projectionMatrix * mv;
   float depth = -mv.z;
   // Never below a pixel: sub-pixel points shimmer as they drift.
-  gl_PointSize = max(aSize * uPixelRatio * (70.0 / depth), uPixelRatio);
+  gl_PointSize = max(aSize * uPixelRatio * (70.0 / depth), 1.0);
   vColor = aColor;
   // A slow, shallow twinkle - breathing, not blinking.
   float twinkle = 0.82 + 0.18 * sin(uTime * (0.35 + fract(aPhase) * 0.4) + aPhase);
@@ -119,7 +119,12 @@ function buildStars(): BufferGeometry {
 type Props = {
   paused: boolean;
   onReady: () => void;
+  /** Render at a fraction of the resolution and scale up blocky: the pixel skin's sky. */
+  pixel?: boolean;
 };
+
+/** The pixel skin's sky: roughly one drawn pixel for every three on screen. */
+const PIXEL_RATIO = 0.34;
 
 /** The sky drifts slowly enough that half the frames are plenty. */
 const FRAME_MS = 1000 / 30;
@@ -129,7 +134,7 @@ const FRAME_MS = 1000 / 30;
  * parallax. Quiet on purpose - it sits behind every page and must never
  * compete with one. Its own chunk, loaded after the screen is up.
  */
-export default function Starfield({ paused, onReady }: Props) {
+export default function Starfield({ paused, onReady, pixel = false }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const loop = useRef<{ start: () => void; stop: () => void } | null>(null);
   const pausedRef = useRef(paused);
@@ -142,8 +147,9 @@ export default function Starfield({ paused, onReady }: Props) {
 
     // Throws without WebGL; LiveWallpaper's boundary falls back to the static sky.
     const renderer = new WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'low-power' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    renderer.setPixelRatio(pixel ? PIXEL_RATIO : Math.min(window.devicePixelRatio || 1, 1.25));
     renderer.domElement.style.display = 'block';
+    if (pixel) renderer.domElement.style.imageRendering = 'pixelated';
     host.appendChild(renderer.domElement);
 
     const scene = new Scene();
@@ -240,6 +246,7 @@ export default function Starfield({ paused, onReady }: Props) {
       renderer.forceContextLoss();
       renderer.domElement.remove();
     };
+    // `pixel` is fixed per instance: LiveWallpaper remounts this when the skin changes.
   }, []);
 
   useEffect(() => {

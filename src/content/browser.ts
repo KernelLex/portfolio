@@ -38,6 +38,8 @@ export const STATUS = {
 } as const;
 
 export const SETTINGS = {
+  pixelOn: 'Pixel skin: on',
+  pixelOff: 'Pixel skin: off',
   replay: 'Replay the intro',
   closeAll: 'Close all tabs',
   privacy: 'No trackers, no analytics. Sound stays off until you turn it on.',

@@ -1,15 +1,14 @@
 /**
- * The optional backend (backend/, deployed on Emergent). Its URL comes from
- * VITE_API_URL; without it, or when a call fails, callers fall back to their
- * offline answers and say so on screen.
+ * The backend (backend/). In production one server serves the site and the
+ * API together, so calls go to /api on the same address; in development Vite
+ * forwards /api to the local backend. VITE_API_URL points elsewhere if the API
+ * ever lives on its own. On any failure, callers fall back to their offline
+ * answers and say so on screen.
  */
 const BASE = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '') ?? '';
 
-export const hasBackend = BASE !== '';
-
 /** POST JSON and parse the reply, or null on any failure. */
 export async function postJSON<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T | null> {
-  if (!hasBackend) return null;
   try {
     const res = await fetch(`${BASE}${path}`, {
       method: 'POST',
@@ -17,7 +16,8 @@ export async function postJSON<T>(path: string, body: unknown, signal?: AbortSig
       body: JSON.stringify(body),
       signal,
     });
-    return res.ok ? ((await res.json()) as T) : null;
+    if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return null;
+    return (await res.json()) as T;
   } catch {
     return null;
   }

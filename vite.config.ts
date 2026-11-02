@@ -7,4 +7,6 @@ import tailwindcss from '@tailwindcss/vite';
 // frame never waits on the game engine.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // In development the backend runs on its own port; in production one server serves both.
+  server: { proxy: { '/api': 'http://localhost:8000' } },
 });

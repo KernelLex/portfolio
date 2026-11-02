@@ -10,7 +10,7 @@ export default function Home() {
   const { open } = useBrowser();
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pt-6 pb-14 sm:px-8 sm:pt-8">
+    <div className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] px-4 pt-6 pb-14 sm:px-8 sm:pt-8 xl:px-12">
       <header className="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
         <div>
           <p className="font-mono text-[11px] tracking-[0.25em] text-accent uppercase">{HOME.eyebrow}</p>

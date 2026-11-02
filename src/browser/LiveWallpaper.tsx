@@ -1,4 +1,5 @@
 import { Component, Suspense, lazy, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useSkin } from '../lib/skin';
 
 const Starfield = lazy(() => import('./Starfield'));
 
@@ -33,6 +34,7 @@ type Props = {
 export default function LiveWallpaper({ paused, reducedMotion, sky = true }: Props) {
   const hidden = useSyncExternalStore(subscribeVisibility, () => document.hidden, () => false);
   const [ready, setReady] = useState(false);
+  const skin = useSkin();
 
   return (
     <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${sky ? 'space-sky' : ''}`}>
@@ -40,7 +42,7 @@ export default function LiveWallpaper({ paused, reducedMotion, sky = true }: Pro
         <div className={`absolute inset-0 transition-opacity duration-[1800ms] ease-out ${ready ? 'opacity-100' : 'opacity-0'}`}>
           <Quiet>
             <Suspense fallback={null}>
-              <Starfield paused={paused || hidden} onReady={() => setReady(true)} />
+              <Starfield key={skin} pixel={skin === 'pixel'} paused={paused || hidden} onReady={() => setReady(true)} />
             </Suspense>
           </Quiet>
         </div>

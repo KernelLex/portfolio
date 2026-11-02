@@ -7,7 +7,7 @@ import { SIDE_BUILDS, SIDE_BUILDS_PAGE as P } from '../../content/sideBuilds';
 export default function SideBuilds() {
   const { open } = useBrowser();
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8">
+    <div className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] px-4 pt-6 pb-16 sm:px-8 sm:pt-8 xl:px-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-xl">
           <p className="font-mono text-[11px] tracking-[0.25em] text-accent uppercase">{P.eyebrow}</p>

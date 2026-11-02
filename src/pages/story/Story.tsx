@@ -56,7 +56,7 @@ export default function Story() {
   }, [at, done, go]);
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col px-4 pt-6 pb-10 sm:px-8 sm:pt-8">
+    <div className="mx-auto flex min-h-full w-full max-w-6xl 2xl:max-w-[1440px] flex-col px-4 pt-6 pb-10 sm:px-8 sm:pt-8 xl:px-12">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] tracking-[0.25em] text-accent uppercase">{STORY.eyebrow}</p>

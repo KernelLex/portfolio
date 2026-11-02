@@ -130,7 +130,7 @@ export default function Control() {
   const gauge = GAUGES.find((g) => g.id === selected);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8">
+    <div className="mx-auto w-full max-w-7xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8 xl:px-12 2xl:max-w-[1440px]">
       <header className="max-w-xl">
         <p className="font-mono text-[11px] tracking-[0.25em] text-accent uppercase">{COPY.eyebrow}</p>
         <h1 className="mt-2 font-display text-5xl text-ink sm:text-6xl">{COPY.title}</h1>

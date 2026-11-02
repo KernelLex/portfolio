@@ -82,7 +82,7 @@ export default function Amoghpedia() {
   const view = address.query.get('view') === 'wiki' ? 'wiki' : 'profile';
   return (
     <>
-      <div className="mx-auto flex w-full max-w-6xl justify-end px-4 pt-6 sm:px-8" role="radiogroup" aria-label={PROFILE.viewsLabel}>
+      <div className="mx-auto flex w-full max-w-6xl 2xl:max-w-[1440px] justify-end px-4 pt-6 sm:px-8 xl:px-12" role="radiogroup" aria-label={PROFILE.viewsLabel}>
         <div className="flex rounded-lg border border-white/[0.1] bg-surface/60 p-0.5 font-mono text-[11px]">
           {(['profile', 'wiki'] as const).map((v) => (
             <button
@@ -136,7 +136,7 @@ function Wiki() {
   );
 
   return (
-    <article className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8">
+    <article className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] px-4 pt-6 pb-16 sm:px-8 sm:pt-8 xl:px-12">
       <header className="border-b border-white/[0.08] pb-4">
         <nav className="mb-5 flex gap-1 font-mono text-[11px]" aria-label={ARTICLE.tabs.label}>
           <span className="rounded-md border border-white/[0.1] bg-white/[0.05] px-2.5 py-1 text-ink">{ARTICLE.tabs.article}</span>

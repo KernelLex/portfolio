@@ -59,6 +59,65 @@
   }
 }
 
+/* --- The pixel skin -------------------------------------------------------
+   The intro's pixel art, carried through the PC and the browser: pixel fonts,
+   square corners, hard drop shadows, a pixelated sky. Off, the site is the
+   calm glass look again; nothing else changes. */
+:root[data-skin='pixel'] {
+  --font-ui: 'Pixelify Sans', 'Silkscreen', ui-sans-serif, sans-serif;
+  --font-display: 'Pixelify Sans', ui-sans-serif, sans-serif;
+  --font-mono: 'Silkscreen', ui-monospace, monospace;
+  --font-condensed: 'Press Start 2P', ui-monospace, monospace;
+}
+
+:root[data-skin='pixel'] body {
+  -webkit-font-smoothing: none;
+}
+
+:root[data-skin='pixel'] *,
+:root[data-skin='pixel'] *::before,
+:root[data-skin='pixel'] *::after {
+  border-radius: 0 !important;
+}
+
+/* Pixel fonts have no italics, and the display face reads best a little heavier. */
+:root[data-skin='pixel'] .italic {
+  font-style: normal;
+}
+
+:root[data-skin='pixel'] .font-display {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+:root[data-skin='pixel'] :is(.glass, [class*='rounded-2xl'], [class*='rounded-3xl']) {
+  box-shadow: 4px 4px 0 0 rgb(0 0 0 / 0.55);
+}
+
+:root[data-skin='pixel'] .bg-accent {
+  box-shadow: 3px 3px 0 0 #7a4413;
+}
+
+:root[data-skin='pixel'] button.bg-accent:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 #7a4413;
+}
+
+:root[data-skin='pixel'] :is(img, canvas) {
+  image-rendering: pixelated;
+}
+
+/* Scanlines over the PC and the browser (the intro has its own). */
+.pixel-crt {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0.16) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 62%, rgb(0 0 0 / 0.32) 100%);
+}
+
 @utility hairline {
   border: 1px solid var(--hairline);
 }
