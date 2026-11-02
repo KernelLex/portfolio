@@ -27,11 +27,23 @@ export const FRAMEABLE: ReadonlyArray<string> = Object.values(LIVE)
   .filter((site) => site.frameable)
   .map((site) => site.href);
 
-/** Product walkthroughs on YouTube (unlisted; uploaded by Thushaar K N). */
-export const VIDEOS = {
-  novaErp: { id: 'OdFdVJgRYs4', title: 'Nova ERP walkthrough' },
-  novaCrm: { id: 'lO3SrFwmit0', title: 'Nova CRM walkthrough' },
-  novaHrms: { id: 'yHgRfNgJLLE', title: 'Nova HRMS walkthrough' },
-} as const;
+export type Clip = { src: string; poster: string; title: string; audio: boolean };
 
-export type Video = (typeof VIDEOS)[keyof typeof VIDEOS];
+const clip = (name: string, title: string, audio: boolean): Clip => ({
+  src: `${import.meta.env.BASE_URL}videos/${name}.mp4`,
+  poster: `${import.meta.env.BASE_URL}videos/${name}.jpg`,
+  title,
+  audio,
+});
+
+/**
+ * Amogh's project videos (from his Google Drive), re-cut as 9:16 shorts and
+ * served by the site itself: no third-party player, nothing tracking.
+ */
+export const CLIPS = {
+  erp: clip('erp', 'Nova ERP', false),
+  crm: clip('crm', 'Nova CRM', true),
+  hrms: clip('hrms', 'Nova HRMS', true),
+  metakai: clip('metakai', 'Metakai', true),
+  cyberbane: clip('cyberbane', 'CyberBane', false),
+} as const;

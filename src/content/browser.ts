@@ -46,7 +46,6 @@ export const SETTINGS = {
 /** Embedded media and the in-browser site viewer. */
 export const MEDIA = {
   play: (title: string) => `Play ${title}`,
-  youtubeNote: 'Plays from YouTube in privacy-enhanced mode, and loads only when you press play.',
   openHere: 'Open in Navigator',
   liveSite: 'Live site, shown inside Navigator',
   newTab: 'Open in a new tab',

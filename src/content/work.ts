@@ -1,4 +1,4 @@
-import { LIVE, VIDEOS, type LiveSite, type Video } from './links';
+import { CLIPS, LIVE, type Clip, type LiveSite } from './links';
 
 /**
  * Client Work: one entry per case study. Facts only from CLAUDE.md section 3,
@@ -20,7 +20,7 @@ export type CaseStudy = {
   live?: LiveSite;
   /** Shown when there is no live link to share. */
   privacy?: string;
-  video?: Video;
+  video?: Clip;
   /** Gradient for the cover, until there are screenshots. */
   tint: string;
 };
@@ -60,7 +60,7 @@ export const CLIENT_WORK: ReadonlyArray<CaseStudy> = [
     result: 'In its main testing phase, with one of the group’s companies as the test bed. Built by Amogh and a friend; the two of them also built the Vera Enterprises website.',
     stack: ['ERPNext v15', 'Frappe HRMS (headless)', 'React', 'TypeScript', 'Tailwind', 'Ollama', 'Ubuntu', 'nginx', 'Cloudflare Tunnel'],
     live: LIVE.vera,
-    video: VIDEOS.novaErp,
+    video: CLIPS.erp,
     tint: 'radial-gradient(ellipse at 20% 20%, rgb(245 163 92 / 0.35), transparent 60%), radial-gradient(ellipse at 90% 90%, rgb(139 108 255 / 0.3), transparent 60%)',
   },
   {
@@ -148,9 +148,9 @@ export const NOVA_PRODUCTS: ReadonlyArray<CaseStudy> = [
       'Won quotes become projects, with purchase, goods receipt, site inventory and service tickets; logistics that need proof of delivery.',
       'Accounting data from Tally, reconciled against the company’s own books to within about one percent; documents read into records with a review queue; an assistant that answers questions about the company’s own figures.',
     ],
-    result: 'Built and running. The walkthrough is recorded on the Vera Enterprises workspaces.',
+    result: 'Built and running.',
     stack: ['ERP', 'Tally', 'Multi-company'],
-    video: VIDEOS.novaErp,
+    video: CLIPS.erp,
     tint: 'radial-gradient(ellipse at 15% 25%, rgb(245 163 92 / 0.32), transparent 60%), radial-gradient(ellipse at 85% 80%, rgb(84 232 224 / 0.22), transparent 60%)',
   },
   {
@@ -168,7 +168,7 @@ export const NOVA_PRODUCTS: ReadonlyArray<CaseStudy> = [
     ],
     result: 'Built and running.',
     stack: ['CRM', 'Invoicing', 'Role-based access'],
-    video: VIDEOS.novaCrm,
+    video: CLIPS.crm,
     tint: 'radial-gradient(ellipse at 80% 20%, rgb(255 95 162 / 0.26), transparent 60%), radial-gradient(ellipse at 20% 85%, rgb(139 108 255 / 0.28), transparent 60%)',
   },
   {
@@ -185,7 +185,7 @@ export const NOVA_PRODUCTS: ReadonlyArray<CaseStudy> = [
     ],
     result: 'Built and running.',
     stack: ['HRMS', 'Payroll', 'WCAG 2.1 AA'],
-    video: VIDEOS.novaHrms,
+    video: CLIPS.hrms,
     tint: 'radial-gradient(ellipse at 30% 80%, rgb(84 232 224 / 0.28), transparent 60%), radial-gradient(ellipse at 75% 15%, rgb(245 163 92 / 0.24), transparent 60%)',
   },
 ];

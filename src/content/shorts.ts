@@ -1,24 +1,24 @@
-import { VIDEOS, type Video } from './links';
+import { CLIPS, type Clip } from './links';
 
-/**
- * Shorts: a vertical feed of project videos. Each entry can cut a moment out
- * of a longer video with start/end (seconds) once Amogh picks the moments;
- * until then each plays its whole walkthrough.
- */
-export type Short = { video: Video; title: string; caption: string; slug: string; start?: number; end?: number };
+/** Shorts: a vertical feed of Amogh's project videos. */
+export type Short = { clip: Clip; caption: string; link: { to: string; label: string } };
 
 export const SHORTS_PAGE = {
   title: 'Shorts',
-  hint: 'Scroll or use the arrow keys',
-  open: 'Open case study',
-  play: 'Tap to play',
+  hint: 'Scroll, swipe or use the arrow keys',
+  soundOn: 'Sound on',
+  soundOff: 'Tap for sound',
+  noSound: 'No sound on this one',
   previous: 'Previous short',
   next: 'Next short',
-  note: 'Plays from YouTube in privacy-enhanced mode, only after you press play.',
 } as const;
 
-export const SHORTS: ReadonlyArray<Short> = [
-  { video: VIDEOS.novaErp, title: 'Nova ERP', caption: 'Quote to cash to accounts, across a group of companies. Recorded on the Vera Enterprises workspaces.', slug: 'nova-erp' },
-  { video: VIDEOS.novaCrm, title: 'Nova CRM', caption: 'First call to last payment, for businesses that sell finite inventory. Nothing sold twice.', slug: 'nova-crm' },
-  { video: VIDEOS.novaHrms, title: 'Nova HRMS', caption: 'Payroll, leave, hiring and tax that reconcile every month.', slug: 'nova-hrms' },
+const CASE = 'Open the case study';
+
+export const SHORTS: ReadonlyArray<Short & { id: string }> = [
+  { id: 'metakai', clip: CLIPS.metakai, caption: 'Build the body you want. No ads, no account, and your data stays on your phone.', link: { to: 'side-builds', label: 'See the side builds' } },
+  { id: 'erp', clip: CLIPS.erp, caption: 'Nova ERP: quote to cash to accounts, across a group of companies.', link: { to: 'work/nova-erp', label: CASE } },
+  { id: 'crm', clip: CLIPS.crm, caption: 'Nova CRM: first call to last payment, for businesses that sell finite inventory.', link: { to: 'work/nova-crm', label: CASE } },
+  { id: 'cyberbane', clip: CLIPS.cyberbane, caption: 'A reputation overhaul for Cyberpunk 2077. Night City remembers.', link: { to: 'side-builds', label: 'See the side builds' } },
+  { id: 'hrms', clip: CLIPS.hrms, caption: 'Nova HRMS: the people and pay side, correct every month.', link: { to: 'work/nova-hrms', label: CASE } },
 ];

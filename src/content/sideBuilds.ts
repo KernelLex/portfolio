@@ -1,4 +1,4 @@
-import { LIVE, PROFILES, type LiveSite } from './links';
+import { CLIPS, LIVE, PROFILES, type Clip, type LiveSite } from './links';
 
 /** Side Builds: what Amogh builds to learn, to fix his own problems, or for fun. Facts from CLAUDE.md 3. */
 export type SideBuild = {
@@ -9,6 +9,8 @@ export type SideBuild = {
   live?: LiveSite;
   /** A number worth showing, only where one is on record. */
   stat?: { value: string; label: string };
+  /** Its short, in the Shorts feed. */
+  short?: { id: string; clip: Clip };
 };
 
 export const SIDE_BUILDS_PAGE = {
@@ -17,11 +19,26 @@ export const SIDE_BUILDS_PAGE = {
   lead: 'Small projects, built to learn, to solve my own problems, or just for fun.',
   github: PROFILES.github,
   githubLabel: 'More on GitHub',
+  watch: 'Watch the short',
   ask: (name: string) => `Tell me about ${name}`,
   askButton: 'Ask about this',
 } as const;
 
 export const SIDE_BUILDS: ReadonlyArray<SideBuild> = [
+  {
+    name: 'Metakai',
+    hook: 'Build the body you want: a fitness app for every goal, from cutting to running.',
+    detail: 'Calories from your own kitchen, every set and PR, GPS runs, watch sync and a physique pass. No ads, no account, and your data stays on your phone.',
+    stack: ['Mobile app', 'Fitness', 'On-device data'],
+    short: { id: 'metakai', clip: CLIPS.metakai },
+  },
+  {
+    name: 'CyberBane',
+    hook: 'A reputation overhaul for Cyberpunk 2077: Night City remembers what you do.',
+    detail: 'The street reacts to how you work, rivals come back harder, and one screen shows exactly why.',
+    stack: ['Game mod', 'Cyberpunk 2077'],
+    short: { id: 'cyberbane', clip: CLIPS.cyberbane },
+  },
   {
     name: 'TrueCommit',
     hook: 'A bounded autonomous revenue-recovery agent. The LLM sees and speaks but never spends.',

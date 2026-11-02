@@ -1,4 +1,4 @@
-import { ArrowUpRight, MessageCircle } from 'lucide-react';
+import { ArrowUpRight, MessageCircle, Play } from 'lucide-react';
 import { useBrowser } from '../../browser/BrowserContext';
 import LiveLinks from '../../components/LiveLinks';
 import { SIDE_BUILDS, SIDE_BUILDS_PAGE as P } from '../../content/sideBuilds';
@@ -41,6 +41,19 @@ export default function SideBuilds() {
                 </li>
               ))}
             </ul>
+            {b.short && (
+              <button
+                type="button"
+                onClick={() => open(`shorts?v=${b.short!.id}`)}
+                className="group relative mt-1 overflow-hidden rounded-xl border border-white/[0.08]"
+              >
+                <img src={b.short.clip.poster} alt="" loading="lazy" className="h-40 w-full object-cover opacity-80 transition-opacity group-hover:opacity-100" />
+                <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/30 text-sm text-white">
+                  <Play className="h-4 w-4 text-accent" fill="currentColor" strokeWidth={0} />
+                  {P.watch}
+                </span>
+              </button>
+            )}
             <div className="mt-auto flex flex-wrap items-center gap-3 pt-2">
               {b.live && <LiveLinks site={b.live} />}
               <button type="button" onClick={() => open(`ask?q=${encodeURIComponent(P.ask(b.name))}`)} className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">

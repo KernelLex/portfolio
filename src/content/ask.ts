@@ -87,9 +87,9 @@ export const FAQ: ReadonlyArray<Faq> = [
     tab: 'side-builds',
   },
   {
-    keywords: ['side', 'projects', 'throttle', 'avika', 'cropradar', 'leadscope', 'trading engine', 'fun'],
+    keywords: ['side', 'projects', 'throttle', 'avika', 'cropradar', 'leadscope', 'trading engine', 'fun', 'metakai', 'cyberbane', 'fitness', 'cyberpunk', 'mod'],
     answer:
-      "I build small things constantly: Throttle, an email scheduler that loses nothing across restarts; Avika, a free offline app for Bengaluru parents of children with disabilities; CropRadar, a crop-disease bot in English and Kannada; a trading strategy engine; and LeadScope.",
+      "I build small things constantly: Throttle, an email scheduler that loses nothing across restarts; Avika, a free offline app for Bengaluru parents of children with disabilities; CropRadar, a crop-disease bot in English and Kannada; Metakai, a fitness app that keeps your data on your phone; CyberBane, a reputation overhaul for Cyberpunk 2077; a trading strategy engine; and LeadScope.",
     tab: 'side-builds',
   },
   {

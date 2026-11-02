@@ -56,6 +56,8 @@ I love building small projects: to learn, to solve my own problems, or just for 
 - Avika: a free offline Android app for Bengaluru parents of children with disabilities.
 - CropRadar: a Telegram bot that helps farmers with crop-disease risk, in English and Kannada.
 - A trading strategy engine, and LeadScope (B2B prospect research).
+- Metakai: a fitness app ("Build the body you want"): calories, training sets and PRs, GPS runs, watch sync and a physique pass. No ads, no account, and your data stays on your phone.
+- CyberBane: a reputation overhaul mod for Cyberpunk 2077 ("Night City remembers"): the street reacts to how you play, rivals come back harder, and one screen shows why.
 - Top 10 at multiple national-level hackathons.
 
 ## Why I do this

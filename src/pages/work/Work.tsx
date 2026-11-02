@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, Lock, MessageCircle, PlayCircle, Radio } from 'lucide-react';
 import { useBrowser } from '../../browser/BrowserContext';
 import LiveLinks from '../../components/LiveLinks';
-import YouTube from '../../components/YouTube';
+import ClipPlayer from '../../components/ClipPlayer';
 import { ALL_WORK, CLIENT_WORK, NOVA_PRODUCTS, WORK, type CaseStudy } from '../../content/work';
 import { playClick } from '../../lib/sound';
 
@@ -137,7 +137,7 @@ function Study({ slug }: { slug: string }) {
         </div>
       </header>
 
-      {study.video && <YouTube video={study.video} className="mt-8" />}
+      {study.video && <ClipPlayer clip={study.video} className="mt-8" />}
 
       <div className="mt-8 grid gap-4 md:grid-cols-2">
         <section className={block}>
