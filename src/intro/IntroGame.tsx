@@ -53,6 +53,15 @@ export default function IntroGame({ start, onEnter, reducedMotion }: Props) {
 
     const watchdog = window.setTimeout(() => bail('scene did not start in time'), BOOT_WATCHDOG_MS);
 
+    // Typing to Byte is not playing: while a text field has focus, the game
+    // neither moves on letters nor swallows the space bar.
+    const typing = () => {
+      const el = document.activeElement;
+      if (game?.input?.keyboard) game.input.keyboard.enabled = !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement);
+    };
+    document.addEventListener('focusin', typing);
+    document.addEventListener('focusout', typing);
+
     void (async () => {
       try {
         // Phaser measures text at creation time, so the fonts have to be
@@ -121,6 +130,8 @@ export default function IntroGame({ start, onEnter, reducedMotion }: Props) {
     return () => {
       cancelled = true;
       window.clearTimeout(watchdog);
+      document.removeEventListener('focusin', typing);
+      document.removeEventListener('focusout', typing);
       game?.destroy(true);
       game = null;
       setMusicPlace(null);

@@ -13,14 +13,45 @@ export const GUIDE = {
   exitTour: 'Stop the tour',
   next: 'Next',
   reopen: 'Ask Byte for help',
+  drag: 'Drag me anywhere',
+  askLabel: 'Ask Byte where something is',
+  askPlaceholder: 'Where is his résumé?',
+  askSend: 'Ask',
+} as const;
+
+/**
+ * Byte's answers to "where is...?". It knows the site, not Amogh's life, so
+ * anything else goes to his AI twin. `going` names the page and its address
+ * before taking the visitor there.
+ */
+export const BYTE_ANSWERS = {
+  going: (title: string, address: string, blurb: string) => `Found it: ${title}, at ${address}. ${blurb} Taking you there.`,
+  caseStudy: (name: string, address: string) => `${name} has its own case study in Client Work, at ${address}. Taking you there.`,
+  toTwin: (address: string) => `I know my way around, not his whole life. His AI twin can answer that, so I'm passing your question to Ask Amogh, at ${address}.`,
+  tour: 'Starting the walkthrough from right here.',
+  fullscreen: 'Done: full screen toggled. Esc leaves it.',
+  me: "I'm Byte, the guide. Ask me where anything is and I'll take you there, or press Ctrl+B for the walkthrough.",
+  inside: (address: string) => `Straight into his browser, ${BROWSER_NAME}, at ${address}.`,
+  contact: (address: string) => `His LinkedIn and GitHub are on the Player Profile, at ${address}. Taking you there.`,
+} as const;
+
+/** Phrases Byte acts on itself, before looking for a page. Lower case. */
+export const BYTE_TOPICS = {
+  tour: ['tour', 'walkthrough', 'walk through', 'walk me through', 'guide me', 'show me around'],
+  fullscreen: ['full screen', 'fullscreen'],
+  me: ['who are you', 'what are you', 'your name', 'byte'],
+  inside: ['browser', 'navigator', 'the computer', 'his computer', 'pc', 'skip', 'skip the game', 'skip the intro'],
+  contact: ['contact', 'email', 'reach him', 'reach out', 'hire', 'linkedin', 'github', 'socials'],
+  /** How to play: answered with the tip for wherever the visitor is. */
+  controls: ['controls', 'how do i play', 'how to play', 'how do i walk', 'how do i move', 'how do i jump', 'jump', 'sit down', 'jack in'],
 } as const;
 
 /** Exploring: one tip per place, shown the first time the visitor gets there. */
 export const TIPS: Record<Place, { keys: string; touch: string } | null> = {
   title: null,
   street: {
-    keys: 'Hold → to walk and Space to jump. Grab the voice notes, then head into the cyber cafe at the end of the street.',
-    touch: 'Hold the screen to walk and tap to jump. Grab the voice notes, then head into the cyber cafe at the end of the street.',
+    keys: 'Hold → to walk and Space to jump. Grab the voice notes, then head into the cyber cafe at the end of the street. Ask me where anything is, and drag me anywhere.',
+    touch: 'Hold the screen to walk and tap to jump. Grab the voice notes, then head into the cyber cafe at the end of the street. Ask me where anything is.',
   },
   cafe: {
     keys: 'Walk to seat 3, press ↑ to sit, then ↑ again to jack in.',
@@ -33,8 +64,8 @@ export const TIPS: Record<Place, { keys: string; touch: string } | null> = {
     touch: `Amogh's PC. Tap ${BROWSER_NAME} to open his browser.`,
   },
   browser: {
-    keys: 'Every tab is a part of his story. Pick one from the sidebar, or tell the address bar where to go, like "open client work".',
-    touch: 'Every tab is a part of his story. Pick one from the bar at the bottom.',
+    keys: 'Every tab is a part of his story. Pick one from the sidebar, or ask me where something is, like "where is his résumé?", and I will take you there.',
+    touch: 'Every tab is a part of his story. Pick one from the bar at the bottom, or ask me where something is and I will take you there.',
   },
 };
 
@@ -57,7 +88,7 @@ export const TOUR = {
     { page: 'amoghpedia', text: 'His Player Profile: stats, loadout, achievements and quests at a glance. The full wiki is one click away.' },
     { page: 'shorts', text: 'Shorts: quick videos of what he has built. Swipe through them.' },
     { page: 'ask', text: 'Ask Amogh: questions go to his AI twin, which answers from what he told it.' },
-    { page: 'home', text: "That's the tour. Explore anything you like, and press Ctrl+B to see it again." },
+    { page: 'home', text: "That's the tour. Ask me where anything is and I'll take you there, or press Ctrl+B to see it again." },
   ] satisfies { page: PageId; text: string }[],
 } as const;
 

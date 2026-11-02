@@ -9,16 +9,18 @@ const NAVIGATE = /^(?:please |can you |could you )?(?:open|show(?: me)?|go(?: to
 // Asking something, rather than asking to go somewhere.
 const QUESTION = /^(?:what|whats|why|how|who|when|where|which|do|did|does|are|is|was|were|can|could|would|will|have|has|tell me|explain)\b/;
 
-const normalise = (s: string) =>
+export const normalise = (s: string) =>
   s
     .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
     .replace(/['’]/g, '')
     .replace(/[^\p{L}\p{N}\s/-]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
 /** The page whose title or alias appears in the text; the longest phrase wins. */
-function bestPage(text: string): { page: PageId; phrase: string } | null {
+export function bestPage(text: string): { page: PageId; phrase: string } | null {
   const padded = ` ${text} `;
   let best: { page: PageId; phrase: string } | null = null;
   for (const page of PAGE_IDS) {

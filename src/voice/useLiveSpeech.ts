@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { MIC, type SpeechLanguage } from '../content/voice';
+import { hushMusic } from '../lib/music';
 
 // The Web Speech API is not in TypeScript's DOM types, and Chrome still prefixes it.
 type Recognition = {
@@ -45,6 +46,13 @@ export function useLiveSpeech({ lang, onFinal, onUtterance, keepAlive = false }:
   const heard = useRef('');
   const handlers = useRef({ onFinal, onUtterance });
   handlers.current = { onFinal, onUtterance };
+  const id = useId();
+
+  // The music would end up in the transcript.
+  useEffect(() => {
+    hushMusic(id, listening);
+    return () => hushMusic(id, false);
+  }, [id, listening]);
 
   const run = useCallback(() => {
     const Ctor = recognizer();

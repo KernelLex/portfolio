@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { timings } from '../config';
 import { bootLines } from '../content/desktop';
 import type { IntroResult } from '../intro/scenes/StreetScene';
+import { setMusicPlace } from '../lib/music';
 import { playClick, playWhoosh } from '../lib/sound';
 import { guide, useGuide } from '../tour/guide';
 import AppWindow from './AppWindow';
@@ -104,6 +105,12 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff, onRepl
     return () => window.clearTimeout(t);
   }, [stage, quick, openBrowser]);
 
+  // The PC's own calm tune, from the desktop on; silence again on logging off.
+  useEffect(() => {
+    if (stage === 'desktop') setMusicPlace('pc');
+  }, [stage]);
+  useEffect(() => () => setMusicPlace(null), []);
+
   // Tell Byte where the visitor is.
   useEffect(() => {
     guide.at(stage === 'boot' ? 'boot' : browser === 'open' ? 'browser' : 'desktop');
@@ -114,6 +121,11 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff, onRepl
   useEffect(() => {
     if (tour.mode === 'tour' && tour.place === 'desktop' && tour.narrated) openBrowser(rectOf('[data-app="navigator"]'));
   }, [tour.mode, tour.place, tour.narrated, openBrowser]);
+
+  // Byte is taking the visitor somewhere in the browser: open it.
+  useEffect(() => {
+    if (stage === 'desktop' && tour.trip) openBrowser(rectOf('[data-app="navigator"]'));
+  }, [stage, tour.trip, openBrowser]);
 
   const running = [
     ...(browser !== 'closed' ? [{ app: appMeta('navigator'), minimized: browser === 'minimized' }] : []),

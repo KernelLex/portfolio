@@ -58,6 +58,13 @@ export default function BrowserShell({ visible, onMinimize, onClose, onReplayInt
     if (step) open(step.page);
   }, [tour.mode, tour.place, tour.line, open]);
 
+  // Byte was asked where something is: open it.
+  useEffect(() => {
+    if (!visible || !tour.trip) return;
+    const to = guide.arrive();
+    if (to) open(to);
+  }, [visible, tour.trip, open]);
+
   const showTips = useCallback(() => {
     playClick();
     guide.explore();

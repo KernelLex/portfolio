@@ -7,9 +7,12 @@ import { audioContext, isSoundOn, subscribeSound } from './sound';
  * line on every other pass, and rain underneath.
  *
  * Silent until the visitor turns sound on. Inside the cafe it is heard through
- * the walls: low-passed and quieter. It stops when they jack in.
+ * the walls: low-passed and quieter. It stops when they jack in, and the PC
+ * plays its own calm piece: the same key, no drums, a slow bell over pads.
+ * Whenever something else is making sound - a video with its sound on, a
+ * reply read aloud, the microphone listening - the music steps aside.
  */
-export type MusicPlace = 'street' | 'cafe' | null;
+export type MusicPlace = 'street' | 'cafe' | 'pc' | null;
 
 const BPM = 92;
 const STEP = 60 / BPM / 4; // a sixteenth
@@ -43,10 +46,34 @@ const LEAD: ReadonlyArray<[number, number, number, number]> = [
   [7, 12, 69, 4],
 ];
 
-const MIX: Record<'street' | 'cafe', { volume: number; cutoff: number; rain: number }> = {
+/** The PC's chords: the city's, with sevenths, an octave lower and slower to change. */
+const PC_CHORDS = [
+  [45, 57, 60, 64, 67],
+  [41, 57, 60, 64, 65],
+  [48, 55, 59, 64, 67],
+  [43, 55, 59, 62, 65],
+];
+
+/** The PC's bell, per four bars: [sixteenth, chord tone]. */
+const BELL: ReadonlyArray<[number, number]> = [
+  [0, 4],
+  [6, 3],
+  [12, 2],
+  [24, 3],
+  [32, 1],
+  [40, 2],
+  [44, 4],
+  [56, 3],
+];
+
+const MIX: Record<'street' | 'cafe' | 'pc', { volume: number; cutoff: number; rain: number }> = {
   street: { volume: 0.22, cutoff: 16000, rain: 0.05 },
   cafe: { volume: 0.14, cutoff: 850, rain: 0.006 },
+  pc: { volume: 0.16, cutoff: 3200, rain: 0 },
 };
+
+/** How often to check whether something else has started making sound. */
+const LISTEN_EVERY = 10;
 
 const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
 
@@ -68,6 +95,9 @@ let timer = 0;
 let step = 0;
 let loop = 0;
 let next = 0;
+let ticks = 0;
+let hushed = false;
+const holds = new Set<string>();
 
 function impulse(ctx: AudioContext, seconds: number, decay: number): AudioBuffer {
   const length = Math.floor(ctx.sampleRate * seconds);
@@ -273,9 +303,65 @@ function lead(g: Graph, t: number, midi: number, length: number): void {
   vib.stop(t + length + 0.3);
 }
 
+function bell(g: Graph, t: number, midi: number): void {
+  for (const [ratio, peak] of [
+    [1, 0.07],
+    [2.01, 0.018],
+  ] as const) {
+    const o = g.ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = hz(midi) * ratio;
+    const v = g.ctx.createGain();
+    envelope(v, t, peak, 0.008, ratio === 1 ? 2.2 : 0.7);
+    o.connect(v);
+    v.connect(g.dry);
+    const d = g.ctx.createGain();
+    d.gain.value = 0.5;
+    v.connect(d).connect(g.delayIn);
+    const r = g.ctx.createGain();
+    r.gain.value = 0.7;
+    v.connect(r).connect(g.verbIn);
+    o.start(t);
+    o.stop(t + 2.4);
+  }
+}
+
+function sub(g: Graph, t: number, midi: number, length: number): void {
+  const o = g.ctx.createOscillator();
+  o.type = 'sine';
+  o.frequency.value = hz(midi);
+  const v = g.ctx.createGain();
+  v.gain.setValueAtTime(0.0001, t);
+  v.gain.exponentialRampToValueAtTime(0.12, t + 1.4);
+  v.gain.setValueAtTime(0.12, t + length - 0.8);
+  v.gain.exponentialRampToValueAtTime(0.0001, t + length + 0.4);
+  o.connect(v).connect(g.dry);
+  o.start(t);
+  o.stop(t + length + 0.5);
+}
+
 /* --------------------------------------------------------- sequencer ---- */
 
+/** The PC: a chord every four bars, a bell line that shifts each pass, nothing that thumps. */
+function playPcStep(g: Graph, s: number, t: number): void {
+  const phrase = ((loop * LOOP_STEPS + s) / 64) | 0;
+  const i = s % 64;
+  const chord = PC_CHORDS[phrase % PC_CHORDS.length];
+  if (i === 0) {
+    pad(g, t, chord.slice(1), STEP * 64);
+    sub(g, t, chord[0], STEP * 64);
+  }
+  for (const [at, tone] of BELL) {
+    if (at === i) bell(g, t, chord[1 + ((tone + phrase) % 4)] + 12);
+  }
+}
+
+
 function playStep(g: Graph, s: number, t: number): void {
+  if (place === 'pc') {
+    playPcStep(g, s, t);
+    return;
+  }
   const bar = (s / 16) | 0;
   const i = s % 16;
   const chord = CHORDS[(bar >> 1) % CHORDS.length];
@@ -297,9 +383,23 @@ function playStep(g: Graph, s: number, t: number): void {
   }
 }
 
+/** Is anything else on the page making sound? */
+function otherAudio(): boolean {
+  if (holds.size || window.speechSynthesis?.speaking) return true;
+  for (const m of document.querySelectorAll('video, audio')) {
+    const media = m as HTMLMediaElement;
+    if (!media.paused && !media.ended && !media.muted && media.volume > 0) return true;
+  }
+  return false;
+}
+
 function tick(): void {
   const g = graph;
   if (!g) return;
+  if (++ticks % LISTEN_EVERY === 0 && otherAudio() !== hushed) {
+    hushed = !hushed;
+    applyMix(false);
+  }
   while (next < g.ctx.currentTime + 0.15) {
     playStep(g, step, next);
     next += STEP;
@@ -313,7 +413,7 @@ function applyMix(fadeIn: boolean): void {
   const m = MIX[place];
   const t = graph.ctx.currentTime;
   graph.out.gain.cancelScheduledValues(t);
-  graph.out.gain.setTargetAtTime(m.volume, t, fadeIn ? 1.2 : 0.4);
+  graph.out.gain.setTargetAtTime(hushed ? 0 : m.volume, t, hushed ? 0.15 : fadeIn ? 1.2 : 0.8);
   graph.tone.frequency.setTargetAtTime(m.cutoff, t, 0.4);
   graph.rain.gain.setTargetAtTime(m.rain, t, 0.6);
 }
@@ -325,6 +425,7 @@ function start(): void {
   step = 0;
   loop = 0;
   next = ctx.currentTime + 0.1;
+  hushed = otherAudio();
   applyMix(true);
   timer = window.setInterval(tick, 25);
 }
@@ -349,10 +450,16 @@ function sync(): void {
   else applyMix(false);
 }
 
-/** Where the player is: the street, inside the cafe, or nowhere (silence). */
+/** Where the player is: the street, inside the cafe, at the PC, or nowhere (silence). */
 export function setMusicPlace(where: MusicPlace): void {
   place = where;
   sync();
+}
+
+/** Something the music cannot see for itself (the microphone) wants quiet, or is done. */
+export function hushMusic(reason: string, on: boolean): void {
+  if (on) holds.add(reason);
+  else holds.delete(reason);
 }
 
 subscribeSound(sync);

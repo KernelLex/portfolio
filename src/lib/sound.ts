@@ -12,6 +12,8 @@ const listeners = new Set<() => void>();
 
 function audio(): AudioContext | null {
   if (!enabled) return null;
+  // Before the visitor's first click or key the browser would refuse anyway.
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return null;
   if (!ctx) {
     try {
       ctx = new AudioContext();
@@ -176,4 +178,11 @@ export function playScan(): void {
 /** One tick of the sync bar. */
 export function playTick(): void {
   tone({ freq: 1800, duration: 0.025, type: 'square', gain: 0.012 });
+}
+
+/** The title landing: a sub drop, a crack, and a rising shimmer. */
+export function playSting(): void {
+  tone({ freq: 110, to: 32, duration: 0.9, type: 'sine', gain: 0.12 });
+  tone({ freq: 2400, to: 300, duration: 0.12, type: 'sawtooth', gain: 0.02 });
+  window.setTimeout(() => tone({ freq: 440, to: 1760, duration: 0.7, type: 'triangle', gain: 0.025 }), 120);
 }

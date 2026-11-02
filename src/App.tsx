@@ -76,6 +76,15 @@ export default function App() {
     [reducedMotion, sitDown],
   );
 
+  // Byte was asked where something is: from the street or the cafe, that means
+  // skipping ahead to the PC, which opens the browser at the answer.
+  useEffect(() => {
+    if (phase !== 'intro') return;
+    return guide.subscribe(() => {
+      if (guide.get().trip) sitDown('skipped');
+    });
+  }, [phase, sitDown]);
+
   const handleReplay = useCallback(() => {
     setIntroStart(FROM_THE_TOP);
     setPhase('intro');

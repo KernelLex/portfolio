@@ -3,8 +3,9 @@ import { useSyncExternalStore } from 'react';
 /**
  * The guide bot's state, shared by the game (Phaser) and the PC and browser
  * (React): whether the visitor is being walked through or finding their own
- * way (chosen on the title screen), where in the experience they are, and how
- * far the narration for that place has got.
+ * way (chosen on the title screen), where in the experience they are, how
+ * far the narration for that place has got, and where Byte has been asked to
+ * take them.
  */
 export type GuideMode = 'tour' | 'explore';
 export type Place = 'title' | 'street' | 'cafe' | 'link' | 'boot' | 'desktop' | 'browser';
@@ -18,9 +19,13 @@ type GuideState = {
   line: number;
   /** The tour has said everything for this place; the next action may go ahead. */
   narrated: boolean;
+  /** Byte's answer to the visitor's last question, shown until it is dismissed. */
+  said: string | null;
+  /** The address Byte is taking the visitor to, until the browser opens it. */
+  trip: string | null;
 };
 
-let state: GuideState = { mode: 'explore', place: 'title', open: false, line: 0, narrated: false };
+let state: GuideState = { mode: 'explore', place: 'title', open: false, line: 0, narrated: false, said: null, trip: null };
 const listeners = new Set<() => void>();
 const seen = new Set<Place>();
 
@@ -41,12 +46,14 @@ export const guide = {
     if (state.place === place) return;
     const firstTime = !seen.has(place);
     seen.add(place);
-    set({ place, line: 0, narrated: false, open: state.mode === 'explore' ? firstTime : true });
+    // On the way somewhere, Byte keeps saying where, rather than tipping each stop.
+    const open = state.said !== null || (state.mode === 'explore' ? firstTime && state.trip === null : true);
+    set({ place, line: 0, narrated: false, open });
   },
 
   /** Start (or restart) the walkthrough from wherever the visitor is. */
   tour(): void {
-    set({ mode: 'tour', open: true, line: 0, narrated: false });
+    set({ mode: 'tour', open: true, line: 0, narrated: false, said: null, trip: null });
   },
 
   explore(): void {
@@ -60,7 +67,25 @@ export const guide = {
   },
 
   setOpen(open: boolean): void {
-    set({ open });
+    set(open ? { open } : { open, said: null });
+  },
+
+  /** Byte answers a question; asking takes over from the walkthrough. */
+  say(said: string): void {
+    seen.add(state.place);
+    set({ mode: 'explore', open: true, said });
+  },
+
+  /** Take the visitor to an address in the browser, from wherever they are. */
+  go(to: string): void {
+    set({ trip: to });
+  },
+
+  /** The browser has the trip: hand over the address, once. */
+  arrive(): string | null {
+    const to = state.trip;
+    if (to !== null) set({ trip: null });
+    return to;
   },
 
   /** The tour's narration moves on; past the last line, the place is narrated. */

@@ -7,8 +7,9 @@ export const TITLE = {
   subtitle: BROWSER_NAME.split(' ').slice(1).join(' ').toUpperCase() || BROWSER_NAME.toUpperCase(),
   tagline: 'A portfolio you play',
   loading: 'LOADING',
-  /** Rotates under the loading bar. */
+  /** The boot log under the loading bar: each line ticks OK as loading passes it. */
   flavour: ['Waking the city', 'Charging the neon', 'Starting the rain', 'Opening the cyber cafe', 'Warming up seat 03'],
+  ok: 'OK',
   menu: [
     { id: 'explore', label: 'START GAME', hint: 'Explore on your own' },
     { id: 'tour', label: 'GUIDED TOUR', hint: 'Byte walks you through it' },
