@@ -68,6 +68,11 @@ export const LINK = {
   detail: `WRIST LINK  >  SEAT 0${SEAT_NUMBER}  >  HANDSHAKE OK`,
   /** Typed out beside the wrist while it is scanned. */
   readout: ['USER   AMOGH P', 'IMPLANT   WRIST', `SEAT   0${SEAT_NUMBER}`],
+  /** The jack-out, played on logging off: the same close-up, in reverse. */
+  disconnecting: 'DISCONNECTING',
+  jackingOut: 'JACKING OUT',
+  closed: 'LINK CLOSED',
+  terminated: 'LINK TERMINATED',
 } as const;
 
 /** Shown under the game on a phone held upright. */

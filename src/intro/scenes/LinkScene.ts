@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { introPalette } from '../../config';
 import { LINK } from '../../content/intro';
 import { setMusicPlace } from '../../lib/music';
-import { playAlarm, playCableOut, playClick, playJackIn, playScan, playTick } from '../../lib/sound';
+import { playAlarm, playCableIn, playCableOut, playClick, playJackIn, playScan, playTick, playWhoosh } from '../../lib/sound';
 import { VIEW_H } from '../viewport';
 import { ADD, PIXEL_FONT, SIGN_FONT, addLight, attachPostFX, colour } from './shared';
 
@@ -44,10 +44,47 @@ const T = {
 const CABLE_MS = T.seat - T.cable;
 const SYNC_MS = T.syncEnd - T.seat - 80;
 
+/** The jack-out's cue sheet: the same beats, backwards. */
+const OUT = {
+  open: 180,
+  band: 420,
+  glitch: 1700,
+  unplug: 2050,
+  retracted: 2650,
+  closed: 2900,
+  out: 3550,
+  done: 4400,
+} as const;
+const OUT_CABLE_MS = OUT.retracted - OUT.unplug - 80;
+
 export type LinkSceneData = {
-  /** Called once the screen has collapsed to black. */
+  /** in: jacking in, ending on black. out: logging off, ending on the cafe. */
+  mode?: 'in' | 'out';
+  /** Called when the cutscene is over. */
   done: () => void;
   reducedMotion: boolean;
+};
+
+/** The close-up's pieces, handed to the jack-out. */
+type LinkParts = {
+  w: number;
+  cy: number;
+  start: Point;
+  seat: Point;
+  arm: Phaser.GameObjects.Sprite;
+  port: Phaser.GameObjects.Sprite;
+  plug: Phaser.GameObjects.Image;
+  socketGlow: Phaser.GameObjects.Image;
+  status: Phaser.GameObjects.Text;
+  headline: Phaser.GameObjects.Text;
+  splitRed: Phaser.GameObjects.Text;
+  splitCyan: Phaser.GameObjects.Text;
+  readouts: Array<Phaser.GameObjects.Graphics | Phaser.GameObjects.Text>;
+  drawSync: (k: number) => void;
+  topBar: Phaser.GameObjects.Rectangle;
+  bottomBar: Phaser.GameObjects.Rectangle;
+  flash: Phaser.GameObjects.Rectangle;
+  slices: Phaser.GameObjects.Graphics;
 };
 
 type Point = { x: number; y: number };
@@ -68,6 +105,9 @@ const bezier = (a: Point, c: Point, b: Point, t: number): Point => {
  *   collapse an RGB glitch, then the bars close to a line, like a screen going off
  *
  * It ends on black, which is exactly where the React boot sequence begins.
+ * Logging off plays it backwards (mode 'out'): out of black onto the plugged-in
+ * close-up, the sync drains, the plug pops and the cable whips home, LINK
+ * CLOSED, and the bars open on the cafe.
  */
 export class LinkScene extends Phaser.Scene {
   private stripes!: Phaser.GameObjects.Graphics;
@@ -89,7 +129,8 @@ export class LinkScene extends Phaser.Scene {
     this.path = null;
     this.still = data.reducedMotion;
     attachPostFX(this);
-    setMusicPlace(null);
+    // The cafe keeps its music on the way out.
+    if (data.mode !== 'out') setMusicPlace(null);
 
     // The close-up's layout scales with the viewport, so a narrow phone still
     // fits both ends of the cable.
@@ -217,6 +258,12 @@ export class LinkScene extends Phaser.Scene {
     const flash = this.add.rectangle(0, BAND_TOP, w, BAND_H, 0xffffff, 1).setOrigin(0, 0).setAlpha(0);
     const slices = this.add.graphics();
 
+    if (data.mode === 'out') {
+      const closeUp = { w, cy, start, seat, arm, port, plug, socketGlow, status, splitRed, splitCyan, readouts, drawSync };
+      this.playOut({ ...closeUp, headline: established, topBar, bottomBar, flash, slices }, data);
+      return;
+    }
+
     if (data.reducedMotion) {
       // No flashing, no shaking: the connected frame, held, then black.
       topBar.y = BAND_TOP;
@@ -237,7 +284,7 @@ export class LinkScene extends Phaser.Scene {
 
     /* --- the alarm: red room, hazard banner --------------------------- */
     const alarm = this.add.rectangle(0, 0, w, VIEW_H, 0xff1a2e, 1).setOrigin(0, 0).setAlpha(0).setDepth(-1);
-    const banner = this.hazardBanner(w);
+    const banner = this.hazardBanner(w, LINK.request);
     playAlarm();
     this.time.delayedCall(450, playAlarm);
     this.tweens.add({ targets: alarm, alpha: 0.55, duration: 120, yoyo: true, repeat: 2, hold: 60 });
@@ -263,11 +310,7 @@ export class LinkScene extends Phaser.Scene {
     });
 
     /* --- scan: brackets close on the wrist, a line sweeps it ---------- */
-    const blink = (text: string, color: string) => {
-      this.tweens.killTweensOf(status);
-      status.setText(text).setColor(color).setAlpha(1);
-      this.tweens.add({ targets: status, alpha: 0.25, duration: 140, yoyo: true, repeat: -1, hold: 160 });
-    };
+    const blink = (text: string, color: string) => this.blink(status, text, color);
     this.time.delayedCall(T.scan, () => {
       playScan();
       this.time.delayedCall(360, playScan);
@@ -390,28 +433,7 @@ export class LinkScene extends Phaser.Scene {
     });
 
     /* --- glitch out ---------------------------------------------------- */
-    this.time.delayedCall(T.glitch, () => {
-      for (let i = 0; i < 8; i++) {
-        this.time.delayedCall(i * 40, () => {
-          const dx = Phaser.Math.Between(2, 4);
-          splitRed.setAlpha(0.8).setX(w / 2 - dx);
-          splitCyan.setAlpha(0.8).setX(w / 2 + dx);
-          this.band.x = Phaser.Math.Between(-8, 8);
-          slices.clear();
-          for (let k = 0; k < 5; k++) {
-            const y = Phaser.Math.Between(BAND_TOP, BAND_BOTTOM - 8);
-            slices.fillStyle([RED, CYAN, 0x000000][k % 3], k % 3 === 2 ? 1 : 0.5);
-            slices.fillRect(Phaser.Math.Between(-20, 20), y, w + 40, Phaser.Math.Between(1, 7));
-          }
-        });
-      }
-      this.time.delayedCall(330, () => {
-        slices.clear();
-        splitRed.setAlpha(0);
-        splitCyan.setAlpha(0);
-        this.band.x = 0;
-      });
-    });
+    this.time.delayedCall(T.glitch, () => this.glitch(w, splitRed, splitCyan, slices));
 
     /* --- collapse to a line, then black -------------------------------- */
     this.time.delayedCall(T.collapse, () => {
@@ -423,6 +445,165 @@ export class LinkScene extends Phaser.Scene {
       this.tweens.add({ targets: line, scaleX: 0, duration: 160, ease: 'Cubic.easeIn' });
     });
     this.time.delayedCall(T.done, () => data.done());
+  }
+
+  /** The signal tears: the headline splits into red and cyan, the band jolts, slices of colour cut across. */
+  private glitch(w: number, splitRed: Phaser.GameObjects.Text, splitCyan: Phaser.GameObjects.Text, slices: Phaser.GameObjects.Graphics): void {
+    for (let i = 0; i < 8; i++) {
+      this.time.delayedCall(i * 40, () => {
+        const dx = Phaser.Math.Between(2, 4);
+        splitRed.setAlpha(0.8).setX(w / 2 - dx);
+        splitCyan.setAlpha(0.8).setX(w / 2 + dx);
+        this.band.x = Phaser.Math.Between(-8, 8);
+        slices.clear();
+        for (let k = 0; k < 5; k++) {
+          const y = Phaser.Math.Between(BAND_TOP, BAND_BOTTOM - 8);
+          slices.fillStyle([RED, CYAN, 0x000000][k % 3], k % 3 === 2 ? 1 : 0.5);
+          slices.fillRect(Phaser.Math.Between(-20, 20), y, w + 40, Phaser.Math.Between(1, 7));
+        }
+      });
+    }
+    this.time.delayedCall(330, () => {
+      slices.clear();
+      splitRed.setAlpha(0);
+      splitCyan.setAlpha(0);
+      this.band.x = 0;
+    });
+  }
+
+  /** A status line that blinks until it is replaced. */
+  private blink(status: Phaser.GameObjects.Text, text: string, color: string): void {
+    this.tweens.killTweensOf(status);
+    status.setText(text).setColor(color).setAlpha(1);
+    this.tweens.add({ targets: status, alpha: 0.25, duration: 140, yoyo: true, repeat: -1, hold: 160 });
+  }
+
+  /**
+   * The jack-out: what the jack-in did, undone in reverse order, so leaving
+   * the PC feels as physical as plugging in.
+   */
+  private playOut(p: LinkParts, data: LinkSceneData): void {
+    const { w, cy, start, seat, arm, port, plug, socketGlow, status, headline, splitRed, splitCyan, readouts, drawSync, topBar, bottomBar, flash, slices } = p;
+    const unplugged = () => {
+      plug.setVisible(false);
+      this.cable.clear();
+      this.path = null;
+    };
+
+    // Where the jack-in left things: plugged in, synced, established.
+    this.band.setVisible(true).setX(0);
+    arm.setFrame(2);
+    port.setFrame(1);
+    this.wristGlow.setAlpha(0.5);
+    socketGlow.setAlpha(0.6);
+    plug.setVisible(true);
+    this.setCable(start, seat, 1, plug);
+    headline.setAlpha(1);
+    readouts.forEach((o) => o.setAlpha(1));
+    drawSync(1);
+
+    if (data.reducedMotion) {
+      // No flashing, no shaking: the unplugged frame, held, then the cafe.
+      topBar.y = BAND_TOP;
+      bottomBar.y = BAND_BOTTOM;
+      arm.setFrame(0);
+      port.setFrame(0);
+      unplugged();
+      this.wristGlow.setAlpha(0);
+      socketGlow.setAlpha(0);
+      headline.setText(LINK.closed).setColor(introPalette.cyan);
+      drawSync(0);
+      this.time.delayedCall(1400, () => data.done());
+      return;
+    }
+
+    /* --- out of black: a line, then the band ---------------------------- */
+    topBar.y = cy;
+    bottomBar.y = cy;
+    const line = this.add.rectangle(w / 2, cy, w, 2, 0xffffff).setOrigin(0.5).setScale(0, 1);
+    this.tweens.add({ targets: line, scaleX: 1, duration: OUT.open - 20, ease: 'Cubic.easeOut' });
+    this.time.delayedCall(OUT.open, () => {
+      line.destroy();
+      this.tweens.add({ targets: topBar, y: BAND_TOP, duration: 220, ease: 'Cubic.easeOut' });
+      this.tweens.add({ targets: bottomBar, y: BAND_BOTTOM, duration: 220, ease: 'Cubic.easeOut' });
+    });
+
+    /* --- disconnecting: the sync drains, the last data runs home -------- */
+    this.time.delayedCall(OUT.band, () => {
+      // The old headline gives way, so the status line reads clean.
+      this.tweens.add({ targets: headline, alpha: 0, duration: 200 });
+      this.blink(status, LINK.disconnecting, '#ffffff');
+      const stream = this.time.addEvent({ delay: 280, loop: true, callback: () => this.pulse() });
+      this.time.delayedCall(OUT.glitch - OUT.band, () => stream.remove());
+      this.tweens.add({ targets: socketGlow, alpha: { from: 0.6, to: 0.25 }, duration: 240, yoyo: true, repeat: 3 });
+      let lastTick = -1;
+      this.tweens.addCounter({
+        from: 1,
+        to: 0,
+        duration: OUT.glitch - OUT.band - 120,
+        ease: 'Sine.easeIn',
+        onUpdate: (tw) => {
+          const k = tw.getValue() ?? 0;
+          drawSync(k);
+          const tick = Math.floor(k * 10);
+          if (tick !== lastTick) {
+            lastTick = tick;
+            playTick();
+          }
+        },
+      });
+    });
+
+    this.time.delayedCall(OUT.glitch, () => this.glitch(w, splitRed, splitCyan, slices));
+
+    /* --- the plug pops and the cable whips home ------------------------- */
+    this.time.delayedCall(OUT.unplug, () => {
+      playClick();
+      playCableIn();
+      this.blink(status, LINK.jackingOut, '#ffffff');
+      port.setFrame(0);
+      socketGlow.setAlpha(0);
+      this.cameras.main.shake(140, 0.01);
+      this.tweens.add({ targets: flash, alpha: { from: 0.6, to: 0 }, duration: 160 });
+      this.sparks(seat.x + PLUG_W / 2, seat.y);
+      this.tweens.add({ targets: readouts, alpha: 0, duration: 160 });
+      this.tweens.addCounter({
+        from: 1,
+        to: 0,
+        duration: OUT_CABLE_MS,
+        ease: 'Cubic.easeInOut',
+        onUpdate: (tw) => this.setCable(start, seat, tw.getValue() ?? 0, plug),
+        onComplete: unplugged,
+      });
+    });
+
+    /* --- the wrist closes over the port --------------------------------- */
+    this.time.delayedCall(OUT.retracted, () => {
+      playClick();
+      [2, 1, 0].forEach((frame, i) => this.time.delayedCall(i * 100, () => arm.setFrame(frame)));
+      this.tweens.add({ targets: this.wristGlow, alpha: { from: 0.8, to: 0 }, duration: 500 });
+    });
+
+    this.time.delayedCall(OUT.closed, () => {
+      this.tweens.killTweensOf(status);
+      status.setAlpha(0);
+      headline.setText(LINK.closed).setColor(introPalette.cyan).setShadow(0, 0, introPalette.cyan, 8, false, true).setScale(1.7);
+      this.tweens.add({ targets: headline, alpha: 1, scale: 1, duration: 180, ease: 'Back.easeOut' });
+    });
+
+    /* --- the bars open on the cafe, under one last banner --------------- */
+    this.time.delayedCall(OUT.out, () => {
+      playWhoosh();
+      playAlarm();
+      this.tweens.add({ targets: this.band, x: -w, duration: 260, ease: 'Cubic.easeIn' });
+      this.tweens.add({ targets: topBar, y: 0, duration: 300, ease: 'Cubic.easeIn' });
+      this.tweens.add({ targets: bottomBar, y: VIEW_H, duration: 300, ease: 'Cubic.easeIn' });
+      const banner = this.hazardBanner(w, LINK.terminated);
+      banner.x = w;
+      this.tweens.add({ targets: banner, x: 0, duration: 170, delay: 120, ease: 'Cubic.easeOut' });
+      this.tweens.add({ targets: banner, x: -w, duration: 160, delay: OUT.done - OUT.out - 200, ease: 'Cubic.easeIn' });
+    });
+    this.time.delayedCall(OUT.done, () => data.done());
   }
 
   update(time: number, delta: number): void {
@@ -450,10 +631,10 @@ export class LinkScene extends Phaser.Scene {
   }
 
   /**
-   * The alarm's banner: a black strip edged in red-and-black hazard stripes,
-   * the request in big pixel lettering between two warning signs.
+   * The hazard banner: a black strip edged in red-and-black stripes, the
+   * label in big pixel lettering between two warning signs.
    */
-  private hazardBanner(w: number): Phaser.GameObjects.Container {
+  private hazardBanner(w: number, label: string): Phaser.GameObjects.Container {
     const h = 46;
     const top = Math.round(VIEW_H / 2 - h / 2);
     const g = this.add.graphics();
@@ -464,9 +645,9 @@ export class LinkScene extends Phaser.Scene {
       for (let x = -10; x < w; x += 10) g.fillTriangle(x, y + 5, x + 5, y + 5, x + 10, y);
     }
 
-    const size = Math.min(16, Math.floor((w - 70) / LINK.request.length));
+    const size = Math.min(16, Math.floor((w - 70) / label.length));
     const text = this.add
-      .text(w / 2, VIEW_H / 2, LINK.request, { fontFamily: PIXEL_FONT, fontSize: size + 'px', color: '#ffffff', padding: { x: 6, y: 6 } })
+      .text(w / 2, VIEW_H / 2, label, { fontFamily: PIXEL_FONT, fontSize: size + 'px', color: '#ffffff', padding: { x: 6, y: 6 } })
       .setOrigin(0.5)
       .setShadow(0, 0, '#ff2a3a', 8, false, true)
       .setResolution(2);

@@ -156,6 +156,11 @@ export function playCableOut(): void {
   tone({ freq: 300, to: 1400, duration: 0.42, type: 'triangle', gain: 0.025 });
 }
 
+/** The cable whipping back into the wrist: the same sweep, falling. */
+export function playCableIn(): void {
+  tone({ freq: 1400, to: 260, duration: 0.4, type: 'triangle', gain: 0.025 });
+}
+
 /** The plug seating: a hard click and a bright chime. */
 export function playJackIn(): void {
   tone({ freq: 1600, duration: 0.03, type: 'square', gain: 0.03 });

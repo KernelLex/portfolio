@@ -146,4 +146,12 @@ export const RECEIPTS: ReadonlyArray<Receipt> = [
     result: 'The Story, Client Work with live sites inside Navigator, Prompt Lens, Ask Amogh and its backend, and these receipts.',
     commits: ['0e90a74', 'c327b83'],
   },
+  {
+    id: 'jack-out',
+    at: '2026-11-03T00:05:00+05:30',
+    tool: 'Claude Code',
+    spoken:
+      'okay, now what is left to do? What are the things I need to do now, and what are the things that need to be done to publish this? Also, when you plug in the PC, you get an animation, right? I also want the same animation when you plug out (top opposite animation). Could you do that also?',
+    result: 'The jack-out: logging off plays the jack-in in reverse. The sync drains, the plug pops, the cable whips back into the wrist, LINK CLOSED, and the bars open on the cafe.',
+  },
 ];

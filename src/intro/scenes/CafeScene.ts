@@ -529,7 +529,7 @@ export class CafeScene extends Phaser.Scene {
     this.cashierHello();
   }
 
-  /** Back from the PC after logging off: still in the seat, then up and free. */
+  /** Back from the PC after logging off: still in the seat, the jack-out plays, then up and free. */
   private standUp(): void {
     const w = this.walker;
     const sprite = w.sprite;
@@ -545,8 +545,7 @@ export class CafeScene extends Phaser.Scene {
     this.camX = Phaser.Math.Clamp(SEAT_X - this.camW / 2, 0, Math.max(0, ROOM_W - this.camW));
     this.cameras.main.scrollX = Math.round(this.camX);
 
-    iris(this, SEAT_X, SCREEN_CY, 'open', 700);
-    this.time.delayedCall(800, () => {
+    const rise = () => {
       this.seatScreen = 'off';
       this.drawScreens();
       playClick();
@@ -568,7 +567,18 @@ export class CafeScene extends Phaser.Scene {
           this.phase = 'walking';
         },
       });
-    });
+    };
+
+    // The jack-in, in reverse, over the cafe; it ends with the room in view.
+    const data: LinkSceneData = {
+      mode: 'out',
+      reducedMotion: this.opts.reducedMotion,
+      done: () => {
+        this.scene.stop('link');
+        this.time.delayedCall(250, rise);
+      },
+    };
+    this.scene.launch('link', data);
   }
 
   /**
