@@ -144,7 +144,10 @@ export class Traffic {
       .setFlipX(lane.dir < 0) // all art faces right
       .setDepth(lane.depth);
     sprite.x = lane.dir > 0 ? left - sprite.width : left + this.viewWidth + sprite.width;
-    if (kind.anim && s.anims.exists(kind.anim)) sprite.play({ key: kind.anim, startFrame: Phaser.Math.Between(0, 3) });
+    const anim = kind.anim ? s.anims.get(kind.anim) : undefined;
+    // Out of step with each other; the start frame must exist in this
+    // animation (the rickshaw has two), or Phaser throws and the loop dies.
+    if (anim) sprite.play({ key: anim.key, startFrame: Phaser.Math.Between(0, anim.frames.length - 1) });
 
     const light = (color: number, alpha: number, sx: number, sy: number, depth = lane.depth + 0.05) =>
       addLight(s, 0, 0, color, alpha, sx, sy, depth).setScrollFactor(lane.parallax);
@@ -173,7 +176,7 @@ export class Traffic {
         .setAlpha(0.16)
         .setTint(0x7fa8e0)
         .setDepth(5);
-      if (kind.anim && s.anims.exists(kind.anim)) v.mirror.play(kind.anim);
+      if (anim) v.mirror.play(anim.key);
     }
     // The police spinner (frame 2 of either flyer sheet) flashes red and blue.
     if (kind.frame === 2 && kind.texture.startsWith('flyers')) {

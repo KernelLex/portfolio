@@ -24,6 +24,15 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
+// A remembered "sound on" cannot start before the visitor interacts (autoplay
+// policy), so the music would wait for the first sound effect. Wake the
+// context on their first key or touch instead.
+const wake = () => {
+  if (ctx?.state === 'suspended') void ctx.resume();
+};
+window.addEventListener('pointerdown', wake, true);
+window.addEventListener('keydown', wake, true);
+
 /** The shared context, or null while sound is off. Music plays through it too. */
 export function audioContext(): AudioContext | null {
   return audio();

@@ -73,6 +73,8 @@ export class CityPostFX extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
 
   onPreRender(): void {
     this.set2f('uResolution', this.renderer.width, this.renderer.height);
-    this.set1f('uTime', this.game.loop.time * 0.001);
+    // Wrapped: a phone's mediump float runs out of precision as the clock
+    // grows, and the grain turns into a frozen pattern.
+    this.set1f('uTime', (this.game.loop.time * 0.001) % 64);
   }
 }
