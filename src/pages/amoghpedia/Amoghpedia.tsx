@@ -4,6 +4,8 @@ import { useBrowser } from '../../browser/BrowserContext';
 import { ARTICLE, CITATIONS, INFOBOX, type Citation } from '../../content/amoghpedia';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { pageEntry } from '../registry';
+import { PROFILE } from '../../content/profile';
+import Profile from './Profile';
 import RichText, { PageLink, numberCitations } from './RichText';
 
 const NUMBERS = numberCitations([...ARTICLE.lead, ...ARTICLE.sections.flatMap((s) => s.body)]);
@@ -71,8 +73,38 @@ function useActiveSection(ids: ReadonlyArray<string>): string {
 
 const SECTION_IDS = ARTICLE.sections.map((s) => s.id);
 
-/** Amoghpedia: an encyclopedia article about Amogh, playful but polished. */
+/**
+ * Amogh's page: a game-style profile by default, so nobody has to read a
+ * résumé, and the full encyclopedia article one click away (?view=wiki).
+ */
 export default function Amoghpedia() {
+  const { address, navigate } = useBrowser();
+  const view = address.query.get('view') === 'wiki' ? 'wiki' : 'profile';
+  return (
+    <>
+      <div className="mx-auto flex w-full max-w-6xl justify-end px-4 pt-6 sm:px-8" role="radiogroup" aria-label={PROFILE.viewsLabel}>
+        <div className="flex rounded-lg border border-white/[0.1] bg-surface/60 p-0.5 font-mono text-[11px]">
+          {(['profile', 'wiki'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={view === v}
+              onClick={() => navigate(v === 'wiki' ? 'amoghpedia?view=wiki' : 'amoghpedia')}
+              className={`rounded-md px-3 py-1.5 transition-colors ${view === v ? 'bg-accent text-space' : 'text-ink-muted hover:text-ink'}`}
+            >
+              {PROFILE.views[v]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {view === 'wiki' ? <Wiki /> : <Profile />}
+    </>
+  );
+}
+
+/** The encyclopedia article about Amogh, playful but polished. */
+function Wiki() {
   const { open } = useBrowser();
   const reducedMotion = useReducedMotion();
   const active = useActiveSection(SECTION_IDS);

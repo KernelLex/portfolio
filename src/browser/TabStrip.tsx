@@ -44,11 +44,11 @@ export default function TabStrip({ tabs, activeId, onActivate, onClose, onNew, c
           return (
             <div
               key={tab.id}
-              className={`chamfer-top group relative flex h-8 min-w-12 flex-1 basis-0 items-center transition-colors sm:max-w-52 ${
-                on ? 'bg-white/[0.06] text-ink' : 'text-ink-muted hover:bg-white/[0.03] hover:text-ink'
+              className={`gx-tab group relative flex h-8 min-w-12 flex-1 basis-0 items-center transition-colors sm:max-w-52 ${
+                on ? 'gx-tab-on text-ink' : 'text-ink-muted hover:bg-white/[0.04] hover:text-ink'
               }`}
             >
-              {on && <span aria-hidden="true" className="absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-accent/0 via-accent to-accent/0" />}
+              {on && <span aria-hidden="true" className="absolute inset-x-3 top-0 h-[2px] bg-gradient-to-r from-accent/0 via-accent to-accent/0 shadow-[0_0_10px_#f5a35c]" />}
               <button
                 type="button"
                 role="tab"

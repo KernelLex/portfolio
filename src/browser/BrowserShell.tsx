@@ -82,11 +82,13 @@ export default function BrowserShell({ visible, onMinimize, onClose, onReplayInt
   return (
     <BrowserContext.Provider value={api}>
       <div className="relative flex h-full w-full overflow-hidden bg-space text-ink">
+        {/* A slow line of light along the top edge: the browser is live. */}
+        <span aria-hidden="true" className="gx-topline pointer-events-none absolute inset-x-0 top-0 z-30 h-px" />
         <LiveWallpaper paused={!visible} reducedMotion={reducedMotion} />
         <Sidebar {...menuProps} />
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-          <header className="relative z-20 shrink-0 border-b border-white/[0.06] bg-space/40 backdrop-blur-xl">
+          <header className="gx-chrome relative z-20 shrink-0 backdrop-blur-xl">
             <TabStrip {...tabProps} />
             <MobileHeader {...tabProps} />
             <AddressBar

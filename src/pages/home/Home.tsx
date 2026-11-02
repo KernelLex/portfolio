@@ -31,7 +31,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => open(id)}
-                  className="hud-ticks glass group relative flex h-full w-full flex-col items-start gap-3 rounded-2xl p-4 text-left transition-colors hover:border-accent/40 hover:bg-surface/70"
+                  className="hud-ticks gx-tile glass group relative flex h-full w-full flex-col items-start gap-3 overflow-hidden rounded-2xl p-5 text-left"
                 >
                   <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/[0.04] text-ink-muted transition-colors group-hover:text-accent">
                     <page.icon className="h-[18px] w-[18px]" strokeWidth={1.6} />

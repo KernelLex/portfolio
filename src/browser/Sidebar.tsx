@@ -16,7 +16,9 @@ type Props = SettingsActions & {
 };
 
 const ICON_BUTTON =
-  'grid h-10 w-10 place-items-center rounded-xl text-ink-muted transition-colors hover:bg-white/[0.06] hover:text-ink';
+  'grid h-10 w-10 place-items-center rounded-xl text-ink-muted transition-all duration-200 hover:bg-white/[0.07] hover:text-ink hover:shadow-[0_0_16px_rgb(245_163_92/0.18)]';
+const ICON_ACTIVE =
+  'bg-gradient-to-br from-accent/30 to-accent/[0.06] !text-accent ring-1 ring-accent/45 shadow-[0_0_20px_rgb(245_163_92/0.35)]';
 
 /**
  * The slim icon rail down the left: one icon per page, the core story first and
@@ -49,7 +51,7 @@ export default function Sidebar({ active, onOpen, onTips, onReplayIntro, onClose
     const on = page.id === active;
     return (
       <li key={page.id} className="relative flex w-full justify-center">
-        {on && <span aria-hidden="true" className="absolute top-1/2 left-0 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent" />}
+        {on && <span aria-hidden="true" className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-accent shadow-[0_0_10px_#f5a35c]" />}
         <button
           type="button"
           data-guide={`page:${page.id}`}
@@ -57,7 +59,7 @@ export default function Sidebar({ active, onOpen, onTips, onReplayIntro, onClose
           aria-current={on ? 'page' : undefined}
           onClick={() => onOpen(page.id)}
           {...labelled(page.title)}
-          className={`${ICON_BUTTON} ${on ? 'bg-accent/[0.09] !text-accent' : ''}`}
+          className={`${ICON_BUTTON} ${on ? ICON_ACTIVE : ''}`}
         >
           <page.icon className="h-[18px] w-[18px]" strokeWidth={1.6} />
         </button>
@@ -69,7 +71,7 @@ export default function Sidebar({ active, onOpen, onTips, onReplayIntro, onClose
     <nav
       ref={navRef}
       aria-label={CHROME.pages}
-      className="relative z-20 hidden w-14 shrink-0 flex-col items-center border-r border-white/[0.06] bg-space/50 backdrop-blur-xl sm:flex"
+      className="gx-rail relative z-20 hidden w-14 shrink-0 flex-col items-center backdrop-blur-xl sm:flex"
     >
       <div className="grid h-12 w-full shrink-0 place-items-center">
         <NavigatorIcon className="h-7 w-7" />

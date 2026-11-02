@@ -34,9 +34,10 @@ export const PAGES: Record<PageId, PageCopy> = {
     aliases: ['home', 'home page', 'new tab', 'start page', 'lyric stage', 'speed dial'],
   },
   amoghpedia: {
-    title: 'Amoghpedia',
-    blurb: 'The encyclopedia entry nobody asked for.',
-    aliases: ['amoghpedia', 'amogh pedia', 'wiki', 'wikipedia', 'encyclopedia', 'about', 'about amogh', 'about you', 'bio', 'biography'],
+    title: 'Player Profile',
+    short: 'Profile',
+    blurb: 'Amogh as a character sheet: stats, loadout, achievements and quests.',
+    aliases: ['player profile', 'profile', 'amoghpedia', 'amogh pedia', 'wiki', 'wikipedia', 'encyclopedia', 'about', 'about amogh', 'about you', 'bio', 'biography', 'resume', 'cv', 'skills', 'achievements'],
   },
   story: {
     title: 'The Story',

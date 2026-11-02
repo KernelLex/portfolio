@@ -58,7 +58,7 @@ export const TOUR = {
     { page: 'home', text: 'New Tab: say anything and the stage performs your words as moving type.' },
     { page: 'story', text: 'The Story: from six months of zero clients to systems companies run on. Play through it.' },
     { page: 'work', text: 'Client Work: real businesses and real builds, with live sites you can open right here.' },
-    { page: 'amoghpedia', text: 'His profile, game style: stats, skills and achievements at a glance.' },
+    { page: 'amoghpedia', text: 'His Player Profile: stats, loadout, achievements and quests at a glance. The full wiki is one click away.' },
     { page: 'shorts', text: 'Shorts: quick videos of what he has built. Swipe through them.' },
     { page: 'ask', text: 'Ask Amogh: questions go to his AI twin, which answers from what he told it.' },
     { page: 'home', text: "That's the tour. Explore anything you like, and press Ctrl+B to see it again." },
