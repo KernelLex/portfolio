@@ -38,6 +38,17 @@ We also added AI: a private assistant trained on the company's own data, running
 ## HRMS
 While building Vera ERP, another client wanted a custom HR module for his own ERP software, which he sells to companies that don't have HR. He wanted the HR module separate but linked into his ERP, without sending credentials directly through APIs. We built that, so his ERP and our HR module work together both ways.
 
+## Nova (from the Nova product catalogue)
+- Nova is the product line I build with Thushaar Rangan: Nova ERP, Nova CRM and Nova HRMS, all built and running. Each began as a request from one company.
+- Nova ERP: quote to cash to accounts across more than one company: a quotation studio (vendor price list of over 7,000 items), projects, purchase, logistics with proof of delivery, Tally finances that reconcile against the company's own books to within about one percent, documents read into records with a review queue, and an assistant that answers questions about the company's own figures. Its walkthrough is recorded on the Vera Enterprises workspaces.
+- Nova CRM: first call to last payment for businesses that sell finite inventory; built first for outdoor media. One timeline per client, inventory that knows its own calendar so nothing is sold twice, and audit-proof billing.
+- Nova HRMS: payroll gross to net, tax that reconciles to the year-end certificate, leave, hiring, dated history on every fact, tested to WCAG 2.1 AA.
+- We also built the Vera Enterprises website (veraenterprises.in).
+
+## This website
+- Amogh Navigator: an interactive portfolio built as a made-up browser, entered through a playable cyberpunk city and a cyber cafe PC.
+- Built with React, TypeScript, Phaser, three.js and GSAP, and built by voice: every prompt was dictated through Wispr Flow to Claude Code. The Voice Receipts tab shows them.
+
 ## Side builds
 I love building small projects: to learn, to solve my own problems, or just for fun. Some of them:
 - TrueCommit (Razorpay AI Buildathon 2026): an AI agent for revenue recovery. "The LLM sees and speaks but never spends." 5 real Razorpay invoices, all paid, ₹2,15,867 captured.

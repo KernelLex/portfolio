@@ -52,6 +52,12 @@ const BUILT: Partial<Record<PageId, LazyExoticComponent<ComponentType>>> = {
   amoghpedia: lazy(() => import('./amoghpedia/Amoghpedia')),
   story: lazy(() => import('./story/Story')),
   work: lazy(() => import('./work/Work')),
+  'prompt-lens': lazy(() => import('./prompt-lens/PromptLens')),
+  ask: lazy(() => import('./ask/Ask')),
+  receipts: lazy(() => import('./receipts/Receipts')),
+  shorts: lazy(() => import('./shorts/Shorts')),
+  'side-builds': lazy(() => import('./side-builds/SideBuilds')),
+  control: lazy(() => import('./control/Control')),
   web: lazy(() => import('./web/WebView')),
 };
 
