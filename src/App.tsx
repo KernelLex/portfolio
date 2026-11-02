@@ -11,6 +11,7 @@ import IntroGame from './intro/IntroGame';
 import GuideBot from './tour/GuideBot';
 import { guide } from './tour/guide';
 import TitleScreen from './intro/TitleScreen';
+import FullscreenOffer from './components/FullscreenOffer';
 import FullscreenToggle from './components/FullscreenToggle';
 import type { StartMode } from './content/title';
 
@@ -106,6 +107,7 @@ export default function App() {
       )}
 
       <GuideBot />
+      <FullscreenOffer />
       {skin === 'pixel' && phase === 'computer' && <div aria-hidden="true" className="pixel-crt" />}
 
       {phase === 'intro' && (

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type PointerEvent } from 'react';
-import { ChevronRight, Mic, Send, X } from 'lucide-react';
+import { ChevronRight, ListChecks, Mic, Send, X } from 'lucide-react';
 import { GUIDE, TIPS, tourLines } from '../content/guide';
 import { VOICE } from '../content/voice';
 import { toggleFullscreen } from '../lib/fullscreen';
 import { playClick, playTick } from '../lib/sound';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { useWisprInput } from '../voice/useWisprInput';
-import { answer } from './answer';
+import { answer, byteMenu } from './answer';
 import BotSprite from './BotSprite';
 import { guide, useGuide, type Place } from './guide';
 
@@ -122,6 +122,7 @@ export default function GuideBot() {
   const [tilt, setTilt] = useState(0);
   const [act, setAct] = useState<{ name: Act; at: number } | null>(null);
   const [talking, setTalking] = useState(false);
+  const [showList, setShowList] = useState(false);
   const drag = useRef<{ id: number; dx: number; dy: number; sx: number; sy: number; lastX: number; moved: boolean } | null>(null);
   const wasDragged = useRef(false);
   const tripTimer = useRef(0);
@@ -131,6 +132,10 @@ export default function GuideBot() {
   const tip = TIPS[g.place];
   const text = g.said ?? (g.mode === 'tour' ? lines[g.line] : tip ? (touch ? tip.touch : tip.keys) : null);
   const showBubble = Boolean(g.open && text);
+
+  useEffect(() => {
+    if (!showBubble) setShowList(false);
+  }, [showBubble]);
 
   const play = useCallback(
     (name: Act) => {
@@ -246,6 +251,7 @@ export default function GuideBot() {
       guide.say(reply.text);
       window.clearTimeout(tripTimer.current);
       const action = reply.action;
+      setShowList(action.kind === 'help');
       if (action.kind === 'go') tripTimer.current = window.setTimeout(() => guide.go(action.to), TRIP_MS);
       else if (action.kind === 'tour') tripTimer.current = window.setTimeout(guide.tour, TRIP_MS);
       else if (action.kind === 'fullscreen') toggleFullscreen();
@@ -374,6 +380,32 @@ export default function GuideBot() {
               <button type="button" onClick={guide.tour} className={SECONDARY}>
                 {GUIDE.startTour}
               </button>
+            </div>
+          )}
+
+          {/* Everything Byte can do, so nobody has to guess the words. */}
+          <button type="button" onClick={() => setShowList((v) => !v)} aria-expanded={showList} className="mt-3 inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
+            <ListChecks className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            {showList ? GUIDE.hideList : GUIDE.list}
+          </button>
+          {showList && (
+            <div className="mt-2 max-h-[min(17rem,38vh)] space-y-3 overflow-y-auto overscroll-contain pr-1">
+              {byteMenu(g.place).map((group) => (
+                <div key={group.title}>
+                  <p className="font-mono text-[10px] tracking-[0.18em] text-ink-muted uppercase">{group.title}</p>
+                  <ul className="mt-1">
+                    {group.items.map((item) => (
+                      <li key={item.example}>
+                        <button type="button" onClick={() => onAsk(item.example)} className="group block w-full rounded-md px-2 py-1 text-left hover:bg-white/[0.06]">
+                          <span className="block text-[12.5px] leading-snug text-ink group-hover:text-accent">“{item.example}”</span>
+                          <span className="block text-[10.5px] text-ink-muted">→ {item.label}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <p className="text-[11px] text-ink-muted">{GUIDE.listTwin}</p>
             </div>
           )}
 

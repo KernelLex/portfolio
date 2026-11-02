@@ -1,5 +1,5 @@
 """
-The portfolio's backend: two small endpoints that call Claude.
+The portfolio's backend: one small endpoint that calls Claude.
 
   POST /api/ask          {message, history} -> {reply, suggestedTab}
   GET  /api/health
@@ -22,6 +22,7 @@ from typing import Literal
 
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -49,7 +50,30 @@ DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "300"))
 ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 LIFE_STORY = Path(os.environ.get("LIFE_STORY_PATH", HERE.parent / "content" / "life-story.md"))
 
-ASK_SYSTEM = (HERE / "prompts" / "ask-amogh.md").read_text(encoding="utf-8") + "\n" + LIFE_STORY.read_text(encoding="utf-8")
+
+
+def heading_level(line: str) -> int:
+    return len(line) - len(line.lstrip("#")) if line.startswith("#") else 0
+
+
+def knowledge(text: str) -> str:
+    """
+    The life story without its drafting notes. A [TODO] gap is not a fact, and
+    a heading left with nothing under it would only tell the twin a section is
+    missing, so both go: what is not written down is simply not in its memory.
+    """
+    lines = [line for line in text.splitlines() if "[TODO" not in line and not line.startswith("> DRAFT")]
+    kept = []
+    for i, line in enumerate(lines):
+        if heading_level(line):
+            following = next((rest for rest in lines[i + 1 :] if rest.strip()), "")
+            if not following or 0 < heading_level(following) <= heading_level(line):
+                continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
+ASK_SYSTEM = (HERE / "prompts" / "ask-amogh.md").read_text(encoding="utf-8") + "\n" + knowledge(LIFE_STORY.read_text(encoding="utf-8"))
 
 TABS = ["story", "work", "amoghpedia", "side-builds", "shorts", "none"]
 ASK_SCHEMA = {
@@ -170,5 +194,22 @@ def ask(body: AskIn, request: Request) -> dict:
 # One server for everything: the built site at /, the API beside it. Mounted
 # last, so the /api routes above match first.
 DIST = Path(os.environ.get("SITE_DIR", HERE.parent / "dist"))
+
+
+def site_url(request: Request) -> str:
+    """This site's own address as visitors see it: SITE_URL if set, else the request's, https behind the host's proxy."""
+    url = os.environ.get("SITE_URL") or str(request.base_url)
+    if request.headers.get("x-forwarded-proto") == "https" and url.startswith("http://"):
+        url = "https://" + url.removeprefix("http://")
+    return url.rstrip("/")
+
+
 if DIST.is_dir():
+
+    @app.get("/", include_in_schema=False)
+    def index(request: Request) -> HTMLResponse:
+        # X and LinkedIn need an absolute link to the share card's image.
+        html = (DIST / "index.html").read_text(encoding="utf-8")
+        return HTMLResponse(html.replace("__SITE_URL__", site_url(request)))
+
     app.mount("/", StaticFiles(directory=DIST, html=True), name="site")

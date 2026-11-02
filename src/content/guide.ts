@@ -17,6 +17,10 @@ export const GUIDE = {
   askLabel: 'Ask Byte where something is',
   askPlaceholder: 'Where is his résumé?',
   askSend: 'Ask',
+  list: 'What can I ask?',
+  hideList: 'Hide the list',
+  groups: { places: 'Places', work: 'Client work', actions: 'Things I can do' },
+  listTwin: 'Anything else about Amogh goes to his AI twin.',
 } as const;
 
 /**
@@ -33,18 +37,126 @@ export const BYTE_ANSWERS = {
   me: "I'm Byte, the guide. Ask me where anything is and I'll take you there, or press Ctrl+B for the walkthrough.",
   inside: (address: string) => `Straight into his browser, ${BROWSER_NAME}, at ${address}.`,
   contact: (address: string) => `His LinkedIn and GitHub are on the Player Profile, at ${address}. Taking you there.`,
+  help: 'Here is everywhere I can take you. Tap one, or ask in your own words.',
+  notHere: 'Those controls are for the street and the cafe. In here, just ask me where to go.',
 } as const;
 
-/** Phrases Byte acts on itself, before looking for a page. Lower case. */
-export const BYTE_TOPICS = {
-  tour: ['tour', 'walkthrough', 'walk through', 'walk me through', 'guide me', 'show me around'],
-  fullscreen: ['full screen', 'fullscreen'],
-  me: ['who are you', 'what are you', 'your name', 'byte'],
-  inside: ['browser', 'navigator', 'the computer', 'his computer', 'pc', 'skip', 'skip the game', 'skip the intro'],
-  contact: ['contact', 'email', 'reach him', 'reach out', 'hire', 'linkedin', 'github', 'socials'],
-  /** How to play: answered with the tip for wherever the visitor is. */
-  controls: ['controls', 'how do i play', 'how to play', 'how do i walk', 'how do i move', 'how do i jump', 'jump', 'sit down', 'jack in'],
-} as const;
+/** What a question can lead to: a page, a case study, or something Byte does itself. */
+export type ByteTarget =
+  | { kind: 'page'; page: PageId }
+  | { kind: 'study'; slug: string }
+  | { kind: 'contact' | 'tour' | 'fullscreen' | 'browser' | 'me' | 'help' | 'controls' };
+
+export type ByteEntry = {
+  target: ByteTarget;
+  group: keyof typeof GUIDE.groups;
+  /** In Byte's list. Case studies take their name from Client Work. */
+  label?: string;
+  /** A question that works: shown in the list, and asked when tapped. */
+  example: string;
+  /** Words and phrases that point here on their own. Lower case. */
+  strong: readonly string[];
+  /** Words that only point here alongside "where", "open", "show"... */
+  weak?: readonly string[];
+};
+
+/**
+ * Everywhere Byte can take a visitor, and what it listens for. Matching is
+ * forgiving: plurals, small typos and any word order still land, so these
+ * lists hold meanings rather than every phrasing. Earlier entries win ties.
+ */
+export const BYTE_PLACES: ReadonlyArray<ByteEntry> = [
+  {
+    target: { kind: 'page', page: 'amoghpedia' },
+    group: 'places',
+    label: 'Player Profile (his résumé)',
+    example: "Where's his résumé?",
+    strong: ['resume', 'cv', 'profile', 'player profile', 'amoghpedia', 'wiki', 'wikipedia', 'bio', 'biography', 'about him', 'about amogh', 'who is amogh', 'who is he', 'skills', 'achievements', 'education', 'qualifications', 'experience', 'internships', 'tech stack', 'loadout'],
+    weak: ['about', 'stack', 'tech', 'languages', 'college', 'degree', 'quests', 'stats', 'roles'],
+  },
+  {
+    target: { kind: 'contact' },
+    group: 'places',
+    label: 'Contact (LinkedIn, GitHub)',
+    example: 'How do I contact him?',
+    strong: ['contact', 'email', 'reach him', 'reach out', 'get in touch', 'hire', 'hiring', 'linkedin', 'linked in', 'github', 'socials', 'connect with'],
+    weak: ['reach', 'mail', 'social', 'connect'],
+  },
+  {
+    target: { kind: 'page', page: 'story' },
+    group: 'places',
+    label: 'The Story',
+    example: 'Tell me his story',
+    strong: ['story', 'journey', 'life story', 'how it started', 'how he started', 'how did he start', 'background', 'timeline', 'history', 'origin', 'zero clients'],
+    weak: ['began', 'beginning', 'chapters', 'mission', 'path'],
+  },
+  {
+    target: { kind: 'page', page: 'work' },
+    group: 'places',
+    label: 'Client Work',
+    example: 'Show me his client work',
+    strong: ['client work', 'clients', 'case studies', 'work', 'portfolio', 'freelance', 'freelancing', 'nova', 'products'],
+    weak: ['business', 'companies', 'company', 'customers', 'websites', 'live sites', 'erp'],
+  },
+  {
+    target: { kind: 'page', page: 'side-builds' },
+    group: 'places',
+    label: 'Side Builds',
+    example: 'Where are his side projects?',
+    strong: ['side builds', 'side projects', 'projects', 'builds', 'hackathons', 'buildathon', 'truecommit', 'true commit', 'throttle', 'avika', 'cropradar', 'crop radar', 'leadscope', 'lead scope', 'promise keeper', 'metakai', 'cyberbane', 'razorpay', 'trading engine'],
+    weak: ['built', 'made', 'apps', 'tools', 'experiments'],
+  },
+  {
+    target: { kind: 'page', page: 'shorts' },
+    group: 'places',
+    label: 'Shorts',
+    example: 'Show me the videos',
+    strong: ['shorts', 'videos', 'reels', 'clips', 'demos', 'watch'],
+    weak: ['film', 'youtube', 'recording', 'footage'],
+  },
+  {
+    target: { kind: 'page', page: 'ask' },
+    group: 'places',
+    label: 'Ask Amogh (AI twin)',
+    example: 'I want to chat with his AI twin',
+    strong: ['ask amogh', 'ai twin', 'twin', 'chat', 'chatbot', 'talk to amogh', 'talk to him', 'ask him', 'ask a question'],
+    weak: ['ask', 'talk', 'questions', 'ai', 'conversation'],
+  },
+  {
+    target: { kind: 'page', page: 'control' },
+    group: 'places',
+    label: 'Amogh Control (the numbers)',
+    example: 'Open the dashboard',
+    strong: ['amogh control', 'control', 'control panel', 'dashboard', 'gauges', 'numbers', 'metrics', 'wpm', 'words per minute', 'typing speed', 'voice speed', 'speed test'],
+    weak: ['stats', 'speed', 'how many', 'count'],
+  },
+  {
+    target: { kind: 'page', page: 'home' },
+    group: 'places',
+    label: 'New Tab (the lyric stage)',
+    example: 'Take me home',
+    strong: ['home', 'new tab', 'start page', 'homepage', 'lyric stage', 'lyrics', 'kinetic', 'speed dial', 'main page'],
+    weak: ['stage', 'typography', 'start'],
+  },
+  { target: { kind: 'study', slug: 'vera-erp' }, group: 'work', example: 'Show me Vera ERP', strong: ['vera', 'vera erp', 'vera enterprises', 'schones leben', 'hagan modular'], weak: ['erp', 'director', 'ollama'] },
+  { target: { kind: 'study', slug: 'hrms' }, group: 'work', example: 'Where is the HRMS?', strong: ['hrms', 'hrms module', 'hr module', 'hr system', 'hr software', 'payroll', 'form 16'], weak: ['hr', 'leave'] },
+  { target: { kind: 'study', slug: 'secant' }, group: 'work', example: 'Open Secant', strong: ['secant', 'first client'], weak: ['architecture', 'architect'] },
+  { target: { kind: 'study', slug: 'hazen' }, group: 'work', example: 'Show me Hazen Lights', strong: ['hazen', 'hazen lights', 'hazenlights'], weak: ['lighting', 'lights', 'ecommerce'] },
+  { target: { kind: 'study', slug: 'iiwm' }, group: 'work', example: 'Where is IIWM?', strong: ['iiwm', 'wedding school', 'business school'], weak: ['wedding'] },
+  { target: { kind: 'study', slug: 'bogen-villa' }, group: 'work', example: 'Open Bogen Villa', strong: ['bogen', 'bogen villa', 'villa', 'venue'], weak: ['wedding'] },
+  { target: { kind: 'study', slug: 'nova-erp' }, group: 'work', example: 'Show me Nova ERP', strong: ['nova erp'] },
+  { target: { kind: 'study', slug: 'nova-crm' }, group: 'work', example: 'Show me Nova CRM', strong: ['crm', 'nova crm', 'sales pipeline'] },
+  { target: { kind: 'study', slug: 'nova-hrms' }, group: 'work', example: 'Show me Nova HRMS', strong: ['nova hrms'] },
+  { target: { kind: 'tour' }, group: 'actions', label: 'Start the walkthrough', example: 'Give me the tour', strong: ['tour', 'walkthrough', 'walk through', 'walk me through', 'guide me', 'show me around', 'guided tour'] },
+  { target: { kind: 'browser' }, group: 'actions', label: 'Skip to his browser', example: 'Skip to the browser', strong: ['browser', 'navigator', 'skip', 'skip intro', 'skip the game', 'pc'], weak: ['computer', 'desktop'] },
+  { target: { kind: 'fullscreen' }, group: 'actions', label: 'Full screen on or off', example: 'Full screen', strong: ['full screen', 'fullscreen', 'maximise', 'maximize'], weak: ['bigger'] },
+  { target: { kind: 'controls' }, group: 'actions', label: 'How to play', example: 'How do I play?', strong: ['controls', 'how to play', 'how do i play', 'how do i walk', 'how do i move', 'how do i jump', 'jump', 'sit down', 'jack in'], weak: ['walk', 'move', 'play'] },
+  { target: { kind: 'me' }, group: 'actions', label: 'Who Byte is', example: 'Who are you?', strong: ['who are you', 'what are you', 'your name', 'byte', 'who is byte'] },
+  { target: { kind: 'help' }, group: 'actions', label: 'This list', example: 'What can I ask?', strong: ['help', 'commands', 'what can you do', 'what can i ask', 'what can i say', 'options', 'list'] },
+];
+
+/** Words that mean "take me somewhere", which let a weak match count. Lower case. */
+export const BYTE_NAVIGATE = ['where', 'wheres', 'open', 'show', 'take', 'go', 'find', 'see', 'navigate', 'bring', 'visit', 'view', 'look', 'page', 'tab', 'section', 'link'] as const;
 
 /** Exploring: one tip per place, shown the first time the visitor gets there. */
 export const TIPS: Record<Place, { keys: string; touch: string } | null> = {
