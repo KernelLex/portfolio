@@ -24,6 +24,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 HERE = Path(__file__).parent
+
+
+def load_env_file(path: Path) -> None:
+    """Read KEY=value lines from the gitignored backend/.env, without overriding real environment variables."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+load_env_file(HERE / ".env")
+
 MODEL = os.environ.get("LLM_MODEL", "claude-opus-5-5")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT", "20"))
 RATE_WINDOW = int(os.environ.get("RATE_WINDOW_SECONDS", "600"))

@@ -24,12 +24,15 @@ local development.
 cd backend
 python -m venv .venv && . .venv/Scripts/activate   # macOS/Linux: . .venv/bin/activate
 pip install -r requirements.txt
-set ANTHROPIC_API_KEY=...                          # macOS/Linux: export ANTHROPIC_API_KEY=...
+cp .env.example .env                               # then put your key in backend/.env
 uvicorn main:app --reload --port 8000
 ```
 
-Then start the site with the API URL: `VITE_API_URL=http://localhost:8000 npm run dev`
-(or put `VITE_API_URL=http://localhost:8000` in a `.env.local` at the repo root).
+`backend/.env` is gitignored and read at startup; real environment variables win over it.
+Never commit it, and never put the key in a `VITE_` variable: those are built into the public site.
+
+Then point the site at the API with `VITE_API_URL=http://localhost:8000` in a `.env.local`
+at the repo root (also gitignored), and run `npm run dev`.
 
 ## Deploy on Emergent
 
