@@ -1,5 +1,6 @@
 import { Suspense, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
+import HudCorners from '../components/HudCorners';
 import { CHROME } from '../content/browser';
 import { pageEntry } from '../pages/registry';
 import UnderConstruction from '../pages/UnderConstruction';
@@ -39,23 +40,22 @@ export default function PageView({ tab, address, reducedMotion }: Props) {
   }, [key, reducedMotion]);
 
   return (
-    <main
-      ref={scrollRef}
-      id="page-panel"
-      aria-label={entry.title}
-      className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain"
-    >
-      <div ref={sheetRef} key={key} className="min-h-full">
-        <Suspense
-          fallback={
-            <p className="grid h-full min-h-40 place-items-center font-mono text-xs text-ink-muted" style={{ animation: 'fade-in 400ms ease-out 300ms both' }}>
-              {CHROME.loading}…
-            </p>
-          }
-        >
-          {Page ? <Page /> : <UnderConstruction entry={entry} />}
-        </Suspense>
-      </div>
-    </main>
+    <div className="relative min-h-0 flex-1">
+      <main ref={scrollRef} id="page-panel" aria-label={entry.title} className="absolute inset-0 overflow-y-auto overscroll-contain">
+        <div ref={sheetRef} key={key} className="min-h-full">
+          <Suspense
+            fallback={
+              <p className="grid h-full min-h-40 place-items-center font-mono text-xs text-ink-muted" style={{ animation: 'fade-in 400ms ease-out 300ms both' }}>
+                {CHROME.loading}…
+              </p>
+            }
+          >
+            {Page ? <Page /> : <UnderConstruction entry={entry} />}
+          </Suspense>
+        </div>
+      </main>
+      {/* Viewfinder marks at the corners of the page, fixed while it scrolls. */}
+      <HudCorners inset={8} size={12} className="hidden sm:block" />
+    </div>
   );
 }

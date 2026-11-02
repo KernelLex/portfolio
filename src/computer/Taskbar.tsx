@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { OS_NAME } from '../config';
 import { DESKTOP_USER, START_MENU } from '../content/desktop';
 import { playClick } from '../lib/sound';
+import { useClock } from '../lib/useClock';
 import { useDismiss } from '../lib/useDismiss';
 import SoundToggle from '../components/SoundToggle';
 import { APPS, type AppId, type AppMeta } from './apps';
@@ -13,15 +14,6 @@ type Props = {
   onOpen: (id: AppId, from: DOMRect | null) => void;
   onLogOff: () => void;
 };
-
-function useClock(): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 15_000);
-    return () => window.clearInterval(id);
-  }, []);
-  return now;
-}
 
 export default function Taskbar({ running, onActivate, onOpen, onLogOff }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);

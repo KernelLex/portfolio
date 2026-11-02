@@ -2,6 +2,8 @@
 
 > Read CLAUDE.md §3 (content) first. Timebox: ~2 hours. Content lives in `src/content/amoghpedia.ts`.
 
+**Status: done (2 Nov).** See "Outcome" at the bottom.
+
 ## Goal
 An interactive, encyclopedia-style article about Amogh. Familiar structure, nicer to look at, with playful touches. Original styling in the space theme: Instrument Serif headings, comfortable reading width, glass infobox. Do not copy Wikipedia's logo or exact look.
 
@@ -31,3 +33,23 @@ An interactive, encyclopedia-style article about Amogh. Familiar structure, nice
 - [ ] All sections render from the content file
 - [ ] Infobox, contents, citations, previews, See also all work
 - [ ] Reads well on a phone
+
+---
+
+## Outcome
+
+Page: `src/pages/amoghpedia/`; content in `src/content/amoghpedia.ts`, links
+in `src/content/links.ts`.
+
+- Markup in the content file: `[[work|Client Work]]` tab links with hover
+  previews, `{ref:id}` citations numbered by first use, `{cn}`, `**bold**`,
+  `- ` lists and `> ` quotes. Editing the article never touches components.
+- Citations cite only what a source can back: live sites (Secant, Hazen Lights,
+  Vera Enterprises, TrueCommit, Throttle), GitHub, otherwise "Amogh's own memory".
+- "Talk" opens Ask Amogh and "View history" opens Voice Receipts.
+- Jokes are marked `TODO(Amogh)` in the content file, not on the page: the
+  "multiple issues" banner, "He reportedly sleeps. [citation needed]", and the
+  "last edited ... out loud" footer.
+- No Vera ERP usage numbers, no IIWM or Bogen Villa links.
+- Photo: set `INFOBOX.photo` once `public/images/amogh.jpg` exists; until then
+  a monogram, so there is no broken image and no 404.

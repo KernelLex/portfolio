@@ -12,6 +12,7 @@
   --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+  --font-condensed: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
 }
 
 @layer base {
@@ -68,13 +69,107 @@
 }
 
 /* The browser's sky: what the live starfield fades in over, and all there is
-   under reduced motion or without WebGL. */
+   under reduced motion or without WebGL. A faint dot grid shows only toward
+   the edges, like the inside of a visor. */
 @utility space-sky {
   background:
     radial-gradient(ellipse 70% 55% at 18% 22%, rgb(139 108 255 / 0.09), transparent 70%),
     radial-gradient(ellipse 50% 40% at 82% 8%, rgb(84 232 224 / 0.045), transparent 70%),
     radial-gradient(ellipse 60% 45% at 92% 108%, rgb(245 163 92 / 0.08), transparent 70%),
     linear-gradient(180deg, #0b0e17 0%, #0e1321 100%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgb(233 235 242 / 0.07) 1px, transparent 1.3px);
+    background-size: 26px 26px;
+    mask-image: radial-gradient(ellipse 75% 70% at 50% 45%, transparent 55%, black 100%);
+  }
+}
+
+/* Fine horizontal lines across the lyric stage: a screen, not a page. Static. */
+@utility lyric-scan {
+  background: repeating-linear-gradient(180deg, rgb(233 235 242 / 0.025) 0 1px, transparent 1px 4px);
+  mask-image: linear-gradient(180deg, black, transparent 85%);
+}
+
+/* Corner ticks that appear on hover, for panels in the browser. */
+@utility hud-ticks {
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+    pointer-events: none;
+  }
+  &::before {
+    top: 6px;
+    left: 6px;
+    border-top: 1px solid var(--color-accent);
+    border-left: 1px solid var(--color-accent);
+  }
+  &::after {
+    right: 6px;
+    bottom: 6px;
+    border-right: 1px solid var(--color-accent);
+    border-bottom: 1px solid var(--color-accent);
+  }
+  &:hover::before,
+  &:hover::after,
+  &:focus-visible::before,
+  &:focus-visible::after {
+    opacity: 0.8;
+  }
+}
+
+/* Tabs with their top corners cut, rather than rounded. */
+@utility chamfer-top {
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%, 0 9px);
+}
+
+@keyframes badge-life {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  8%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* A section heading lights up briefly when the contents box jumps to it. */
+@keyframes section-flash {
+  0% {
+    background-color: rgb(245 163 92 / 0.16);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* The address bar's load line: sweeps across once on every navigation. */
+@keyframes nav-sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  70% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
 }
 
 /* The intro's pixel character, as the browser's guide: its idle breath at 2x. */

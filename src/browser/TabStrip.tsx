@@ -43,11 +43,11 @@ export default function TabStrip({ tabs, activeId, onActivate, onClose, onNew, c
           return (
             <div
               key={tab.id}
-              className={`group relative flex h-8 min-w-12 flex-1 basis-0 items-center rounded-t-lg transition-colors sm:max-w-52 ${
+              className={`chamfer-top group relative flex h-8 min-w-12 flex-1 basis-0 items-center transition-colors sm:max-w-52 ${
                 on ? 'bg-white/[0.06] text-ink' : 'text-ink-muted hover:bg-white/[0.03] hover:text-ink'
               }`}
             >
-              {on && <span aria-hidden="true" className="absolute inset-x-3 top-0 h-px bg-accent/70" />}
+              {on && <span aria-hidden="true" className="absolute inset-x-2.5 top-0 h-px bg-gradient-to-r from-accent/0 via-accent to-accent/0" />}
               <button
                 type="button"
                 role="tab"
@@ -58,7 +58,7 @@ export default function TabStrip({ tabs, activeId, onActivate, onClose, onNew, c
                 onClick={() => onActivate(tab.id)}
                 onAuxClick={(e) => e.button === 1 && onClose(tab.id)}
                 onKeyDown={(e) => onKeyDown(e, i)}
-                className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-t-lg pr-1 pl-3 text-left text-xs"
+                className="flex h-full min-w-0 flex-1 items-center gap-2 pr-1 pl-3.5 text-left text-xs"
               >
                 <page.icon className={`h-3.5 w-3.5 shrink-0 ${on ? 'text-accent' : ''}`} strokeWidth={1.7} />
                 <span className="truncate">{page.title}</span>

@@ -12,6 +12,7 @@ import MobileBar from './MobileBar';
 import MobileHeader from './MobileHeader';
 import PageView from './PageView';
 import Sidebar from './Sidebar';
+import StatusBar from './StatusBar';
 import TabStrip from './TabStrip';
 import { currentOf, useTabs } from './useTabs';
 import WindowControls from './WindowControls';
@@ -103,8 +104,16 @@ export default function BrowserShell({ visible, onMinimize, onClose, onReplayInt
               onReload={() => dispatch({ type: 'reload' })}
               onGo={navigate}
             />
+            {/* The load line: one sweep per navigation. */}
+            <span
+              key={`${tab.id}|${current}|${tab.reloads}`}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 -bottom-px h-px origin-left bg-gradient-to-r from-accent/0 via-accent/80 to-accent/0"
+              style={{ animation: 'nav-sweep 700ms ease-out both' }}
+            />
           </header>
           <PageView tab={tab} address={address} reducedMotion={reducedMotion} />
+          <StatusBar address={address} tabCount={tabs.length} />
           <MobileBar {...menuProps} />
         </div>
 

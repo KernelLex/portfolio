@@ -22,11 +22,13 @@ export function parseAddress(raw: string): Address | null {
   return { raw, page, rest, query: new URLSearchParams(search) };
 }
 
-/** What the address bar shows: decoded, so a question reads as words. */
-export function addressUrl(raw: string): string {
+/** The path as people read it: decoded, so a question reads as words. */
+export function addressPath(raw: string): string {
   try {
-    return `${URL_SCHEME}://${decodeURIComponent(raw)}`;
+    return decodeURIComponent(raw);
   } catch {
-    return `${URL_SCHEME}://${raw}`;
+    return raw;
   }
 }
+
+export const addressUrl = (raw: string): string => `${URL_SCHEME}://${addressPath(raw)}`;

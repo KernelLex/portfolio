@@ -45,6 +45,7 @@ const NICE: ReadonlySet<PageId> = new Set(['shorts', 'side-builds', 'control']);
 /** Each page is its own chunk, fetched the first time its tab opens. */
 const BUILT: Partial<Record<PageId, LazyExoticComponent<ComponentType>>> = {
   home: lazy(() => import('./home/Home')),
+  amoghpedia: lazy(() => import('./amoghpedia/Amoghpedia')),
 };
 
 export const PAGE_LIST: ReadonlyArray<PageEntry> = PAGE_IDS.map((id) => ({

@@ -40,7 +40,8 @@ export default function Sidebar({ active, onOpen, onTips, onReplayIntro, onClose
   const labelled = (text: string) => ({
     onPointerEnter: showLabel(text),
     onPointerLeave: hideLabel,
-    onFocus: showLabel(text),
+    // Keyboard focus only: a mouse click leaves focus behind, and the label with it.
+    onFocus: (e: SyntheticEvent<HTMLElement>) => e.currentTarget.matches(':focus-visible') && showLabel(text)(e),
     onBlur: hideLabel,
   });
 

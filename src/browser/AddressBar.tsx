@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, CornerDownLeft, Mic, RotateCw, Zap } from 'lucide-react';
 import { ADDRESS, CHROME } from '../content/browser';
 import { pageEntry } from '../pages/registry';
-import { watchVoiceInput } from '../voice/detect';
-import { addressUrl, type Address } from './address';
+import { URL_SCHEME } from '../config';
+import { useWisprInput } from '../voice/useWisprInput';
+import { addressPath, type Address } from './address';
 import ChromeButton from './ChromeButton';
 import { resolveCommand } from './resolveCommand';
 
@@ -33,8 +34,8 @@ export default function AddressBar({ address, canBack, canForward, onBack, onFor
   const voiceGo = useRef(0);
   const selectOnClick = useRef(false);
 
-  const url = addressUrl(address.raw);
-  const typed = draft !== null && draft.trim() !== '' && draft !== url;
+  const path = addressPath(address.raw);
+  const typed = draft !== null && draft.trim() !== '' && draft !== path;
   const target = typed ? resolveCommand(draft) : null;
 
   const reset = () => {
@@ -52,19 +53,12 @@ export default function AddressBar({ address, canBack, canForward, onBack, onFor
   const goRef = useRef(go);
   goRef.current = go;
 
-  useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    const stop = watchVoiceInput(el, () => {
-      setVoice(true);
-      window.clearTimeout(voiceGo.current);
-      voiceGo.current = window.setTimeout(() => goRef.current(el.value), VOICE_GO_MS);
-    });
-    return () => {
-      stop();
-      window.clearTimeout(voiceGo.current);
-    };
-  }, []);
+  useWisprInput(inputRef, () => {
+    setVoice(true);
+    window.clearTimeout(voiceGo.current);
+    voiceGo.current = window.setTimeout(() => goRef.current(inputRef.current?.value ?? ''), VOICE_GO_MS);
+  });
+  useEffect(() => () => window.clearTimeout(voiceGo.current), []);
 
   const destination = target && (target.page === 'ask' && target.to !== 'ask' ? null : pageEntry(target.page));
 
@@ -91,14 +85,14 @@ export default function AddressBar({ address, canBack, canForward, onBack, onFor
           aria-label={ADDRESS.label}
           aria-describedby="address-hint"
           placeholder={ADDRESS.placeholder}
-          value={draft ?? url}
+          value={draft ?? path}
           onChange={(e) => {
             window.clearTimeout(voiceGo.current);
             setVoice(false);
             setDraft(e.target.value);
           }}
           onFocus={(e) => {
-            setDraft(url);
+            setDraft(path);
             e.currentTarget.select();
             selectOnClick.current = true;
           }}
@@ -109,14 +103,20 @@ export default function AddressBar({ address, canBack, canForward, onBack, onFor
           }}
           onBlur={reset}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') go(draft ?? url);
+            if (e.key === 'Enter') go(draft ?? path);
             if (e.key === 'Escape') {
               reset();
               e.currentTarget.blur();
             }
           }}
-          className="h-8 w-full rounded-lg bg-white/[0.04] pr-9 pl-3 font-mono text-[12.5px] text-ink ring-1 ring-white/[0.06] transition-colors outline-none placeholder:text-ink-muted/70 hover:bg-white/[0.06] focus:bg-white/[0.07] focus:ring-accent/40 focus-visible:outline-none"
+          className="h-8 w-full rounded-lg bg-white/[0.04] pr-9 pl-[5.1rem] font-mono text-[12.5px] text-ink ring-1 ring-white/[0.06] transition-colors outline-none placeholder:text-ink-muted/70 hover:bg-white/[0.06] focus:bg-white/[0.07] focus:ring-accent/40 focus-visible:outline-none"
         />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-1.5 -translate-y-1/2 rounded-md border border-accent/25 bg-accent/[0.08] px-1.5 py-0.5 font-mono text-[11px] leading-none text-accent"
+        >
+          {URL_SCHEME}://
+        </span>
         <span title={ADDRESS.wispr} className="absolute top-1/2 right-2.5 -translate-y-1/2 text-ink-muted" aria-hidden="true">
           <Mic className="h-3.5 w-3.5" strokeWidth={1.7} />
         </span>

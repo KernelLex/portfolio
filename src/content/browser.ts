@@ -30,6 +30,13 @@ export const ADDRESS = {
   voiceNote: 'a guess from how fast the text arrived',
 } as const;
 
+/** The thin status line along the bottom of the browser, on wider screens. */
+export const STATUS = {
+  link: 'Link stable',
+  tabs: (n: number, max: number) => `Tabs ${n}/${max}`,
+  private: 'No trackers',
+} as const;
+
 export const SETTINGS = {
   replay: 'Replay the intro',
   closeAll: 'Close all tabs',

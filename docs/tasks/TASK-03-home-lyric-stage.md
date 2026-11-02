@@ -2,6 +2,8 @@
 
 > Read CLAUDE.md §6 first. Timebox: ~3–4 hours. This is the hero, so polish matters.
 
+**Status: done (2 Nov).** See "Outcome" at the bottom.
+
 ## Goal
 The home page (New Tab) is a stage where whatever the visitor says through Wispr Flow is performed as expressive kinetic typography, inspired by the Cotodama Lyric Speaker (original design, nothing copied). Below the stage: quick-link tiles to the main pages.
 
@@ -41,3 +43,33 @@ Tiles for Amoghpedia, The Story, Client Work, Prompt Lens, Ask Amogh, Voice Rece
 - [ ] Voice badge + WPM appear on voice input
 - [ ] Demo line plays on load; reduced motion → simple fade-in text
 - [ ] Works on phone width
+
+---
+
+## Outcome
+
+Stage: `src/pages/home/LyricStage.tsx`; engine in `src/pages/home/lyrics/`
+(`phrases.ts` splits and scores text, `scenes.ts` has the six scenes,
+`perform.ts` runs them). Words in `src/content/lyrics.ts`. Voice kit in
+`src/voice/` (`useWisprInput`, `VoiceBadge`, `useLiveSpeech`, `FallbackMic`,
+`WisprHint`), reused by the address bar.
+
+- Six scenes: giant word, vertical stack, scatter collage, word-by-word pop,
+  sliding ribbon (with a ghost ribbon behind), split screen. Never the same
+  scene twice running.
+- Emphasis: long words bigger, ALL CAPS biggest, "?" tilts the layout, "!"
+  punches in with a shake, numbers count up in amber (Indian digit grouping
+  kept: 2,15,867).
+- Four faces rotate per phrase: Space Grotesk bold, Instrument Serif italic,
+  Big Shoulders Display (the condensed face, added to the fonts), JetBrains Mono.
+- Mood: a phrase with a keyword tints the stage (bright, low, calm).
+- The demo loops until the visitor speaks; the stage pauses while scrolled away.
+- Deviation: the text field is visible under the stage rather than hidden, so
+  typing and screen readers work; clicking the stage focuses it.
+- The fallback mic says honestly that Chrome's recogniser sends audio to Google;
+  the site itself never records or stores audio.
+- WPM: words over time since focus or the last chunk, shown only between 60 and
+  400 WPM and labelled estimated. A status bar at the bottom of the browser shows
+  the last voice reading.
+- Soak: a minute of demo loops and a 40-word dictation leave no layers behind;
+  console clean. Reduced motion performs as plain fades.
