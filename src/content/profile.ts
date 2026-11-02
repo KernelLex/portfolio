@@ -29,6 +29,7 @@ export const PROFILE = {
     languages: 'Languages',
   },
   questHint: 'Click a quest to open it',
+  photo: { alt: 'Amogh P', label: 'Photo style', pixel: 'Pixel', real: 'Real' },
 } as const;
 
 export const STATS: ReadonlyArray<{ label: string; value: number }> = [
@@ -56,6 +57,8 @@ export const ACHIEVEMENTS: ReadonlyArray<Achievement> = [
   { title: 'No AI slop', detail: 'Custom 3D for every client site.' },
   { title: 'One place', detail: 'An ERP for a whole group of companies, with a private AI.' },
   { title: 'Polyglot', detail: 'Speaks five languages.' },
+  { title: 'Club founder', detail: 'Started his own biking club at RV University.' },
+  { title: 'Host', detail: 'Hosted events at RV University.' },
   { title: 'Voice-built', detail: 'Built this site by speaking every prompt.' },
 ];
 
@@ -64,6 +67,7 @@ export type Quest = { title: string; detail: string; to?: PageId | `work/${strin
 export const QUESTS: ReadonlyArray<Quest> = [
   { title: 'Picked freedom', detail: 'B.Sc. (Hons) Data Science at RV University, to explore.', to: 'story', when: '2023' },
   { title: 'Into the field', detail: 'Stopped waiting after year one and went out to build.', to: 'story' },
+  { title: 'On campus', detail: 'Hosted events, started a biking club, and built a club app until the funding ran out.', to: 'story' },
   { title: 'Six months, zero', detail: 'Websites with a friend. Not one client, for six months.', to: 'story' },
   { title: 'First client', detail: 'Secant: a 3D interactive site for an architecture firm.', to: 'work/secant' },
   { title: 'No AI slop', detail: 'Hazen Lights: custom 3D, one of a kind.', to: 'work/hazen' },
@@ -76,5 +80,5 @@ export const QUESTS: ReadonlyArray<Quest> = [
 export const INVENTORY: ReadonlyArray<{ item: string; use: string }> = [
   { item: 'Bambu Lab P1S', use: '3D printing' },
   { item: 'Home server', use: 'Runs his own' },
-  { item: 'Jewellery idea', use: 'A side business in waiting' },
+  { item: 'A SaaS product', use: 'Has the idea, working on it' },
 ];

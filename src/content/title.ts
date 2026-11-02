@@ -18,7 +18,7 @@ export const TITLE = {
   pressTouch: 'TAP TO START',
   controls: '↑ ↓ to choose · Enter to start',
   fullscreen: 'Plays in full screen · Esc to leave it',
-  footer: '© 2026 Amogh P · built by voice with Wispr Flow',
+  footer: '© 2026 Amogh P',
 } as const;
 
 export type StartMode = (typeof TITLE.menu)[number]['id'];

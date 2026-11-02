@@ -2,9 +2,8 @@ import { LIVE, PROFILES } from './links';
 import type { PageId } from './pages';
 
 /**
- * Amoghpedia: the encyclopedia article. Facts only from CLAUDE.md section 3
- * and Amogh's life-story draft. Vera ERP usage numbers stay out until he
- * confirms the wording.
+ * Amoghpedia: the encyclopedia article. Facts only from CLAUDE.md section 3,
+ * Amogh's life-story draft and his résumé.
  *
  * Inline markup in paragraphs:
  *   [[work|Client Work]]   a link to another tab (shows a preview on hover)
@@ -69,6 +68,15 @@ export const ARTICLE = {
       ],
     },
     {
+      id: 'campus',
+      title: 'Campus life',
+      body: [
+        'At RV University Amogh hosted events and started his own biking club.{ref:self}',
+        'Running clubs and events showed him how messy club and event management was, so he built an app for it: a role-based club management app in FlutterFlow and Firebase for students, club heads, reps and deans, with event discovery, QR-code registration, club joining, external event requests, real-time approvals and attendance analytics.{ref:self} The project stopped only when the funding ran out.{ref:self}',
+        'It is a pattern with him: he gets involved, brings people in, and fixes what is broken in the things he is part of.',
+      ],
+    },
+    {
       id: 'freelance',
       title: 'Freelance career',
       body: [
@@ -82,7 +90,7 @@ export const ARTICLE = {
       title: 'The pivot to systems',
       body: [
         'The goal was never only websites. While working with one client, Amogh talked to people inside the company and found a director struggling to see the details across the several companies he ran.{ref:self}',
-        'He pitched and built **Vera ERP**: one place for every company in the group, covering HR, sales and quotations, projects, purchase, logistics, Tally finances and documents, with a private AI assistant that runs on the company\'s own server, so its data never leaves it.{ref:vera} It runs ERPNext v15 and Frappe HRMS headless behind a React and TypeScript front end, on bare-metal Ubuntu behind nginx and a Cloudflare Tunnel.{ref:self}',
+        'He pitched and built **Vera ERP**: one place for every company in the group, covering HR, sales and quotations, projects, purchase, logistics, Tally finances and documents, with a private AI assistant that runs on the company\'s own server, so its data never leaves it.{ref:vera} It runs ERPNext v15 and Frappe HRMS headless behind a React and TypeScript front end, on bare-metal Ubuntu behind nginx and a Cloudflare Tunnel.{ref:self} It is live, and serves about 41 employees across the companies.{ref:self}',
         'Another client, who sells his own ERP to companies that have no HR department, wanted a separate HR module linked into it without passing credentials over APIs. Amogh\'s team built and delivered it: an Indian HR suite covering payroll, leave, hiring, performance and income tax, including Form 16.{ref:self}',
       ],
     },
@@ -109,7 +117,7 @@ export const ARTICLE = {
       id: 'personal-life',
       title: 'Personal life',
       body: [
-        'Outside work Amogh 3D prints on a Bambu Lab P1S, runs his own home server, and has an idea for a jewellery business.{ref:self} He speaks English, Kannada, Hindi, Telugu and Tamil. He reportedly sleeps.{cn}',
+        'Outside work Amogh 3D prints on a Bambu Lab P1S, runs his own home server, and has an idea for a SaaS product that he is working on.{ref:self} He speaks English, Kannada, Hindi, Telugu and Tamil. He reportedly sleeps.{cn}',
       ],
     },
     {
@@ -129,8 +137,8 @@ export const ARTICLE = {
 
 export const INFOBOX = {
   caption: 'Amogh P, Bengaluru',
-  /** Set to e.g. 'images/amogh.jpg' once the photo is in public/; until then, a monogram. */
-  photo: undefined as string | undefined,
+  /** His photo; without one, the monogram below. */
+  photo: `${import.meta.env.BASE_URL}photo/amogh.webp` as string | undefined,
   monogram: 'AP',
   rows: [
     { label: 'Based in', value: 'Bengaluru, India' },

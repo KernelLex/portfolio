@@ -3,8 +3,8 @@ import { CLIPS, LIVE, type Clip, type LiveSite } from './links';
 /**
  * Client Work: one entry per case study. Facts only from CLAUDE.md section 3,
  * Amogh's life-story draft and the Nova catalogue. IIWM and Bogen Villa are
- * private clients: described, never linked. Vera ERP usage numbers stay out
- * until Amogh confirms the wording.
+ * private clients: described, never linked. Vera ERP's numbers are in
+ * Amogh's own wording, from his résumé.
  */
 export type CaseStudy = {
   slug: string;
@@ -57,7 +57,7 @@ export const CLIENT_WORK: ReadonlyArray<CaseStudy> = [
       'A private AI assistant on a local Ollama model, so company data never leaves the server.',
       'Attendance from Jibble, and the whole thing self-hosted on bare-metal Ubuntu behind nginx and a Cloudflare Tunnel.',
     ],
-    result: 'In its main testing phase, with one of the group’s companies as the test bed. Built by Amogh and a friend; the two of them also built the Vera Enterprises website.',
+    result: 'Live on the group’s own server, serving about 41 employees across the companies. Built by Amogh and a friend; the two of them also built the Vera Enterprises website.',
     stack: ['ERPNext v15', 'Frappe HRMS (headless)', 'React', 'TypeScript', 'Tailwind', 'Ollama', 'Ubuntu', 'nginx', 'Cloudflare Tunnel'],
     live: LIVE.vera,
     video: CLIPS.erp,

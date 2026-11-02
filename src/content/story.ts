@@ -5,7 +5,7 @@
  * TODO(Amogh): a chapter for a mistake you made and its lesson goes between
  * "weddings" and "pivot" once you send it.
  */
-export type Widget = 'fork' | 'classroom' | 'pitch' | 'wireframe' | 'spotlight' | 'cards' | 'merge' | 'hub' | 'plug' | 'why' | 'end';
+export type Widget = 'fork' | 'classroom' | 'campus' | 'pitch' | 'wireframe' | 'spotlight' | 'cards' | 'merge' | 'hub' | 'plug' | 'why' | 'end';
 
 export type Chapter = {
   id: string;
@@ -21,7 +21,7 @@ export type Chapter = {
 export const STORY = {
   eyebrow: 'amogh://story',
   title: 'The Story',
-  lead: 'Played, not read. Eleven chapters, one small thing to do in each.',
+  lead: 'Played, not read. Twelve chapters, one small thing to do in each.',
   objective: 'Objective',
   complete: 'Complete',
   next: 'Next chapter',
@@ -37,6 +37,16 @@ export const STORY = {
 export const PIECES = {
   fork: { engineering: 'Engineering', bsc: 'B.Sc. Data Science', notThis: 'Not for me: I wanted room to explore.' },
   classroom: { button: 'Stop waiting' },
+  campus: {
+    steps: [
+      { act: 'Host an event', result: 'Hosted events at RV University' },
+      { act: 'Start a club', result: 'Started my own biking club' },
+      { act: 'Fix the mess', result: 'Built a club and event app' },
+    ],
+    app: 'Club app',
+    features: ['Events', 'QR check-in', 'Join a club', 'Approvals', 'Attendance'],
+    paused: 'Paused: funding',
+  },
   pitch: { button: 'Send a pitch', rejected: 'No', month: (n: number) => `Month ${n}`, yes: 'Secant said yes.' },
   wireframe: { hint: 'Drag, or use ← →', label: 'Secant' },
   spotlight: { hidden: 'No AI slop. Every site one of a kind.', label: 'Hazen Lights', hint: 'Move your pointer, or tap around' },
@@ -64,6 +74,14 @@ export const CHAPTERS: ReadonlyArray<Chapter> = [
     objective: 'Stop waiting',
     done: 'Out into the field, early.',
     widget: 'classroom',
+  },
+  {
+    id: 'campus',
+    title: 'Meanwhile, on campus.',
+    body: 'I hosted events at RV University and started my own biking club. Getting people to show up is outreach, and I am into it. Running clubs showed me how messy club and event management was, so I built an app for it. It stopped when the funding did, but the habit stuck: get into things, bring people in, fix what is broken.',
+    objective: 'Host, start, build',
+    done: 'Outreach, and a problem worth solving.',
+    widget: 'campus',
   },
   {
     id: 'zero',

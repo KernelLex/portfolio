@@ -3,6 +3,7 @@ import { ChevronRight, ListChecks, Mic, Send, X } from 'lucide-react';
 import { GUIDE, TIPS, tourLines } from '../content/guide';
 import { VOICE } from '../content/voice';
 import { toggleFullscreen } from '../lib/fullscreen';
+import { downloadResume } from '../lib/resume';
 import { playClick, playTick } from '../lib/sound';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { useWisprInput } from '../voice/useWisprInput';
@@ -255,6 +256,7 @@ export default function GuideBot() {
       if (action.kind === 'go') tripTimer.current = window.setTimeout(() => guide.go(action.to), TRIP_MS);
       else if (action.kind === 'tour') tripTimer.current = window.setTimeout(guide.tour, TRIP_MS);
       else if (action.kind === 'fullscreen') toggleFullscreen();
+      else if (action.kind === 'download') downloadResume();
     },
     [play],
   );
@@ -307,6 +309,8 @@ export default function GuideBot() {
   if (hidden) return null;
 
   const actClass = act ? `bot-act-${act.name}` : '';
+  // Moved to the right half, Byte's label goes on its left.
+  const onRight = pos !== null && pos.x + BOT.w / 2 > window.innerWidth / 2;
 
   return (
     <div
@@ -333,7 +337,15 @@ export default function GuideBot() {
             <BotSprite talking={talking && !reduced} className="h-14 w-[3.25rem] drop-shadow-[0_6px_14px_rgba(0,0,0,0.6)]" />
           </span>
         </span>
-        {!showBubble && !touch && <span className="absolute -top-1 -right-2 rounded bg-accent px-1 font-mono text-[9px] leading-4 text-space">{GUIDE.shortcut}</span>}
+        {/* Until it is opened, Byte says what it is for, on the side with room. */}
+        {!showBubble && !held && (
+          <span
+            className={`absolute top-1/2 -translate-y-1/2 rounded-md border border-accent/40 bg-[#0d111c]/95 px-2 py-1 font-mono text-[10px] whitespace-nowrap text-accent shadow-[0_6px_18px_rgba(0,0,0,0.5)] ${onRight ? 'right-full mr-2' : 'left-full ml-2'}`}
+            style={{ animation: 'fade-in 300ms ease-out both' }}
+          >
+            {touch ? GUIDE.tapMe : GUIDE.clickMe}
+          </span>
+        )}
       </button>
 
       {showBubble && (

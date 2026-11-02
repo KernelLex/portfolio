@@ -2,7 +2,8 @@
  * Words that appear inside the intro game. Kept out of the scenes so copy can
  * change without touching Phaser code.
  *
- * Every voice note is a fact from CLAUDE.md section 3 - nothing invented.
+ * Every voice note is a fact from CLAUDE.md section 3 or Amogh's résumé -
+ * nothing invented.
  */
 
 export type VoiceNote = {
@@ -17,8 +18,8 @@ export const VOICE_NOTES: ReadonlyArray<VoiceNote> = [
   { x: 205, high: false, text: '7 roles before graduating' },
   { x: 335, high: true, text: 'Top 10 at national hackathons' },
   { x: 455, high: false, text: 'Speaks 5 languages' },
-  { x: 565, high: true, text: '6 months, zero clients. Then Secant.' },
-  { x: 675, high: false, text: 'Rs 2,15,867 recovered on real invoices' },
+  { x: 565, high: true, text: 'Secant: real-time 3D, built in WebGL' },
+  { x: 675, high: false, text: 'Vera ERP: 3 companies, 1 dashboard' },
 ];
 
 export const BILLBOARD = {
@@ -54,7 +55,7 @@ export const BILLBOARD_MESSAGES = {
   vera: ['VERA ERP', 'ONE PLACE', 'PRIVATE AI'],
   secant: ['SECANT', 'ARCHITECTURE', 'IN 3D'],
   hazen: ['HAZEN', 'LIGHTING', 'IN 3D'],
-  truecommit: ['TRUECOMMIT', '5 INVOICES', 'ALL PAID'],
+  truecommit: ['TRUECOMMIT', 'BOUNDED AI', 'SAFE AGENT'],
 } as const;
 
 /** The jack-in cutscene's lettering. */
@@ -66,8 +67,8 @@ export const LINK = {
   established: 'LINK ESTABLISHED',
   sync: 'SYNC',
   detail: `WRIST LINK  >  SEAT 0${SEAT_NUMBER}  >  HANDSHAKE OK`,
-  /** Typed out beside the wrist while it is scanned. */
-  readout: ['USER   AMOGH P', 'IMPLANT   WRIST', `SEAT   0${SEAT_NUMBER}`],
+  /** Typed out beside the wrist while it is scanned. Each '#' is drawn as random hex: an encrypted ID, never a name. */
+  readout: ['ID   ####-####-####', 'IMPLANT   WRIST', `SEAT   0${SEAT_NUMBER}`],
   /** The jack-out, played on logging off: the same close-up, in reverse. */
   disconnecting: 'DISCONNECTING',
   jackingOut: 'JACKING OUT',

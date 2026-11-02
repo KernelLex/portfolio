@@ -316,25 +316,10 @@
 }
 
 /* The profile's avatar: the street's pixel character at 4x, breathing, inside a slowly turning ring. */
-.profile-sprite {
-  width: 128px;
-  height: 176px;
-  background-size: 512px 176px;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-  animation: profile-idle 1.6s steps(4) infinite;
-}
-
 .profile-ring {
   background: conic-gradient(from 0deg, rgb(245 163 92 / 0.9), transparent 25%, rgb(84 232 224 / 0.6) 50%, transparent 75%, rgb(245 163 92 / 0.9));
   mask: radial-gradient(circle, transparent 66%, black 67%, black 69%, transparent 70%);
   animation: ring-turn 14s linear infinite;
-}
-
-@keyframes profile-idle {
-  to {
-    background-position: -512px 0;
-  }
 }
 
 @keyframes ring-turn {

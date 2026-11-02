@@ -98,10 +98,16 @@ export const FAQ: ReadonlyArray<Faq> = [
     tab: 'amoghpedia',
   },
   {
-    keywords: ['hobby', 'hobbies', 'free time', '3d print', 'printing', 'bambu', 'home server', 'jewelry', 'jewellery'],
+    keywords: ['hobby', 'hobbies', 'free time', '3d print', 'printing', 'bambu', 'home server', 'saas', 'startup', 'side business'],
     answer:
-      "I 3D print on a Bambu Lab P1S, run my own home server, and I have an idea for a jewelry business.",
+      "I 3D print on a Bambu Lab P1S, run my own home server, and I have an idea for a SaaS product that I'm working on.",
     tab: 'amoghpedia',
+  },
+  {
+    keywords: ['club', 'clubs', 'biking', 'bike', 'event', 'events', 'campus', 'outreach', 'marketing'],
+    answer:
+      "At RV University I hosted events and started my own biking club. Running them showed me how messy club and event management was, so I built an app for it: events, QR registrations, approvals and attendance. It stopped when the funding did. That's how I work: I get into things, bring people in, and fix what's broken.",
+    tab: 'story',
   },
   {
     keywords: ['contact', 'hire', 'linkedin', 'github', 'email', 'reach'],

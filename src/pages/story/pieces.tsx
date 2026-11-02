@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Check, Lock, Plug } from 'lucide-react';
+import { Bike, CalendarDays, Check, Lock, Plug, Smartphone } from 'lucide-react';
 import { PIECES, type Widget } from '../../content/story';
 import { playClick, playJackIn, playPickup, playTick } from '../../lib/sound';
 
@@ -71,6 +71,65 @@ function Classroom({ done, onDone }: PieceProps) {
       >
         {PIECES.classroom.button}
       </button>
+    </div>
+  );
+}
+
+const CAMPUS_ICONS = [CalendarDays, Bike, Smartphone];
+
+/** On campus: host, start, build - and the build stops when the money does. */
+function Campus({ done, onDone }: PieceProps) {
+  const { steps, features } = PIECES.campus;
+  const [at, setAt] = useState(done ? steps.length : 0);
+  const built = at >= steps.length;
+  return (
+    <div className={`${BOX} grid items-center gap-5 p-5 sm:grid-cols-[1fr_9.5rem]`}>
+      <ol className="flex flex-col gap-2.5">
+        {steps.map((step, i) => {
+          const Icon = CAMPUS_ICONS[i];
+          const stepDone = i < at;
+          return (
+            <li key={step.act}>
+              <button
+                type="button"
+                disabled={i !== at}
+                onClick={() => {
+                  playPickup();
+                  setAt(i + 1);
+                  if (i + 1 === steps.length) onDone();
+                }}
+                className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+                  stepDone ? 'border-accent/60 bg-accent/10' : i === at ? 'border-white/25 hover:border-accent/60' : 'border-white/[0.06] opacity-40'
+                }`}
+              >
+                <Icon className={`h-5 w-5 shrink-0 ${stepDone ? 'text-accent' : 'text-ink-muted'}`} strokeWidth={1.8} />
+                <span className="flex-1 text-[15px] text-ink">{stepDone ? step.result : step.act}</span>
+                {stepDone && <Check className="h-4 w-4 text-accent" strokeWidth={2} />}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      {/* The app, as far as it got. */}
+      <div className="relative mx-auto h-60 w-[9.5rem] rounded-[1.4rem] border-2 border-white/15 bg-black/60 p-3">
+        <p className="font-mono text-[9px] tracking-[0.2em] text-accent uppercase">{PIECES.campus.app}</p>
+        <ul className="mt-2 space-y-1.5">
+          {features.map((feature, i) => (
+            <li
+              key={feature}
+              className={`rounded-md border border-white/10 px-2 py-1.5 text-[11px] text-ink transition-opacity duration-500 ${built ? 'opacity-100' : 'opacity-0'}`}
+              style={{ transitionDelay: `${i * 120}ms` }}
+            >
+              {feature}
+            </li>
+          ))}
+        </ul>
+        {built && (
+          <span className="absolute inset-x-1.5 top-1/2 -translate-y-1/2 -rotate-12 rounded border-2 border-[#ff5fa2] bg-[#0b0e17]/90 py-1.5 text-center font-mono text-[11px] font-bold tracking-wider text-[#ff5fa2] uppercase shadow-[0_6px_18px_rgba(0,0,0,0.6)]">
+            {PIECES.campus.paused}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -445,6 +504,7 @@ function End({ done, onDone }: PieceProps) {
 const PIECE_FOR: Record<Widget, (p: PieceProps) => React.ReactNode> = {
   fork: Fork,
   classroom: Classroom,
+  campus: Campus,
   pitch: Pitch,
   wireframe: Wireframe,
   spotlight: Spotlight,

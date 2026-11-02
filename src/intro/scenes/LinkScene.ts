@@ -7,6 +7,9 @@ import { VIEW_H } from '../viewport';
 import { ADD, PIXEL_FONT, SIGN_FONT, addLight, attachPostFX, colour } from './shared';
 
 /** Mirrors scripts/art/link.mjs: where the cable leaves the wrist and seats in the socket. */
+/** The readout's '#' marks, re-rolled as hex every time they are drawn: it reads as ciphertext. */
+const cipher = (text: string) => text.replace(/#/g, () => '0123456789ABCDEF'[Math.floor(Math.random() * 16)]);
+
 const WRIST_PORT = { x: 125, y: 25 };
 /** The light strip round the wrist implant, in the arm sprite's pixels. */
 const WRIST_STRIP = { x: 125, y: 35 };
@@ -272,7 +275,7 @@ export class LinkScene extends Phaser.Scene {
       arm.setFrame(2);
       port.setFrame(1);
       this.wristGlow.setAlpha(0.5);
-      readout.forEach((t) => t.setText(t.getData('full') as string));
+      readout.forEach((t) => t.setText(cipher(t.getData('full') as string)));
       leader.setAlpha(1);
       this.setCable(start, seat, 1, plug);
       established.setAlpha(1);
@@ -329,7 +332,7 @@ export class LinkScene extends Phaser.Scene {
           let left = n;
           readout.forEach((t) => {
             const full = t.getData('full') as string;
-            t.setText(full.slice(0, Math.max(0, left)));
+            t.setText(cipher(full.slice(0, Math.max(0, left))));
             left -= full.length;
           });
         },

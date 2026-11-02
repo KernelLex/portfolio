@@ -25,7 +25,9 @@ export type TabAction =
   | { type: 'reset' };
 
 /** Past this, the oldest tab closes to make room. */
-export const MAX_TABS = 6;
+export const MAX_TABS = 10;
+/** The browser opens with every page in a tab, New Tab in front. */
+const START_TABS: ReadonlyArray<PageId> = ['home', 'story', 'work', 'amoghpedia', 'side-builds', 'shorts', 'ask', 'control'];
 const HISTORY_LIMIT = 30;
 const HOME = 'home';
 
@@ -85,7 +87,10 @@ function reducer(state: TabsState, action: TabAction): TabsState {
   }
 }
 
-const fresh = (): TabsState => addTab({ tabs: [], active: '', next: 1 }, HOME);
+function fresh(): TabsState {
+  const opened = START_TABS.reduce((state, page) => addTab(state, page), { tabs: [], active: '', next: 1 } as TabsState);
+  return { ...opened, active: opened.tabs[0].id };
+}
 
 /**
  * Tabs live in memory only: logging off the PC and back on keeps them, and a

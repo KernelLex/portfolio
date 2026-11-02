@@ -6,11 +6,12 @@ import {
   BrainCircuit,
   ChevronRight,
   Database,
+  Download,
   Flag,
-  Gem,
   MapPin,
   MonitorSmartphone,
   Printer,
+  Rocket,
   Server,
   Swords,
   Trophy,
@@ -19,13 +20,14 @@ import {
 } from 'lucide-react';
 import { useBrowser } from '../../browser/BrowserContext';
 import HudCorners from '../../components/HudCorners';
+import { RESUME } from '../../content/links';
 import { ACHIEVEMENTS, INVENTORY, LOADOUT, PROFILE as P, QUESTS, STATS } from '../../content/profile';
 import { playClick } from '../../lib/sound';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 
 const SLOT_ICONS: ReadonlyArray<LucideIcon> = [MonitorSmartphone, Database, BrainCircuit, Server];
-const ITEM_ICONS: ReadonlyArray<LucideIcon> = [Printer, Server, Gem];
-const SPRITE = `${import.meta.env.BASE_URL}assets/intro/player-idle.png`;
+const ITEM_ICONS: ReadonlyArray<LucideIcon> = [Printer, Server, Rocket];
+const PHOTO = { pixel: `${import.meta.env.BASE_URL}photo/amogh-pixel.png`, real: `${import.meta.env.BASE_URL}photo/amogh.webp` };
 
 const PANEL = 'relative rounded-2xl border border-white/[0.08] bg-surface/60 backdrop-blur-sm';
 const HEADING = 'mb-4 flex items-center gap-2 font-mono text-[11px] tracking-[0.22em] text-accent uppercase';
@@ -49,6 +51,39 @@ function Counter({ value, reduced }: { value: number; reduced: boolean }) {
   return <span ref={ref}>{shown}</span>;
 }
 
+// The photo style outlives the tab, until the page reloads.
+let savedReal = false;
+
+/** His photo, pixel art first, with a switch to the real one and back. */
+function Portrait() {
+  const [real, setReal] = useState(savedReal);
+  const choose = (value: boolean) => () => {
+    playClick();
+    savedReal = value;
+    setReal(value);
+  };
+  const SWITCH = 'px-3 py-1 font-mono text-[10px] tracking-[0.18em] uppercase transition-colors';
+  return (
+    <>
+      <div className="relative mx-auto grid h-56 w-56 place-items-center">
+        <span aria-hidden="true" className="profile-ring absolute inset-0 rounded-full" />
+        <div className="relative h-44 w-44 overflow-hidden bg-space [clip-path:circle(50%)]">
+          <img src={PHOTO.pixel} alt={real ? '' : P.photo.alt} aria-hidden={real} className={`absolute inset-0 h-full w-full object-cover [image-rendering:pixelated] transition-opacity duration-500 ${real ? 'opacity-0' : 'opacity-100'}`} />
+          <img src={PHOTO.real} alt={real ? P.photo.alt : ''} aria-hidden={!real} loading="lazy" className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${real ? 'opacity-100' : 'opacity-0'}`} />
+        </div>
+      </div>
+      <div role="group" aria-label={P.photo.label} className="mx-auto mt-3 flex w-fit overflow-hidden rounded-lg border border-white/[0.12]">
+        <button type="button" aria-pressed={!real} onClick={choose(false)} className={`${SWITCH} ${real ? 'text-ink-muted hover:text-ink' : 'bg-accent text-space'}`}>
+          {P.photo.pixel}
+        </button>
+        <button type="button" aria-pressed={real} onClick={choose(true)} className={`${SWITCH} ${real ? 'bg-accent text-space' : 'text-ink-muted hover:text-ink'}`}>
+          {P.photo.real}
+        </button>
+      </div>
+    </>
+  );
+}
+
 /** Amogh as a character sheet: who he is, what he can do, what he has done. */
 export default function Profile() {
   const { open } = useBrowser();
@@ -60,11 +95,7 @@ export default function Profile() {
       <section className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         <div className={`${PANEL} overflow-hidden p-6`}>
           <HudCorners inset={10} size={12} />
-          <div className="relative mx-auto grid h-56 w-56 place-items-center">
-            <span aria-hidden="true" className="profile-ring absolute inset-0 rounded-full" />
-            <span aria-hidden="true" className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgb(245_163_92/0.18),transparent_70%)]" />
-            <div role="img" aria-label={P.name} className="profile-sprite relative" style={{ backgroundImage: `url(${SPRITE})` }} />
-          </div>
+          <Portrait />
           <p className="mt-4 text-center font-mono text-[11px] tracking-[0.3em] text-ink-muted">@{P.handle}</p>
           <h1 className="mt-1 text-center font-condensed text-5xl tracking-wide text-ink uppercase">{P.name}</h1>
           <p className="mt-1 text-center text-sm text-accent">{P.className}</p>
@@ -97,6 +128,15 @@ export default function Profile() {
               </a>
             ))}
           </div>
+          <a
+            href={RESUME.href}
+            download={RESUME.file}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-2.5 text-sm font-medium text-space transition-opacity hover:opacity-90"
+          >
+            <Download className="h-4 w-4" strokeWidth={2} />
+            {RESUME.label}
+            <span className="font-mono text-[10px] opacity-70">{RESUME.format}</span>
+          </a>
         </div>
 
         <div className="flex flex-col gap-5">

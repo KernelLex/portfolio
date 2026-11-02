@@ -14,6 +14,8 @@ export const GUIDE = {
   next: 'Next',
   reopen: 'Ask Byte for help',
   drag: 'Drag me anywhere',
+  clickMe: 'Click me for help',
+  tapMe: 'Tap me for help',
   askLabel: 'Ask Byte where something is',
   askPlaceholder: 'Where is his résumé?',
   askSend: 'Ask',
@@ -38,6 +40,7 @@ export const BYTE_ANSWERS = {
   inside: (address: string) => `Straight into his browser, ${BROWSER_NAME}, at ${address}.`,
   contact: (address: string) => `His LinkedIn and GitHub are on the Player Profile, at ${address}. Taking you there.`,
   help: 'Here is everywhere I can take you. Tap one, or ask in your own words.',
+  download: 'Downloading his résumé (PDF) now. It is also a click away in the Terminal on his PC, and on the Player Profile.',
   notHere: 'Those controls are for the street and the cafe. In here, just ask me where to go.',
 } as const;
 
@@ -45,7 +48,7 @@ export const BYTE_ANSWERS = {
 export type ByteTarget =
   | { kind: 'page'; page: PageId }
   | { kind: 'study'; slug: string }
-  | { kind: 'contact' | 'tour' | 'fullscreen' | 'browser' | 'me' | 'help' | 'controls' };
+  | { kind: 'contact' | 'download' | 'tour' | 'fullscreen' | 'browser' | 'me' | 'help' | 'controls' };
 
 export type ByteEntry = {
   target: ByteTarget;
@@ -87,8 +90,8 @@ export const BYTE_PLACES: ReadonlyArray<ByteEntry> = [
     group: 'places',
     label: 'The Story',
     example: 'Tell me his story',
-    strong: ['story', 'journey', 'life story', 'how it started', 'how he started', 'how did he start', 'background', 'timeline', 'history', 'origin', 'zero clients'],
-    weak: ['began', 'beginning', 'chapters', 'mission', 'path'],
+    strong: ['story', 'journey', 'life story', 'how it started', 'how he started', 'how did he start', 'background', 'timeline', 'history', 'origin', 'zero clients', 'biking club', 'biking', 'bike club', 'club app', 'campus', 'clubs', 'events he hosted', 'outreach'],
+    weak: ['began', 'beginning', 'chapters', 'mission', 'path', 'events', 'club', 'rvu', 'marketing'],
   },
   {
     target: { kind: 'page', page: 'work' },
@@ -147,6 +150,7 @@ export const BYTE_PLACES: ReadonlyArray<ByteEntry> = [
   { target: { kind: 'study', slug: 'nova-erp' }, group: 'work', example: 'Show me Nova ERP', strong: ['nova erp'] },
   { target: { kind: 'study', slug: 'nova-crm' }, group: 'work', example: 'Show me Nova CRM', strong: ['crm', 'nova crm', 'sales pipeline'] },
   { target: { kind: 'study', slug: 'nova-hrms' }, group: 'work', example: 'Show me Nova HRMS', strong: ['nova hrms'] },
+  { target: { kind: 'download' }, group: 'actions', label: 'Download his résumé (PDF)', example: 'Download his résumé', strong: ['download resume', 'download cv', 'download his resume', 'resume pdf', 'cv pdf', 'pdf'], weak: ['download'] },
   { target: { kind: 'tour' }, group: 'actions', label: 'Start the walkthrough', example: 'Give me the tour', strong: ['tour', 'walkthrough', 'walk through', 'walk me through', 'guide me', 'show me around', 'guided tour'] },
   { target: { kind: 'browser' }, group: 'actions', label: 'Skip to his browser', example: 'Skip to the browser', strong: ['browser', 'navigator', 'skip', 'skip intro', 'skip the game', 'pc'], weak: ['computer', 'desktop'] },
   { target: { kind: 'fullscreen' }, group: 'actions', label: 'Full screen on or off', example: 'Full screen', strong: ['full screen', 'fullscreen', 'maximise', 'maximize'], weak: ['bigger'] },
@@ -172,12 +176,12 @@ export const TIPS: Record<Place, { keys: string; touch: string } | null> = {
   link: null,
   boot: null,
   desktop: {
-    keys: `Amogh's PC. Double-click ${BROWSER_NAME} to open his browser. The terminal knows a few tricks too.`,
-    touch: `Amogh's PC. Tap ${BROWSER_NAME} to open his browser.`,
+    keys: `Amogh's PC. Double-click ${BROWSER_NAME} to open his browser. The Terminal has a Download résumé button, and "help" lists everything it can do.`,
+    touch: `Amogh's PC. Tap ${BROWSER_NAME} to open his browser, or the Terminal to download his résumé.`,
   },
   browser: {
-    keys: 'Every tab is a part of his story. Pick one from the sidebar, or ask me where something is, like "where is his résumé?", and I will take you there.',
-    touch: 'Every tab is a part of his story. Pick one from the bar at the bottom, or ask me where something is and I will take you there.',
+    keys: 'Every page is already open as a tab along the top: click one to switch. The sidebar has them too, or ask me where something is, like "where is his résumé?", and I will take you there.',
+    touch: 'Every page is already open. Switch with the bar at the bottom, or ask me where something is and I will take you there.',
   },
 };
 
@@ -190,11 +194,11 @@ export const TOUR = {
   ],
   cafe: ['Seat 3 is his. Every other seat is taken.', 'Now the fun part: his wrist plugs straight into the PC.'],
   desktop: [
-    'This is KernelLex OS, his PC. The terminal has a few tricks; try neofetch later.',
+    'This is KernelLex OS, his PC. The Terminal downloads his résumé, and "help" shows all its tricks.',
     `Everything lives in his browser, ${BROWSER_NAME}. Opening it now.`,
   ],
   browser: [
-    { page: 'home', text: 'New Tab: say anything and the stage performs your words as moving type.' },
+    { page: 'home', text: 'Every page is already open as a tab. New Tab first: say anything and the stage performs your words as moving type.' },
     { page: 'story', text: 'The Story: from six months of zero clients to systems companies run on. Play through it.' },
     { page: 'work', text: 'Client Work: real businesses and real builds, with live sites you can open right here.' },
     { page: 'amoghpedia', text: 'His Player Profile: stats, loadout, achievements and quests at a glance. The full wiki is one click away.' },

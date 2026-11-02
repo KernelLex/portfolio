@@ -2,6 +2,12 @@
  * Every outside link on the site, in one place. Only links Amogh has given.
  * IIWM and Bogen Villa are private clients: described, never linked.
  */
+/**
+ * Amogh's résumé as a PDF. The public copy leaves out the personal-details
+ * block (home address, birth date, family contacts).
+ */
+export const RESUME = { href: `${import.meta.env.BASE_URL}Amogh-P-Resume.pdf`, file: 'Amogh-P-Resume.pdf', label: 'Download résumé', format: 'PDF' } as const;
+
 export const PROFILES = {
   github: { label: 'GitHub', handle: 'KernelLex', href: 'https://github.com/KernelLex' },
   linkedin: { label: 'LinkedIn', handle: 'amogh-prashanth', href: 'https://www.linkedin.com/in/amogh-prashanth-393b37319/' },

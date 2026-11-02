@@ -5,7 +5,7 @@ import { PAGES } from '../content/pages';
 import { ALL_WORK } from '../content/work';
 import type { Place } from './guide';
 
-export type ByteAction = { kind: 'go'; to: string } | { kind: 'tour' } | { kind: 'fullscreen' } | { kind: 'help' } | { kind: 'none' };
+export type ByteAction = { kind: 'go'; to: string } | { kind: 'download' } | { kind: 'tour' } | { kind: 'fullscreen' } | { kind: 'help' } | { kind: 'none' };
 export type ByteAnswer = { text: string; action: ByteAction };
 
 const STRONG = 3;
@@ -77,6 +77,8 @@ function respond(target: ByteTarget, place: Place, touch: boolean): ByteAnswer {
     }
     case 'contact':
       return go(BYTE_ANSWERS.contact(addressUrl('amoghpedia')), 'amoghpedia');
+    case 'download':
+      return { text: BYTE_ANSWERS.download, action: { kind: 'download' } };
     case 'browser':
       return go(BYTE_ANSWERS.inside(addressUrl('home')), 'home');
     case 'tour':

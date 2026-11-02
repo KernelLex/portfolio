@@ -743,15 +743,16 @@ export class StreetScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(DEPTH.hud);
 
-    this.add
-      .rectangle(6, 5, 46, 18, 0x05070c, 0.82)
+    // The voice-note counter: a box sized to its icon and count, with even margins.
+    const box = this.add
+      .rectangle(4, 4, 0, 20, 0x05070c, 0.82)
       .setOrigin(0, 0)
       .setStrokeStyle(1, colour(introPalette.accent), 0.4)
       .setScrollFactor(0)
       .setDepth(DEPTH.hud);
-    this.add.image(16, 14, 'note', 0).setScrollFactor(0).setDepth(DEPTH.hud);
+    this.add.image(14, 14, 'note', 0).setScrollFactor(0).setDepth(DEPTH.hud);
     this.counter = this.add
-      .text(28, 14, `${this.taken.length}/${VOICE_NOTES.length}`, {
+      .text(27, 14, `${this.taken.length}/${VOICE_NOTES.length}`, {
         fontFamily: PIXEL_FONT,
         fontSize: '8px',
         color: this.taken.length === VOICE_NOTES.length ? introPalette.lime : '#e9ebf2',
@@ -760,6 +761,7 @@ export class StreetScene extends Phaser.Scene {
       .setResolution(2)
       .setScrollFactor(0)
       .setDepth(DEPTH.hud);
+    box.setSize(this.counter.x + this.counter.width + 5 - box.x, 20);
   }
 
   private markInput(): void {

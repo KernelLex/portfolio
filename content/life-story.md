@@ -18,6 +18,12 @@ I chose B.Sc. because I wanted freedom to explore. I felt engineering wouldn't g
 ## Going into the field early
 College was good at first. After the first year, the curriculum thinned out and we weren't learning as much, so I stopped waiting and took things into my own hands. I wanted to get into the real world before everyone else: build real things, use my skills, and understand how industries actually work.
 
+## On campus
+- I hosted events at RV University.
+- I started my own biking club.
+- Running clubs and events showed me how messy club and event management was, so I built an app to fix it: a role-based club management app (FlutterFlow and Firebase) for students, club heads, reps and deans, with event discovery, QR-code registration, club joining, external event requests, real-time approvals and attendance analytics. It stopped only because of funding.
+- I'm into marketing and outreach: getting people to show up. And I get into the things I'm part of and try to fix what's broken in them.
+
 ## The freelance grind
 - I started with websites because I thought it was an easy market to break into. It wasn't. For the first 6 months I didn't get a single client.
 - I kept trying. My first client was Secant, an architecture firm (secant.in). I built them a 3D interactive website.
@@ -33,7 +39,7 @@ We pitched a solution and built a custom ERP: Vera ERP. Everything in one place.
 
 We also added AI: a private assistant trained on the company's own data, running locally, so the data never leaves their server. He can ask a question and get the answer.
 
-[TODO: confirm usage wording, e.g. "about 41 employees are on the system, around 10 use it actively, and one company is our test bed; it's in the main testing phase"]
+Vera ERP is live at hr.veraenterprises.in, self-hosted on an on-premise Ubuntu 22.04 server, and serves about 41 employees across the companies. I work on it as a Software Developer at Vera (since April 2026).
 
 ## HRMS
 While building Vera ERP, another client wanted a custom HR module for his own ERP software, which he sells to companies that don't have HR. He wanted the HR module separate but linked into his ERP, without sending credentials directly through APIs. We built that, so his ERP and our HR module work together both ways.
@@ -71,7 +77,7 @@ It's not only for clients. It's for my own growth: understanding different indus
 ## Outside work
 - 3D printing on my Bambu Lab P1S.
 - I run my own home server.
-- I have an idea for a jewelry side business.
+- I have an idea for a SaaS product and I'm working on it.
 - [TODO: anything fun/personal you want the twin to know: food, music, habits]
 
 ## Why Wispr Flow / why growth
