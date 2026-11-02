@@ -8,22 +8,18 @@ import { playClick } from './lib/sound';
 import SoundToggle from './components/SoundToggle';
 import IntroGame from './intro/IntroGame';
 import GuideBot from './tour/GuideBot';
+import { guide } from './tour/guide';
+import TitleScreen from './intro/TitleScreen';
+import FullscreenToggle from './components/FullscreenToggle';
+import type { StartMode } from './content/title';
 
 // Lazy, and fetched while the intro plays - so the game is the preloader.
 const Computer = lazy(() => import('./computer/Computer'));
 
-type Phase = 'intro' | 'computer';
+type Phase = 'title' | 'intro' | 'computer';
 
 const FROM_THE_TOP: IntroStart = { scene: 'street', taken: [] };
 
-/**
- * Every visit starts on the street, so everyone gets the whole walk in.
- * Only a visitor who asked their system for reduced motion skips the game.
- */
-function initialPhase(): Phase {
-  if (typeof window === 'undefined') return 'computer';
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'computer' : 'intro';
-}
 
 /**
  * The whole entry flow: the street and the cafe (Phaser), then the cafe PC
@@ -31,9 +27,9 @@ function initialPhase(): Phase {
  */
 export default function App() {
   const reducedMotion = useReducedMotion();
-  const [start] = useState(initialPhase);
-  const [phase, setPhase] = useState<Phase>(start);
-  const [entry, setEntry] = useState<ComputerEntry>(start === 'intro' ? 'fresh' : 'returning');
+  // Every visit starts at the title screen, then the street, so everyone gets the whole walk in.
+  const [phase, setPhase] = useState<Phase>('title');
+  const [entry, setEntry] = useState<ComputerEntry>('fresh');
   const [intro, setIntro] = useState<IntroResult>();
   const [introStart, setIntroStart] = useState<IntroStart>(FROM_THE_TOP);
   // A fresh PC every time you sit down at it.
@@ -66,6 +62,18 @@ export default function App() {
     setPhase('intro');
   }, [intro]);
 
+  // The title menu picks the mode. Only a visitor who asked their system for
+  // reduced motion skips the game and goes straight to the PC.
+  const handleStart = useCallback(
+    (mode: StartMode) => {
+      if (mode === 'tour') guide.tour();
+      else guide.explore();
+      if (reducedMotion) sitDown('returning');
+      else setPhase('intro');
+    },
+    [reducedMotion, sitDown],
+  );
+
   const handleReplay = useCallback(() => {
     setIntroStart(FROM_THE_TOP);
     setPhase('intro');
@@ -73,6 +81,8 @@ export default function App() {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-space">
+      {phase === 'title' && <TitleScreen onStart={handleStart} reducedMotion={reducedMotion} />}
+
       {phase === 'intro' && <IntroGame start={introStart} onEnter={handleEntered} reducedMotion={reducedMotion} />}
 
       {phase === 'computer' && (
@@ -89,6 +99,7 @@ export default function App() {
       {phase === 'intro' && (
         <div className="absolute top-3 right-3 z-40 flex items-center gap-2">
           <SoundToggle label="Music" />
+          <FullscreenToggle />
           <button
             type="button"
             onClick={handleSkip}

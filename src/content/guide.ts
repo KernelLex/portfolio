@@ -2,15 +2,10 @@ import { BROWSER_NAME } from '../config';
 import type { Place } from '../tour/guide';
 import type { PageId } from './pages';
 
-/** Byte, the guide bot: it asks how the visitor wants to go, then tours or tips. */
+/** Byte, the guide bot: it walks the visitor through, or tips those exploring. */
 export const GUIDE = {
   name: 'Byte',
   label: 'Byte, your guide',
-  choose: {
-    text: "Hey, I'm Byte. Want me to walk you through Amogh's world, or would you rather explore it yourself?",
-    tour: 'Take the tour',
-    explore: 'Explore on my own',
-  },
   shortcut: 'Ctrl+B',
   shortcutHint: 'Ctrl+B starts the walkthrough any time. Esc stops it.',
   gotIt: 'Got it',
@@ -22,6 +17,7 @@ export const GUIDE = {
 
 /** Exploring: one tip per place, shown the first time the visitor gets there. */
 export const TIPS: Record<Place, { keys: string; touch: string } | null> = {
+  title: null,
   street: {
     keys: 'Hold → to walk and Space to jump. Grab the voice notes, then head into the cyber cafe at the end of the street.',
     touch: 'Hold the screen to walk and tap to jump. Grab the voice notes, then head into the cyber cafe at the end of the street.',

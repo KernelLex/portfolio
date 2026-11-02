@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CityPostFX } from '../pipelines/CityPostFX';
+import { BASE, IMAGES, SHEETS } from '../assets';
 
 /** Helpers both intro scenes lean on: assets, lights, text and the look pass. */
 
@@ -8,51 +9,6 @@ export const ADD = Phaser.BlendModes.ADD;
 export const PIXEL_FONT = '"Press Start 2P", monospace';
 /** Small-sign pixel font: designed to stay legible at 8px with 5px capitals. */
 export const SIGN_FONT = '"Silkscreen", monospace';
-
-const BASE = 'assets/intro/';
-
-/** [key, frame width, frame height] for every spritesheet the intro uses. */
-const SHEETS: ReadonlyArray<[string, number, number]> = [
-  ['player-idle', 32, 44],
-  ['player-walk', 32, 44],
-  ['player-jump', 32, 44],
-  ['player-sit', 32, 44],
-  ['player-turn', 32, 44],
-  ['props', 64, 120],
-  ['rickshaw', 60, 40],
-  ['note', 18, 16],
-  ['cafe-npc', 24, 26],
-  ['cafe-counter', 128, 72],
-  ['cafe-decor', 48, 64],
-  ['door', 14, 44],
-  ['pedestrians', 24, 44],
-  ['sign-frame', 16, 16],
-  ['flyers', 64, 18],
-  ['flyers-far', 20, 6],
-  ['traffic', 88, 30],
-  ['link-arm', 200, 64],
-  ['link-port', 110, 96],
-];
-
-const IMAGES: ReadonlyArray<string> = [
-  'sky',
-  'skyline',
-  'buildings',
-  'cables',
-  'street',
-  'cafe-front',
-  'billboard',
-  'glow',
-  'cafe-wall',
-  'cafe-desk',
-  'cafe-chair',
-  'megacity',
-  'haze',
-  'street-front',
-  'link-plug',
-  'bus',
-  'sign-bracket',
-];
 
 /** Flat colour stand-ins, so a missing file degrades instead of breaking the scene. */
 const FALLBACKS: ReadonlyArray<[string, number, number, number]> = [

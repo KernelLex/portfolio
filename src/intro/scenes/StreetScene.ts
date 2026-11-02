@@ -784,11 +784,7 @@ export class StreetScene extends Phaser.Scene {
 
     // Nothing here moves unless the player (or the walkthrough) moves it.
     const input = touring() ? this.pilotInput() : this.controls.read();
-    if (input.active) {
-      this.markInput();
-      // Walking off without choosing is choosing to explore.
-      if (guide.get().mode === 'choose') guide.explore();
-    }
+    if (input.active) this.markInput();
 
     const atDoor = Math.abs(this.walker.x - CAFE_X) < DOOR_ZONE && !this.walker.airborne;
     if (atDoor && (input.up || input.enter)) {

@@ -462,10 +462,7 @@ export class CafeScene extends Phaser.Scene {
 
     // Nothing in the cafe moves unless the player (or the walkthrough) moves it.
     const input = touring() ? this.pilotInput() : this.controls.read();
-    if (input.active) {
-      this.markInput();
-      if (guide.get().mode === 'choose') guide.explore();
-    }
+    if (input.active) this.markInput();
 
     if (this.phase === 'seated') {
       if (input.up || input.enter) this.jackIn();

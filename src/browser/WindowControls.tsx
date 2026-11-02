@@ -1,4 +1,5 @@
 import { Minus, X } from 'lucide-react';
+import FullscreenToggle from '../components/FullscreenToggle';
 import { CHROME } from '../content/browser';
 import { playClick } from '../lib/sound';
 import ChromeButton from './ChromeButton';
@@ -17,6 +18,7 @@ export default function WindowControls({ onMinimize, onClose }: Props) {
   };
   return (
     <div className="flex shrink-0 items-center gap-0.5">
+      <FullscreenToggle className="h-8 w-8 rounded-lg hover:bg-white/[0.07] hover:text-ink" />
       <ChromeButton label={CHROME.minimise} onClick={press(onMinimize)}>
         <Minus className="h-4 w-4" strokeWidth={1.6} />
       </ChromeButton>

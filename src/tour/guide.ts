@@ -2,12 +2,12 @@ import { useSyncExternalStore } from 'react';
 
 /**
  * The guide bot's state, shared by the game (Phaser) and the PC and browser
- * (React): whether the visitor is being walked through, finding their own way,
- * or has not chosen yet; where in the experience they are; and how far the
- * narration for that place has got.
+ * (React): whether the visitor is being walked through or finding their own
+ * way (chosen on the title screen), where in the experience they are, and how
+ * far the narration for that place has got.
  */
-export type GuideMode = 'choose' | 'tour' | 'explore';
-export type Place = 'street' | 'cafe' | 'link' | 'boot' | 'desktop' | 'browser';
+export type GuideMode = 'tour' | 'explore';
+export type Place = 'title' | 'street' | 'cafe' | 'link' | 'boot' | 'desktop' | 'browser';
 
 type GuideState = {
   mode: GuideMode;
@@ -20,7 +20,7 @@ type GuideState = {
   narrated: boolean;
 };
 
-let state: GuideState = { mode: 'choose', place: 'street', open: true, line: 0, narrated: false };
+let state: GuideState = { mode: 'explore', place: 'title', open: false, line: 0, narrated: false };
 const listeners = new Set<() => void>();
 const seen = new Set<Place>();
 
