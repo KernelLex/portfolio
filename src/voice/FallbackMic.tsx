@@ -13,13 +13,14 @@ type Props = {
 /** A microphone button for visitors without Wispr, in English, Hindi or Kannada. */
 export default function FallbackMic({ onInterim, onFinal }: Props) {
   const [lang, setLang] = useState<SpeechLanguage>('en-IN');
-  const speech = useLiveSpeech({ lang, onFinal });
+  const [said, setSaid] = useState('');
+  const speech = useLiveSpeech({ lang, onFinal, onUtterance: (text) => setSaid((s) => `${s} ${text}`.trim()) });
   const report = useRef(onInterim);
   report.current = onInterim;
 
   useEffect(() => {
-    report.current?.(speech.interim);
-  }, [speech.interim]);
+    report.current?.(speech.listening ? `${said} ${speech.interim}`.trim() : '');
+  }, [said, speech.interim, speech.listening]);
 
   if (!speech.supported) return <p className="text-[11px] text-ink-muted">{MIC.unsupported}</p>;
 
@@ -32,7 +33,10 @@ export default function FallbackMic({ onInterim, onFinal }: Props) {
           onClick={() => {
             playClick();
             if (speech.listening) speech.stop();
-            else speech.start();
+            else {
+              setSaid('');
+              speech.start();
+            }
           }}
           className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs transition-colors ${
             speech.listening

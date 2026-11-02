@@ -9,8 +9,15 @@ export const LYRICS = {
   inputLabel: 'Say or type something for the lyric stage to perform',
   perform: 'Perform',
   replay: 'Replay',
-  hearing: 'Hearing',
   languages: 'Try it in Hindi or Kannada too.',
+  live: {
+    off: 'Live words',
+    on: 'Live words on',
+    language: 'Speech language',
+    tag: 'Live · raw speech',
+    note: "Shows your words as you speak, with your browser's speech recognition (in Chrome, Google processes the audio). Wispr's clean text takes over when it lands. Nothing is recorded or stored here.",
+    unsupported: 'Live words need a browser with speech recognition, like Chrome or Edge.',
+  },
 } as const;
 
 export type Mood = 'neutral' | 'bright' | 'low' | 'calm';

@@ -2,6 +2,8 @@
 
 > Read CLAUDE.md §3 story arc first. Timebox: ~3 hours. Content in `src/content/story.ts`.
 
+**Status (2 Nov):** Eleven scenes in `src/content/story.ts`, drawn by `src/pages/story/visuals.tsx` as each scrolls into view, with parallax, a progress line and jump dots. Voice toggle appears once any scene has an `audio` file. The mistakes scene waits for Amogh.
+
 ## Goal
 A scroll-driven animated story of Amogh's journey with optional voiceover. It should feel like a short animated film the visitor scrolls through. GSAP ScrollTrigger, space theme, Instrument Serif for big lines.
 

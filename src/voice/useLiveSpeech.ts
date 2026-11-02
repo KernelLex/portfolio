@@ -23,8 +23,12 @@ function recognizer(): RecognitionCtor | undefined {
 
 type Options = {
   lang: SpeechLanguage;
-  /** The whole utterance, once the visitor stops. */
-  onFinal: (text: string) => void;
+  /** Everything heard, once listening stops. */
+  onFinal?: (text: string) => void;
+  /** Each phrase as soon as the recogniser settles on it. */
+  onUtterance?: (text: string) => void;
+  /** Keep listening across the recogniser's own pauses, until stop() is called. */
+  keepAlive?: boolean;
 };
 
 /**
@@ -32,46 +36,54 @@ type Options = {
  * as-heard text that Wispr's cleaned-up output can be compared against, and a
  * microphone for visitors who do not have Wispr.
  */
-export function useLiveSpeech({ lang, onFinal }: Options) {
+export function useLiveSpeech({ lang, onFinal, onUtterance, keepAlive = false }: Options) {
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
   const [error, setError] = useState<string | null>(null);
   const active = useRef<Recognition | null>(null);
+  const wanted = useRef(false);
   const heard = useRef('');
-  const finish = useRef(onFinal);
-  finish.current = onFinal;
+  const handlers = useRef({ onFinal, onUtterance });
+  handlers.current = { onFinal, onUtterance };
 
-  const start = useCallback(() => {
+  const run = useCallback(() => {
     const Ctor = recognizer();
     if (!Ctor || active.current) return;
     const rec = new Ctor();
     rec.lang = lang;
     rec.continuous = true;
     rec.interimResults = true;
-    heard.current = '';
-    setInterim('');
-    setError(null);
+    let emitted = 0;
 
     rec.onresult = (e) => {
-      let done = '';
       let pending = '';
       for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) done += e.results[i][0].transcript;
-        else pending += e.results[i][0].transcript;
+        const text = e.results[i][0].transcript;
+        if (!e.results[i].isFinal) pending += text;
+        else if (i >= emitted) {
+          emitted = i + 1;
+          heard.current = `${heard.current} ${text}`.trim();
+          handlers.current.onUtterance?.(text.trim());
+        }
       }
-      heard.current = done;
-      setInterim(`${done} ${pending}`.trim());
+      setInterim(pending.trim());
     };
     rec.onerror = (e) => {
       if (e.error === 'no-speech' || e.error === 'aborted') return;
+      wanted.current = false;
       setError(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? MIC.denied : MIC.failed);
     };
     rec.onend = () => {
       active.current = null;
-      setListening(false);
       setInterim('');
+      // Chrome ends a session after a pause; carry on if the visitor has not stopped.
+      if (keepAlive && wanted.current) {
+        run();
+        return;
+      }
+      setListening(false);
       const text = heard.current.trim();
-      if (text) finish.current(text);
+      if (text) handlers.current.onFinal?.(text);
     };
 
     active.current = rec;
@@ -80,14 +92,28 @@ export function useLiveSpeech({ lang, onFinal }: Options) {
       setListening(true);
     } catch {
       active.current = null;
+      wanted.current = false;
+      setListening(false);
       setError(MIC.failed);
     }
-  }, [lang]);
+  }, [lang, keepAlive]);
 
-  const stop = useCallback(() => active.current?.stop(), []);
+  const start = useCallback(() => {
+    wanted.current = true;
+    heard.current = '';
+    setInterim('');
+    setError(null);
+    run();
+  }, [run]);
+
+  const stop = useCallback(() => {
+    wanted.current = false;
+    active.current?.stop();
+  }, []);
 
   useEffect(
     () => () => {
+      wanted.current = false;
       const rec = active.current;
       if (!rec) return;
       rec.onend = null;

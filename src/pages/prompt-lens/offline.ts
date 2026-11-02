@@ -10,7 +10,7 @@ const FILLERS = new RegExp(`\\b(?:${FILLER_WORDS.map((w) => w.replace(/ /g, '\\s
 export function offlinePrompt(text: string, mode: LensMode): string {
   const cleaned = text
     .replace(FILLERS, '')
-    .replace(/^(?:so|okay|ok|and),?\s*/i, '')
+    .replace(/^(?:so|okay|ok|and)\b,?\s*/i, '')
     .replace(/\s+/g, ' ')
     .trim();
   const sentences = cleaned.split(/(?<=[.!?])\s+/).filter(Boolean);

@@ -4,14 +4,18 @@ import HudCorners from '../../components/HudCorners';
 import { LYRICS, type Mood } from '../../content/lyrics';
 import { playClick } from '../../lib/sound';
 import { useReducedMotion } from '../../lib/useReducedMotion';
-import FallbackMic from '../../voice/FallbackMic';
 import { useWisprInput } from '../../voice/useWisprInput';
 import VoiceBadge from '../../voice/VoiceBadge';
 import WisprHint from '../../voice/WisprHint';
+import LiveWords from './LiveWords';
 import { perform, type Performance } from './lyrics/perform';
 
 /** The demo breathes between loops, until a visitor gives the stage words of their own. */
 const DEMO_GAP_MS = 2600;
+/** After raw speech settles, wait this long for Wispr's clean text before performing the raw words. */
+const WISPR_GRACE_MS = 1800;
+/** Raw speech that arrives this soon after a Wispr chunk is the same sentence, already performed. */
+const WISPR_ECHO_MS = 4000;
 
 const MOODS: ReadonlyArray<[Mood, string]> = [
   ['neutral', 'radial-gradient(ellipse 80% 70% at 30% 20%, rgb(139 108 255 / 0.16), transparent 70%), radial-gradient(ellipse 60% 60% at 85% 90%, rgb(84 232 224 / 0.06), transparent 70%)'],
@@ -37,6 +41,10 @@ export default function LyricStage() {
   const [playing, setPlaying] = useState(true);
   const [draft, setDraft] = useState('');
   const [hearing, setHearing] = useState('');
+  const [heardRaw, setHeardRaw] = useState('');
+  const wisprAt = useRef(0);
+  const rawTimer = useRef(0);
+  const pendingRaw = useRef('');
   const [focused, setFocused] = useState(false);
 
   const play = useCallback(
@@ -85,12 +93,35 @@ export default function LyricStage() {
   const submit = (text: string) => {
     const words = text.trim();
     if (!words) return;
+    window.clearTimeout(rawTimer.current);
+    pendingRaw.current = '';
     setDraft('');
+    setHeardRaw('');
     playRef.current(words, true);
   };
 
-  // Wispr lands its text in one go and never presses Enter: perform it at once.
-  const reading = useWisprInput(inputRef, () => submit(inputRef.current?.value ?? ''));
+  // Wispr lands its text in one go and never presses Enter: perform it at once,
+  // in place of the raw words the live mic was showing.
+  const reading = useWisprInput(inputRef, () => {
+    wisprAt.current = performance.now();
+    submit(inputRef.current?.value ?? '');
+  });
+
+  // Raw speech from the live mic: show it, and perform it only if Wispr does not.
+  const onRawPhrase = (text: string) => {
+    if (performance.now() - wisprAt.current < WISPR_ECHO_MS) return;
+    pendingRaw.current = `${pendingRaw.current} ${text}`.trim();
+    setHeardRaw(pendingRaw.current);
+    window.clearTimeout(rawTimer.current);
+    rawTimer.current = window.setTimeout(() => {
+      const words = pendingRaw.current;
+      pendingRaw.current = '';
+      setHeardRaw('');
+      if (words) playRef.current(words, true);
+    }, WISPR_GRACE_MS);
+  };
+  useEffect(() => () => window.clearTimeout(rawTimer.current), []);
+  const live = `${heardRaw} ${hearing}`.trim();
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -137,10 +168,14 @@ export default function LyricStage() {
           </button>
         )}
 
-        {hearing ? (
-          <p className="pointer-events-none absolute inset-x-8 bottom-5 truncate text-center font-mono text-xs text-ink-muted italic">
-            {LYRICS.hearing}: {hearing}
-          </p>
+        {live ? (
+          <div className="pointer-events-none absolute inset-x-6 bottom-6 text-center" aria-hidden="true">
+            <p className="font-mono text-[10px] tracking-[0.2em] text-accent uppercase">{LYRICS.live.tag}</p>
+            <p className="mx-auto mt-1.5 line-clamp-2 max-w-3xl font-mono text-lg leading-snug text-ink/85 sm:text-2xl">
+              {live.length > 140 ? `…${live.slice(-140)}` : live}
+              <span className="story-caret ml-1 inline-block h-5 w-2.5 translate-y-1 bg-accent" />
+            </p>
+          </div>
         ) : (
           !focused &&
           !visitorText && (
@@ -185,7 +220,7 @@ export default function LyricStage() {
             <span className="text-[11px] text-ink-muted/80">{LYRICS.languages}</span>
           </p>
         </form>
-        <FallbackMic onInterim={setHearing} onFinal={(text) => submit(text)} />
+        <LiveWords onHearing={setHearing} onPhrase={onRawPhrase} />
       </div>
     </section>
   );

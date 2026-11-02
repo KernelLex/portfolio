@@ -52,7 +52,7 @@ export default function PromptLens() {
   const [busy, setBusy] = useState(false);
   const [view, setView] = useState<'before' | 'after'>('after');
   const [copied, setCopied] = useState(false);
-  const speech = useLiveSpeech({ lang: 'en-IN', onFinal: setHeard });
+  const speech = useLiveSpeech({ lang: 'en-IN', onUtterance: (t) => setHeard((h) => `${h} ${t}`.trim()) });
 
   const enhance = async (input: string, as: LensMode) => {
     const idea = input.trim();
@@ -84,7 +84,7 @@ export default function PromptLens() {
       /* clipboard blocked: the text is still selectable */
     }
   };
-  const live = speech.listening ? speech.interim : heard;
+  const live = `${heard} ${speech.interim}`.trim();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-16 sm:px-8 sm:pt-8">
@@ -136,7 +136,10 @@ export default function PromptLens() {
                   onClick={() => {
                     playClick();
                     if (speech.listening) speech.stop();
-                    else speech.start();
+                    else {
+                      setHeard('');
+                      speech.start();
+                    }
                   }}
                   className={`flex h-9 w-max items-center gap-2 rounded-lg border px-3 text-sm ${
                     speech.listening ? 'border-accent/60 bg-accent/10 text-accent' : 'border-white/[0.12] text-ink hover:border-white/25'

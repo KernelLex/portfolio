@@ -2,6 +2,8 @@
 
 > Read CLAUDE.md §6–7 first. Uses the voice utilities from TASK-03. Timebox: ~2–3 hours.
 
+**Status (2 Nov):** Three panels: live raw speech, Wispr clean text, engineered prompt. Calls `/api/prompt-lens`; without a backend, a labelled offline template. Prompt rules in `backend/prompts/prompt-lens.md`.
+
 ## Goal
 Speak a messy idea through Wispr Flow and get a clean, structured, prompt-engineered prompt back. Show the full pipeline: **raw speech → Wispr clean text → engineered prompt.** This is Amogh's own tool, and it was used to build this site.
 

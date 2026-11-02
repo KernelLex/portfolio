@@ -2,6 +2,8 @@
 
 > Timebox: ~1.5 hours. Content in `src/content/receipts.ts`.
 
+**Status (2 Nov):** Real prompts copied verbatim from the Claude Code session logs, each linked to its commit in the public repo (`src/content/receipts.ts`).
+
 ## Goal
 A build log proving the site was built by voice. Each entry shows: **what Amogh said (raw Wispr dictation) → the prompt that went to Claude Code / Emergent → what got built.**
 

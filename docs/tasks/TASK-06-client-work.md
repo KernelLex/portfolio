@@ -2,6 +2,8 @@
 
 > Read CLAUDE.md §3 projects first. Timebox: ~2 hours. Content in `src/content/work.ts`.
 
+**Status (2 Nov):** Six client case studies plus the three Nova products (`src/content/work.ts`), each at `amogh://work/<slug>`. Live sites that allow framing open inside Navigator (`amogh://web?url=`); Secant and Throttle send X-Frame-Options: DENY and open in a new tab. Walkthrough videos play from YouTube only when pressed.
+
 ## Goal
 A grid of case-study cards; each opens its own subpage (`amogh://work/<slug>`) inside the same tab.
 

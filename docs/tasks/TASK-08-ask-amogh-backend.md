@@ -2,6 +2,8 @@
 
 > Read CLAUDE.md §6–7 first. Timebox: ~3 hours.
 
+**Status (2 Nov):** Backend in `backend/` (FastAPI, Anthropic SDK, structured output, refusal fallback, CORS, rate limit; verified locally without a key). Chat in `src/pages/ask/`, labelled AI, with an offline FAQ written only from the life story. Needs `ANTHROPIC_API_KEY` to answer for real.
+
 ## Part A: Backend (small; this is what goes to Emergent)
 Create `backend/` as a minimal **FastAPI** app (Emergent's usual stack):
 - `POST /api/prompt-lens` `{ text, mode }` → `{ prompt }` using `backend/prompts/prompt-lens.md`

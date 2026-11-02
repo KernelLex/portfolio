@@ -144,6 +144,6 @@ export const RECEIPTS: ReadonlyArray<Receipt> = [
       "see, I'm talking about the terminal and everything else. When you're inside the laptop, the Linux OS kernel makes that, and the browser is also a little futuristic and a nice thing, like Opera. It should be cooler. Basically, take inspiration from opera and, if possible, add a nice live background to it. And the Wispr Flow voice: as I'm speaking, it should show it on the screen, not once I'm completed. See if that is possible. And do task 5. And task 6 complete all the remaining tasks",
     excerpt: true,
     result: 'The Story, Client Work with live sites inside Navigator, Prompt Lens, Ask Amogh and its backend, and these receipts.',
-    commits: ['0e90a74'],
+    commits: ['0e90a74', 'c327b83'],
   },
 ];

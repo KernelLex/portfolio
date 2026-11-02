@@ -19,21 +19,23 @@ const subscribeVisibility = (fn: () => void) => {
 };
 
 type Props = {
-  /** The browser is minimised: nothing to draw for. */
+  /** Nobody can see it (minimised, or covered): nothing to draw for. */
   paused: boolean;
   reducedMotion: boolean;
+  /** Paint the deep-space gradient underneath; off when something else is the backdrop. */
+  sky?: boolean;
 };
 
 /**
  * A static deep-space gradient, with the moving starfield faded in on top once
  * it has loaded. Under reduced motion the gradient is all there is.
  */
-export default function LiveWallpaper({ paused, reducedMotion }: Props) {
+export default function LiveWallpaper({ paused, reducedMotion, sky = true }: Props) {
   const hidden = useSyncExternalStore(subscribeVisibility, () => document.hidden, () => false);
   const [ready, setReady] = useState(false);
 
   return (
-    <div aria-hidden="true" className="space-sky pointer-events-none absolute inset-0">
+    <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${sky ? 'space-sky' : ''}`}>
       {!reducedMotion && (
         <div className={`absolute inset-0 transition-opacity duration-[1800ms] ease-out ${ready ? 'opacity-100' : 'opacity-0'}`}>
           <Quiet>

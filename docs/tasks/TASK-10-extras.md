@@ -2,6 +2,8 @@
 
 > Do these in order and stop whenever time runs out. Each one is independent.
 
+**Status (2 Nov):** Done: Shorts (the three Nova walkthroughs; moments can be cut with start/end once chosen), Side Builds, Amogh Control (gauges counted from content, live voice-speed test). Not done: retro easter egg, Campaign (needs Amogh's idea), Incognito/Wrapped.
+
 ## A. Shorts (~1.5h)
 - A vertical swipe feed (Reels/Shorts feel, original styling): one video per screen, swipe/scroll-snap or arrow keys, autoplay muted when in view, tap for sound.
 - Overlay: project name, one-line caption, "Open case study →".

@@ -9,6 +9,8 @@ import BootSequence from './BootSequence';
 import BrowserWindow from './BrowserWindow';
 import Desktop from './Desktop';
 import Taskbar from './Taskbar';
+import LiveWallpaper from '../browser/LiveWallpaper';
+import SystemPanel from './SystemPanel';
 import Wallpaper from './Wallpaper';
 import Notepad from './apps/Notepad';
 import RecycleBin from './apps/RecycleBin';
@@ -109,9 +111,12 @@ export default function Computer({ entry, intro, reducedMotion, onLogOff, onRepl
   return (
     <div className="fixed inset-0 overflow-hidden bg-black text-ink">
       <Wallpaper />
+      {/* The same live sky as the browser, over the planet; asleep while the browser covers it. */}
+      <LiveWallpaper paused={stage !== 'desktop' || browser === 'open'} reducedMotion={reducedMotion} sky={false} />
 
       {stage === 'desktop' && (
         <div className="absolute inset-0" style={{ animation: 'fade-in 450ms ease-out both' }}>
+          <SystemPanel active={browser !== 'open'} />
           <Desktop apps={APPS} onOpen={openApp} showHint={hint} />
 
           {windows.map((w) => {
