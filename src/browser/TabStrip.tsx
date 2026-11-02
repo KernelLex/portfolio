@@ -1,9 +1,9 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Plus, X } from 'lucide-react';
 import { CHROME } from '../content/browser';
-import { pageEntry } from '../pages/registry';
+import { pageEntry, titleOf } from '../pages/registry';
 import ChromeButton from './ChromeButton';
-import { pageOf, type Tab } from './useTabs';
+import { currentOf, pageOf, type Tab } from './useTabs';
 
 type Props = {
   tabs: ReadonlyArray<Tab>;
@@ -39,6 +39,7 @@ export default function TabStrip({ tabs, activeId, onActivate, onClose, onNew, c
       <div role="tablist" aria-label={CHROME.tabs} className="flex min-w-0 flex-1 items-end gap-1">
         {tabs.map((tab, i) => {
           const page = pageEntry(pageOf(tab));
+          const title = titleOf(currentOf(tab));
           const on = tab.id === activeId;
           return (
             <div
@@ -61,11 +62,11 @@ export default function TabStrip({ tabs, activeId, onActivate, onClose, onNew, c
                 className="flex h-full min-w-0 flex-1 items-center gap-2 pr-1 pl-3.5 text-left text-xs"
               >
                 <page.icon className={`h-3.5 w-3.5 shrink-0 ${on ? 'text-accent' : ''}`} strokeWidth={1.7} />
-                <span className="truncate">{page.title}</span>
+                <span className="truncate">{title}</span>
               </button>
               <button
                 type="button"
-                aria-label={CHROME.closeTab(page.title)}
+                aria-label={CHROME.closeTab(title)}
                 onClick={() => onClose(tab.id)}
                 className={`mr-1.5 grid h-5 w-5 shrink-0 place-items-center rounded text-ink-muted transition hover:bg-white/10 hover:text-ink focus-visible:opacity-100 ${
                   on ? '' : 'opacity-0 group-hover:opacity-100'

@@ -4,7 +4,7 @@ import { NavigatorIcon } from '../computer/icons';
 import { CHROME } from '../content/browser';
 import { playClick } from '../lib/sound';
 import { useDismiss } from '../lib/useDismiss';
-import { pageEntry } from '../pages/registry';
+import { pageEntry, titleOf } from '../pages/registry';
 import { addressUrl } from './address';
 import { currentOf, pageOf, type Tab } from './useTabs';
 
@@ -25,6 +25,7 @@ export default function MobileHeader({ tabs, activeId, onActivate, onClose, onNe
 
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const page = pageEntry(pageOf(active));
+  const title = titleOf(currentOf(active));
   const pick = (fn: () => void) => () => {
     setOpen(false);
     fn();
@@ -37,7 +38,7 @@ export default function MobileHeader({ tabs, activeId, onActivate, onClose, onNe
         <button
           type="button"
           aria-expanded={open}
-          aria-label={`${page.title}. ${CHROME.tabCount(tabs.length)}`}
+          aria-label={`${title}. ${CHROME.tabCount(tabs.length)}`}
           onClick={() => {
             playClick();
             setOpen((v) => !v);
@@ -45,7 +46,7 @@ export default function MobileHeader({ tabs, activeId, onActivate, onClose, onNe
           className="flex max-w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink transition-colors hover:bg-white/[0.06]"
         >
           <page.icon className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.7} />
-          <span className="truncate">{page.title}</span>
+          <span className="truncate">{title}</span>
           <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-md border border-ink-muted/40 px-1 font-mono text-[10px] text-ink-muted">
             {tabs.length}
           </span>
@@ -60,6 +61,7 @@ export default function MobileHeader({ tabs, activeId, onActivate, onClose, onNe
             <ul className="p-1.5">
               {tabs.map((tab) => {
                 const entry = pageEntry(pageOf(tab));
+                const label = titleOf(currentOf(tab));
                 const on = tab.id === activeId;
                 return (
                   <li key={tab.id} className={`flex items-center rounded-lg ${on ? 'bg-white/[0.06]' : ''}`}>
@@ -71,13 +73,13 @@ export default function MobileHeader({ tabs, activeId, onActivate, onClose, onNe
                     >
                       <entry.icon className={`h-4 w-4 shrink-0 ${on ? 'text-accent' : 'text-ink-muted'}`} strokeWidth={1.7} />
                       <span className="min-w-0">
-                        <span className="block truncate text-sm text-ink">{entry.title}</span>
+                        <span className="block truncate text-sm text-ink">{label}</span>
                         <span className="block truncate font-mono text-[10.5px] text-ink-muted">{addressUrl(currentOf(tab))}</span>
                       </span>
                     </button>
                     <button
                       type="button"
-                      aria-label={CHROME.closeTab(entry.title)}
+                      aria-label={CHROME.closeTab(label)}
                       onClick={() => onClose(tab.id)}
                       className="mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-md text-ink-muted hover:bg-white/10 hover:text-ink"
                     >

@@ -5,7 +5,7 @@ import { CHROME } from '../content/browser';
 import type { PageId } from '../content/pages';
 import { playClick } from '../lib/sound';
 import { useDismiss } from '../lib/useDismiss';
-import { MOBILE_MAIN, PAGE_LIST, pageEntry } from '../pages/registry';
+import { LISTED_PAGES, MOBILE_MAIN, pageEntry } from '../pages/registry';
 import SettingsList, { type SettingsActions } from './SettingsList';
 
 type Props = SettingsActions & {
@@ -23,7 +23,7 @@ export default function MobileBar({ active, onOpen, onTips, onReplayIntro, onClo
   const ref = useRef<HTMLDivElement>(null);
   useDismiss(ref, more, () => setMore(false));
 
-  const rest = PAGE_LIST.filter((p) => !MOBILE_MAIN.includes(p.id));
+  const rest = LISTED_PAGES.filter((p) => !MOBILE_MAIN.includes(p.id));
   const inMore = rest.some((p) => p.id === active);
   const close = () => setMore(false);
 

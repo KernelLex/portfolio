@@ -14,6 +14,7 @@ export const PAGE_IDS = [
   'shorts',
   'side-builds',
   'control',
+  'web',
 ] as const;
 
 export type PageId = (typeof PAGE_IDS)[number];
@@ -47,7 +48,7 @@ export const PAGES: Record<PageId, PageCopy> = {
   work: {
     title: 'Client Work',
     blurb: 'Case studies: Vera ERP, HRMS, Secant, Hazen Lights and more.',
-    aliases: ['client work', 'clients', 'client', 'work', 'case studies', 'case study', 'portfolio', 'vera', 'vera erp', 'erp', 'hrms', 'secant', 'hazen', 'hazen lights', 'websites'],
+    aliases: ['client work', 'clients', 'client', 'work', 'case studies', 'case study', 'portfolio', 'vera', 'vera erp', 'erp', 'hrms', 'secant', 'hazen', 'hazen lights', 'websites', 'nova', 'nova erp', 'nova crm', 'nova hrms', 'crm'],
   },
   'prompt-lens': {
     title: 'Prompt Lens',
@@ -74,6 +75,11 @@ export const PAGES: Record<PageId, PageCopy> = {
     title: 'Side Builds',
     blurb: 'TrueCommit, Throttle, Avika, CropRadar and more.',
     aliases: ['side builds', 'side build', 'side projects', 'side project', 'projects', 'builds', 'truecommit', 'true commit', 'promise keeper', 'throttle', 'avika', 'cropradar', 'crop radar', 'trading engine', 'leadscope', 'lead scope'],
+  },
+  web: {
+    title: 'Live site',
+    blurb: 'A live site, opened inside Navigator.',
+    aliases: [],
   },
   control: {
     title: 'Amogh Control',

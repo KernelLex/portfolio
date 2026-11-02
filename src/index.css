@@ -146,6 +146,22 @@
   }
 }
 
+/* Story visuals drift against the scroll (set per scene in Story.tsx). */
+.story-visual {
+  transform: translateY(var(--drift, 0px));
+  will-change: transform;
+}
+
+.story-caret {
+  animation: caret-blink 1.2s steps(1) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* A section heading lights up briefly when the contents box jumps to it. */
 @keyframes section-flash {
   0% {
