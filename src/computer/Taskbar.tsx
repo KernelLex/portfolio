@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { OS_NAME } from '../config';
 import { DESKTOP_USER, START_MENU } from '../content/desktop';
 import { playClick } from '../lib/sound';
+import { useDismiss } from '../lib/useDismiss';
 import SoundToggle from '../components/SoundToggle';
 import { APPS, type AppId, type AppMeta } from './apps';
 import { OsLogo, WifiIcon } from './icons';
@@ -27,22 +28,7 @@ export default function Taskbar({ running, onActivate, onOpen, onLogOff }: Props
   const menuRef = useRef<HTMLDivElement>(null);
   const now = useClock();
 
-  // Close the start menu on any click outside it, or on Escape.
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDown = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
-    window.addEventListener('pointerdown', onDown);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('pointerdown', onDown);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [menuOpen]);
+  useDismiss(menuRef, menuOpen, () => setMenuOpen(false));
 
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const date = now.toLocaleDateString([], { day: 'numeric', month: 'short' });

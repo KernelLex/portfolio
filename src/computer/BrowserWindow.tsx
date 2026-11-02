@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { timings } from '../config';
 import { rectOf } from './apps';
 
-const BrowserShell = lazy(() => import('../components/BrowserShell'));
+const BrowserShell = lazy(() => import('../browser/BrowserShell'));
 
 type Props = {
   mode: 'open' | 'minimized';
@@ -119,7 +119,7 @@ export default function BrowserWindow({ mode, launchFrom, reducedMotion, onMinim
     >
       <div ref={contentRef} className="absolute top-0 left-0 h-[100dvh] w-screen">
         <Suspense fallback={<div className="h-full w-full bg-space" />}>
-          <BrowserShell onMinimize={minimize} onClose={close} onReplayIntro={onReplay} />
+          <BrowserShell visible={mode === 'open'} onMinimize={minimize} onClose={close} onReplayIntro={onReplay} />
         </Suspense>
       </div>
     </div>

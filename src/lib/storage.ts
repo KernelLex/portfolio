@@ -19,3 +19,21 @@ export function writeFlag(key: string, value: boolean): void {
     /* no-op: a lost preference is not worth breaking the page over */
   }
 }
+
+/** Parsed JSON, or null. Callers validate the shape: it may be stale or hand-edited. */
+export function readJSON(key: string): unknown {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw === null ? null : JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function writeJSON(key: string, value: unknown): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* no-op, as above */
+  }
+}

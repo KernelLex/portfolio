@@ -4,11 +4,13 @@ import { isSoundOn, setSoundOn, subscribeSound } from '../lib/sound';
 /**
  * Sound is off until asked for (CLAUDE.md 5). The toggle lives in the frame so
  * it is reachable from the intro and from every page inside the browser.
- * `label` names what it controls where that is more than interface sounds.
+ * `label` names what it controls where that is more than interface sounds;
+ * `className` replaces the default glass chip, to sit among other chrome.
  */
-export default function SoundToggle({ label }: { label?: string }) {
+export default function SoundToggle({ label, className }: { label?: string; className?: string }) {
   const on = useSyncExternalStore(subscribeSound, isSoundOn, () => false);
   const what = label ? `sound and ${label.toLowerCase()}` : 'interface sounds';
+  const look = className ?? `glass h-8 rounded-md hover:text-accent ${label ? 'px-2.5' : 'w-8'}`;
 
   return (
     <button
@@ -16,7 +18,7 @@ export default function SoundToggle({ label }: { label?: string }) {
       onClick={() => setSoundOn(!on)}
       aria-pressed={on}
       title={on ? `Mute ${what}` : `Unmute ${what}`}
-      className={`glass flex h-8 items-center gap-1.5 rounded-md text-ink-muted transition-colors hover:text-accent ${label ? 'px-2.5' : 'w-8 justify-center'}`}
+      className={`flex items-center justify-center gap-1.5 text-ink-muted transition-colors ${look}`}
     >
       <span className="sr-only">{on ? `Mute ${what}` : `Unmute ${what}`}</span>
       <svg

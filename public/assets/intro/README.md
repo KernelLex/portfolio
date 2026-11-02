@@ -112,7 +112,7 @@ Change a building's position or height in `city.mjs` and the sign positions in
 
 | File              | Size     | Frames     | Notes                                                                 |
 | ----------------- | -------- | ---------- | --------------------------------------------------------------------- |
-| `player-idle.png` | 128 × 44 | 4 × 32×44  | A slow breath, facing right.                                          |
+| `player-idle.png` | 128 × 44 | 4 × 32×44  | A slow breath, facing right. Also the browser's guide (`src/browser/Guide.tsx`, 2x). |
 | `player-walk.png` | 256 × 44 | 8 × 32×44  | Facing right. Frames 0 and 4 are the contact poses. See stride below. |
 | `player-jump.png` | 64 × 44  | 2 × 32×44  | 0 rising (tucked), 1 falling (legs reaching down).                    |
 | `player-sit.png`  | 64 × 44  | 2 × 32×44  | Back view. 0 standing, turned to the desk. 1 seated: head and shoulders only, at the bottom of the cell. |

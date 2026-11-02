@@ -3,8 +3,8 @@ import { readFlag, writeFlag } from './storage';
 
 /**
  * UI sound, muted by default (CLAUDE.md 5). Tones are synthesised with WebAudio
- * rather than shipped as files, so the intro stays light and there is nothing
- * to license. TASK-02 can swap these for real samples behind the same API.
+ * rather than shipped as files, so the site stays light and there is nothing
+ * to license. Real samples could replace them behind the same API.
  */
 let enabled = readFlag(storageKeys.soundOn, false);
 let ctx: AudioContext | null = null;
@@ -91,6 +91,36 @@ export function playClick(): void {
 /** Longer downward sweep - for entering the door / changing worlds. */
 export function playWhoosh(): void {
   tone({ freq: 520, to: 90, duration: 0.55, type: 'sawtooth', gain: 0.035 });
+}
+
+let noise: AudioBuffer | null = null;
+
+/** A soft breath of air - switching pages inside the browser. */
+export function playSwoosh(): void {
+  const ac = audio();
+  if (!ac) return;
+  if (!noise || noise.sampleRate !== ac.sampleRate) {
+    noise = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.3), ac.sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  }
+  const src = ac.createBufferSource();
+  const band = ac.createBiquadFilter();
+  const vol = ac.createGain();
+  const now = ac.currentTime;
+
+  src.buffer = noise;
+  band.type = 'bandpass';
+  band.Q.value = 0.9;
+  band.frequency.setValueAtTime(450, now);
+  band.frequency.exponentialRampToValueAtTime(2400, now + 0.24);
+  vol.gain.setValueAtTime(0, now);
+  vol.gain.linearRampToValueAtTime(0.045, now + 0.07);
+  vol.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+  src.connect(band).connect(vol).connect(ac.destination);
+  src.start(now);
+  src.stop(now + 0.3);
 }
 
 /** A pneumatic sigh: the cafe's sliding doors. */

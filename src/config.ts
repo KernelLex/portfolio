@@ -42,6 +42,8 @@ export const introPalette = {
 export const storageKeys = {
   introSeen: 'amogh:intro-seen',
   soundOn: 'amogh:sound-on',
+  tabs: 'amogh:tabs',
+  guideSeen: 'amogh:guide-seen',
 } as const;
 
 /** Timings for the cafe PC's boot and the browser launch, in milliseconds. */
