@@ -9,7 +9,7 @@ local development.
 | `POST /api/ask` | `{ message, history: [{ role, content }] }` | `{ reply, suggestedTab }` |
 | `GET /api/health` | | `{ ok, model }` |
 
-- Model: `LLM_MODEL`, default `claude-opus-5-5`. Set `claude-haiku-5-5` to spend the least.
+- Model: `LLM_MODEL`, default `claude-haiku-5-5`.
 - Refusals fall back to another model server-side (`fallbacks: "default"`); one that still
   refuses comes back as a 422 with a short message.
 - Ask Amogh answers only from `../content/life-story.md` (`LIFE_STORY_PATH` to override),

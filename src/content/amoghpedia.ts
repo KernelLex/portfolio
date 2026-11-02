@@ -109,7 +109,7 @@ export const ARTICLE = {
       id: 'personal-life',
       title: 'Personal life',
       body: [
-        'Outside work Amogh trades on Zerodha Kite (still learning stop-losses and GTT orders), 3D prints on a Bambu Lab P1S, runs his own home server, and has an idea for a jewellery business.{ref:self} He speaks English, Kannada, Hindi, Telugu and Tamil. He reportedly sleeps.{cn}',
+        'Outside work Amogh 3D prints on a Bambu Lab P1S, runs his own home server, and has an idea for a jewellery business.{ref:self} He speaks English, Kannada, Hindi, Telugu and Tamil. He reportedly sleeps.{cn}',
       ],
     },
     {

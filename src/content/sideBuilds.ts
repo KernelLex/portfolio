@@ -27,14 +27,14 @@ export const SIDE_BUILDS_PAGE = {
 export const SIDE_BUILDS: ReadonlyArray<SideBuild> = [
   {
     name: 'Metakai',
-    hook: 'Build the body you want: a fitness app for every goal, from cutting to running.',
+    hook: 'Build the body you want: a fitness app for every goal, from cutting to running. A collaboration with Thushaar Rangan.',
     detail: 'Calories from your own kitchen, every set and PR, GPS runs, watch sync and a physique pass. No ads, no account, and your data stays on your phone.',
     stack: ['Mobile app', 'Fitness', 'On-device data'],
     short: { id: 'metakai', clip: CLIPS.metakai },
   },
   {
     name: 'CyberBane',
-    hook: 'A reputation overhaul for Cyberpunk 2077: Night City remembers what you do.',
+    hook: 'A reputation overhaul for Cyberpunk 2077: Night City remembers what you do. A collaboration with Thushaar Rangan.',
     detail: 'The street reacts to how you work, rivals come back harder, and one screen shows exactly why.',
     stack: ['Game mod', 'Cyberpunk 2077'],
     short: { id: 'cyberbane', clip: CLIPS.cyberbane },

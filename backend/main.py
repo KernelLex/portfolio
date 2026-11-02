@@ -40,7 +40,7 @@ def load_env_file(path: Path) -> None:
 
 load_env_file(HERE / ".env")
 
-MODEL = os.environ.get("LLM_MODEL", "claude-opus-5-5")
+MODEL = os.environ.get("LLM_MODEL", "claude-haiku-5-5")
 RATE_LIMIT = int(os.environ.get("RATE_LIMIT", "20"))
 RATE_WINDOW = int(os.environ.get("RATE_WINDOW_SECONDS", "600"))
 DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "300"))

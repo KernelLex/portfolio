@@ -13,7 +13,6 @@ import {
   Printer,
   Server,
   Swords,
-  TrendingUp,
   Trophy,
   Users,
   type LucideIcon,
@@ -25,7 +24,7 @@ import { playClick } from '../../lib/sound';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 
 const SLOT_ICONS: ReadonlyArray<LucideIcon> = [MonitorSmartphone, Database, BrainCircuit, Server];
-const ITEM_ICONS: ReadonlyArray<LucideIcon> = [TrendingUp, Printer, Server, Gem];
+const ITEM_ICONS: ReadonlyArray<LucideIcon> = [Printer, Server, Gem];
 const SPRITE = `${import.meta.env.BASE_URL}assets/intro/player-idle.png`;
 
 const PANEL = 'relative rounded-2xl border border-white/[0.08] bg-surface/60 backdrop-blur-sm';
@@ -224,7 +223,7 @@ export default function Profile() {
           <Backpack className="h-4 w-4" strokeWidth={1.8} />
           {P.headings.inventory}
         </h2>
-        <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <ul className="grid gap-3 sm:grid-cols-3">
           {INVENTORY.map((it, i) => {
             const Icon = ITEM_ICONS[i];
             return (

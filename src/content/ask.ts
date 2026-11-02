@@ -89,7 +89,7 @@ export const FAQ: ReadonlyArray<Faq> = [
   {
     keywords: ['side', 'projects', 'throttle', 'avika', 'cropradar', 'leadscope', 'trading engine', 'fun', 'metakai', 'cyberbane', 'fitness', 'cyberpunk', 'mod'],
     answer:
-      "I build small things constantly: Throttle, an email scheduler that loses nothing across restarts; Avika, a free offline app for Bengaluru parents of children with disabilities; CropRadar, a crop-disease bot in English and Kannada; Metakai, a fitness app that keeps your data on your phone; CyberBane, a reputation overhaul for Cyberpunk 2077; a trading strategy engine; and LeadScope.",
+      "I build small things constantly: Throttle, an email scheduler that loses nothing across restarts; Avika, a free offline app for Bengaluru parents of children with disabilities; CropRadar, a crop-disease bot in English and Kannada; and, with Thushaar Rangan, Metakai, a fitness app that keeps your data on your phone, and CyberBane, a reputation overhaul for Cyberpunk 2077; a trading strategy engine; and LeadScope.",
     tab: 'side-builds',
   },
   {
@@ -98,9 +98,9 @@ export const FAQ: ReadonlyArray<Faq> = [
     tab: 'amoghpedia',
   },
   {
-    keywords: ['hobby', 'hobbies', 'free time', 'trading', 'zerodha', '3d print', 'printing', 'bambu', 'home server', 'jewelry', 'jewellery'],
+    keywords: ['hobby', 'hobbies', 'free time', '3d print', 'printing', 'bambu', 'home server', 'jewelry', 'jewellery'],
     answer:
-      "I trade on Zerodha Kite (still learning stop-losses and GTT orders), 3D print on a Bambu Lab P1S, run my own home server, and I have an idea for a jewelry business.",
+      "I 3D print on a Bambu Lab P1S, run my own home server, and I have an idea for a jewelry business.",
     tab: 'amoghpedia',
   },
   {

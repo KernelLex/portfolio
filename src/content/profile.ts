@@ -74,7 +74,6 @@ export const QUESTS: ReadonlyArray<Quest> = [
 ];
 
 export const INVENTORY: ReadonlyArray<{ item: string; use: string }> = [
-  { item: 'Zerodha Kite', use: 'Trading, still learning stop-losses and GTT orders' },
   { item: 'Bambu Lab P1S', use: '3D printing' },
   { item: 'Home server', use: 'Runs his own' },
   { item: 'Jewellery idea', use: 'A side business in waiting' },

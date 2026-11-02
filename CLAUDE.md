@@ -81,7 +81,7 @@ The challenge brief: *"Build the most creative portfolio of yourself with voice.
 - **Trading Strategy Engine:** prices + news + macro + Reddit → FinBERT sentiment → LLM hypotheses → backtests with SHAP.
 - **LeadScope:** ethical B2B prospect research dashboard.
 - Internships: Gojeta (automation), RVU (app dev, research: YOLOv5), ChaturManas (web), Internshub (AI), MasterCom (data).
-- Interests: trading (Zerodha Kite), 3D printing (Bambu Lab P1S), home server, jewelry business idea.
+- Interests: 3D printing (Bambu Lab P1S), home server, jewelry business idea. (Never mention trading platforms on the site.)
 
 ### Content still pending from Amogh
 - Project video catalog + links (for Shorts)

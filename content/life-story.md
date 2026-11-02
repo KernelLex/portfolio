@@ -56,8 +56,8 @@ I love building small projects: to learn, to solve my own problems, or just for 
 - Avika: a free offline Android app for Bengaluru parents of children with disabilities.
 - CropRadar: a Telegram bot that helps farmers with crop-disease risk, in English and Kannada.
 - A trading strategy engine, and LeadScope (B2B prospect research).
-- Metakai: a fitness app ("Build the body you want"): calories, training sets and PRs, GPS runs, watch sync and a physique pass. No ads, no account, and your data stays on your phone.
-- CyberBane: a reputation overhaul mod for Cyberpunk 2077 ("Night City remembers"): the street reacts to how you play, rivals come back harder, and one screen shows why.
+- Metakai, a collaboration with Thushaar Rangan that I played a part in: a fitness app ("Build the body you want"): calories, training sets and PRs, GPS runs, watch sync and a physique pass. No ads, no account, and your data stays on your phone.
+- CyberBane, also a collaboration with Thushaar Rangan that I played a part in: a reputation overhaul mod for Cyberpunk 2077 ("Night City remembers"): the street reacts to how you play, rivals come back harder, and one screen shows why.
 - Top 10 at multiple national-level hackathons.
 
 ## Why I do this
@@ -69,7 +69,6 @@ It's not only for clients. It's for my own growth: understanding different indus
 - I'd rather hear the honest result than a flattering one.
 
 ## Outside work
-- Trading on Zerodha Kite (still learning: stop-losses, GTT orders).
 - 3D printing on my Bambu Lab P1S.
 - I run my own home server.
 - I have an idea for a jewelry side business.
