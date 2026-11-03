@@ -1,6 +1,6 @@
 import { URL_SCHEME } from '../config';
 import { PAGE_IDS, PAGES, type PageId } from '../content/pages';
-import { parseAddress } from './address';
+import { askAddress, parseAddress } from './address';
 
 export type Resolution = { to: string; page: PageId };
 
@@ -31,7 +31,7 @@ export function bestPage(text: string): { page: PageId; phrase: string } | null 
   return best;
 }
 
-const ask = (q: string): Resolution => ({ to: `ask?q=${encodeURIComponent(q)}`, page: 'ask' });
+const ask = (q: string): Resolution => ({ to: askAddress(q), page: 'ask' });
 
 /**
  * Turn whatever was typed or dictated into the address bar into somewhere to

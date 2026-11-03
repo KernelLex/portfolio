@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, MessageCircle, Target } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Gamepad2, MessageCircle, MousePointerClick, Target, X } from 'lucide-react';
 import { useBrowser } from '../../browser/BrowserContext';
 import HudCorners from '../../components/HudCorners';
 import { CHAPTERS, STORY } from '../../content/story';
@@ -9,6 +9,8 @@ import { Piece } from './pieces';
 
 // Progress outlives the tab, like any save file - until the page reloads.
 let saved = { at: 0, done: CHAPTERS.map(() => false) };
+// The how-to-play card, until it is dismissed.
+let coachSeen = false;
 
 /**
  * The Story as a mission: one chapter at a time, each with a small thing to
@@ -20,6 +22,7 @@ export default function Story() {
   const reduced = useReducedMotion();
   const [at, setAt] = useState(saved.at);
   const [done, setDone] = useState(saved.done);
+  const [coach, setCoach] = useState(!coachSeen);
   const chapter = CHAPTERS[at];
   const last = at === CHAPTERS.length - 1;
   const unlocked = (i: number) => i === 0 || done[i - 1];
@@ -65,6 +68,36 @@ export default function Story() {
         </div>
         <p className="hidden font-mono text-[10.5px] text-ink-muted md:block">{STORY.keys}</p>
       </header>
+
+      {coach && (
+        <aside className="relative mt-5 flex gap-4 rounded-2xl border border-accent/30 bg-accent/[0.06] p-4 pr-12 sm:p-5 sm:pr-14" style={reduced ? undefined : { animation: 'guide-in 320ms ease-out both' }}>
+          <Gamepad2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" strokeWidth={1.8} aria-hidden="true" />
+          <div>
+            <p className="font-mono text-[11px] tracking-[0.2em] text-accent uppercase">{STORY.coach.title}</p>
+            <ol className="mt-2 space-y-1 text-sm text-ink/90">
+              {STORY.coach.steps.map((step, i) => (
+                <li key={step} className="flex gap-2">
+                  <span className="font-mono text-accent">{i + 1}.</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              coachSeen = true;
+              setCoach(false);
+            }}
+            aria-label={STORY.coach.dismiss}
+            title={STORY.coach.dismiss}
+            className="absolute top-3 right-3 grid h-8 w-8 place-items-center rounded-lg text-ink-muted hover:bg-white/10 hover:text-ink"
+          >
+            <X className="h-4 w-4" strokeWidth={2} />
+          </button>
+        </aside>
+      )}
 
       {/* The mission track: done, current, and still locked. */}
       <ol className="mt-6 flex gap-1.5" aria-label={STORY.title}>
@@ -134,7 +167,18 @@ export default function Story() {
             )}
           </div>
         </div>
-        <Piece widget={chapter.widget} done={done[at]} onDone={complete} reduced={reduced} />
+        {/* The piece, with what to do right beside it. */}
+        <div className="flex flex-col gap-2.5">
+          <p className={`flex items-start gap-2 font-mono text-[11px] leading-relaxed tracking-wide ${done[at] ? 'text-ink-muted' : 'text-accent'}`}>
+            <MousePointerClick className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />
+            <span>
+              <span className="uppercase">{STORY.yourMove}</span> · {done[at] ? (last ? chapter.done : STORY.doneHint) : chapter.how}
+            </span>
+          </p>
+          <div className="flex-1">
+            <Piece widget={chapter.widget} done={done[at]} onDone={complete} reduced={reduced} />
+          </div>
+        </div>
       </section>
     </div>
   );

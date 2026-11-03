@@ -132,7 +132,7 @@ export const ARTICLE = {
       ],
     },
   ] satisfies Section[],
-  seeAlsoPages: ['story', 'work', 'side-builds', 'shorts', 'ask'] satisfies PageId[],
+  seeAlsoPages: ['story', 'work', 'side-builds', 'videos', 'ask'] satisfies PageId[],
 };
 
 export const INFOBOX = {

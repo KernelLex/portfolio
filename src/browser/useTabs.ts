@@ -27,7 +27,7 @@ export type TabAction =
 /** Past this, the oldest tab closes to make room. */
 export const MAX_TABS = 10;
 /** The browser opens with every page in a tab, New Tab in front. */
-const START_TABS: ReadonlyArray<PageId> = ['home', 'story', 'work', 'amoghpedia', 'side-builds', 'shorts', 'ask', 'control'];
+const START_TABS: ReadonlyArray<PageId> = ['home', 'story', 'work', 'amoghpedia', 'side-builds', 'videos', 'ask', 'control'];
 const HISTORY_LIMIT = 30;
 const HOME = 'home';
 

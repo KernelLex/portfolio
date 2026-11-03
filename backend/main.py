@@ -75,7 +75,7 @@ def knowledge(text: str) -> str:
 
 ASK_SYSTEM = (HERE / "prompts" / "ask-amogh.md").read_text(encoding="utf-8") + "\n" + knowledge(LIFE_STORY.read_text(encoding="utf-8"))
 
-TABS = ["story", "work", "amoghpedia", "side-builds", "shorts", "none"]
+TABS = ["story", "work", "amoghpedia", "side-builds", "videos", "none"]
 ASK_SCHEMA = {
     "type": "object",
     "properties": {

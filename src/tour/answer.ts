@@ -1,4 +1,4 @@
-import { addressUrl } from '../browser/address';
+import { addressUrl, askAddress } from '../browser/address';
 import { normalise } from '../browser/resolveCommand';
 import { BYTE_ANSWERS, BYTE_NAVIGATE, BYTE_PLACES, GUIDE, TIPS, type ByteEntry, type ByteTarget } from '../content/guide';
 import { PAGES } from '../content/pages';
@@ -115,7 +115,7 @@ export function answer(question: string, place: Place, touch: boolean): ByteAnsw
   }
   if (best && (best.score >= ENOUGH || navigating)) return respond(best.keyed.entry.target, place, touch);
 
-  const to = `ask?q=${encodeURIComponent(question.trim())}`;
+  const to = askAddress(question);
   return { text: BYTE_ANSWERS.toTwin(addressUrl('ask')), action: { kind: 'go', to } };
 }
 

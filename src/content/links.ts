@@ -43,7 +43,7 @@ const clip = (name: string, title: string, audio: boolean): Clip => ({
 });
 
 /**
- * Amogh's project videos (from his Google Drive), re-cut as 9:16 shorts and
+ * Amogh's project videos (from his Google Drive), as 720p walkthroughs
  * served by the site itself: no third-party player, nothing tracking.
  */
 export const CLIPS = {

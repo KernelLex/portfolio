@@ -24,7 +24,7 @@ import { RESUME } from '../../content/links';
 import { ACHIEVEMENTS, INVENTORY, LOADOUT, PROFILE as P, QUESTS, STATS } from '../../content/profile';
 import { playClick } from '../../lib/sound';
 import { useReducedMotion } from '../../lib/useReducedMotion';
-import AvatarSprite from './AvatarSprite';
+import AvatarSprite from '../../components/AvatarSprite';
 
 const SLOT_ICONS: ReadonlyArray<LucideIcon> = [MonitorSmartphone, Database, BrainCircuit, Server];
 const ITEM_ICONS: ReadonlyArray<LucideIcon> = [Printer, Server, Rocket];

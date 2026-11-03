@@ -22,12 +22,28 @@ export function parseAddress(raw: string): Address | null {
   return { raw, page, rest, query: new URLSearchParams(search) };
 }
 
-/** The path as people read it: decoded, so a question reads as words. */
+let asked = 0;
+
+/**
+ * A question for Ask Amogh. Each one gets its own address (the &n= tag), so
+ * asking the same thing again - from a case study, Byte or the address bar -
+ * really asks again instead of landing on an answer already given.
+ */
+export function askAddress(question: string): string {
+  asked += 1;
+  return `ask?q=${encodeURIComponent(question.trim())}&n=${Date.now().toString(36)}${asked}`;
+}
+
+/** The question an Ask address carries. */
+export const askedIn = (raw: string): string => new URLSearchParams(raw.split('?')[1] ?? '').get('q') ?? '';
+
+/** The path as people read it: decoded, so a question reads as words, without the &n= tag. */
 export function addressPath(raw: string): string {
+  const shown = raw.replace(/&n=[^&]*/, '');
   try {
-    return decodeURIComponent(raw);
+    return decodeURIComponent(shown);
   } catch {
-    return raw;
+    return shown;
   }
 }
 

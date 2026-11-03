@@ -33,13 +33,13 @@ const ICONS: Record<PageId, LucideIcon> = {
   story: Route,
   work: Briefcase,
   ask: MessageCircle,
-  shorts: Clapperboard,
+  videos: Clapperboard,
   'side-builds': Wrench,
   control: Gauge,
   web: Globe,
 };
 
-const NICE: ReadonlySet<PageId> = new Set(['shorts', 'side-builds', 'control']);
+const NICE: ReadonlySet<PageId> = new Set(['videos', 'side-builds', 'control']);
 const HIDDEN: ReadonlySet<PageId> = new Set(['web']);
 
 /** Each page is its own chunk, fetched the first time its tab opens. */
@@ -49,7 +49,7 @@ const BUILT: Partial<Record<PageId, LazyExoticComponent<ComponentType>>> = {
   story: lazy(() => import('./story/Story')),
   work: lazy(() => import('./work/Work')),
   ask: lazy(() => import('./ask/Ask')),
-  shorts: lazy(() => import('./shorts/Shorts')),
+  videos: lazy(() => import('./videos/Videos')),
   'side-builds': lazy(() => import('./side-builds/SideBuilds')),
   control: lazy(() => import('./control/Control')),
   web: lazy(() => import('./web/WebView')),

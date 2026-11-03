@@ -10,7 +10,7 @@ export type SideBuild = {
   /** A number worth showing, only where one is on record. */
   stat?: { value: string; label: string };
   /** Its short, in the Shorts feed. */
-  short?: { id: string; clip: Clip };
+  video?: { id: string; clip: Clip };
 };
 
 export const SIDE_BUILDS_PAGE = {
@@ -19,7 +19,7 @@ export const SIDE_BUILDS_PAGE = {
   lead: 'Small projects, built to learn, to solve my own problems, or just for fun.',
   github: PROFILES.github,
   githubLabel: 'More on GitHub',
-  watch: 'Watch the short',
+  watch: 'Watch the video',
   ask: (name: string) => `Tell me about ${name}`,
   askButton: 'Ask about this',
 } as const;
@@ -30,14 +30,14 @@ export const SIDE_BUILDS: ReadonlyArray<SideBuild> = [
     hook: 'Build the body you want: a fitness app for every goal, from cutting to running. A collaboration with Thushaar Rangan.',
     detail: 'Calories from your own kitchen, every set and PR, GPS runs, watch sync and a physique pass. No ads, no account, and your data stays on your phone.',
     stack: ['Mobile app', 'Fitness', 'On-device data'],
-    short: { id: 'metakai', clip: CLIPS.metakai },
+    video: { id: 'metakai', clip: CLIPS.metakai },
   },
   {
     name: 'CyberBane',
     hook: 'A reputation overhaul for Cyberpunk 2077: Night City remembers what you do. A collaboration with Thushaar Rangan.',
     detail: 'The street reacts to how you work, rivals come back harder, and one screen shows exactly why.',
     stack: ['Game mod', 'Cyberpunk 2077'],
-    short: { id: 'cyberbane', clip: CLIPS.cyberbane },
+    video: { id: 'cyberbane', clip: CLIPS.cyberbane },
   },
   {
     name: 'TrueCommit',

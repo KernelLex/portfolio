@@ -9,10 +9,11 @@ export const ASK = {
   greeting: "Hey, I'm Amogh's AI twin. Ask me about my work, my story, or how this site was built.",
   starters: [
     'Why B.Sc. instead of engineering?',
-    'What was the hardest part?',
     'Tell me about Vera ERP',
-    'Why Wispr Flow?',
-    'What did you learn from 6 months of zero clients?',
+    'What are the Nova products?',
+    'What did you build on campus?',
+    'How do I download your résumé?',
+    'How do I play the Story?',
   ],
   placeholder: 'Ask me anything',
   inputLabel: 'Your question for the AI twin',
@@ -108,6 +109,35 @@ export const FAQ: ReadonlyArray<Faq> = [
     answer:
       "At RV University I hosted events and started my own biking club. Running them showed me how messy club and event management was, so I built an app for it: events, QR registrations, approvals and attendance. It stopped when the funding did. That's how I work: I get into things, bring people in, and fix what's broken.",
     tab: 'story',
+  },
+  {
+    keywords: ['resume', 'résumé', 'cv', 'download', 'pdf'],
+    answer: "My résumé downloads as a PDF: open the Terminal on the PC and click Download résumé (or type resume), or use the button on the Player Profile.",
+    tab: 'amoghpedia',
+  },
+  {
+    keywords: ['play the story', 'story work', 'how do i play', 'chapter', 'chapters', 'stuck', 'next chapter'],
+    answer: "The Story is played, not read: each chapter has one small thing to do in the panel beside the text, and the line marked Your move says exactly what. Do it and Next chapter unlocks. Stuck? Skip counts it as done.",
+    tab: 'story',
+  },
+  {
+    keywords: ['video', 'videos', 'watch', 'walkthrough', 'demo'],
+    answer: "Videos has walkthroughs of Nova ERP, Nova CRM and Nova HRMS, plus Metakai and CyberBane. Play one, then pick the next from Up next.",
+    tab: 'videos',
+  },
+  {
+    keywords: ['navigate', 'tabs', 'byte', 'guide', 'around', 'where is', 'find'],
+    answer: "Every page is already open as a tab along the top, and the sidebar has them too. Or ask Byte, the little bot in the corner, where something is and it takes you there. Ctrl+B starts the walkthrough.",
+  },
+  {
+    keywords: ['promise keeper', 'truecommit', 'agent', 'agents'],
+    answer: "TrueCommit is a bounded revenue-recovery agent: the LLM sees and speaks but never spends, and a separate deterministic gate decides what it may do. Seven agents, a hash-chained ledger and a 20-rule gate. Promise Keeper was the earlier, measured version: 88.6% promise extraction with 721 tests.",
+    tab: 'side-builds',
+  },
+  {
+    keywords: ['internship', 'internships', 'intern', 'roles', 'experience', 'gojeta', 'chaturmanas', 'internshub', 'mastercom'],
+    answer: "Seven roles before graduating: Software Developer at Vera, automation at Gojeta, app development and YOLOv5 research at RV University, web at ChaturManas, AI at Internshub and data at MasterCom.",
+    tab: 'amoghpedia',
   },
   {
     keywords: ['contact', 'hire', 'linkedin', 'github', 'email', 'reach'],

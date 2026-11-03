@@ -1,4 +1,5 @@
 import { ArrowLeft, ArrowRight, Lock, MessageCircle, PlayCircle, Radio } from 'lucide-react';
+import { askAddress } from '../../browser/address';
 import { useBrowser } from '../../browser/BrowserContext';
 import LiveLinks from '../../components/LiveLinks';
 import ClipPlayer from '../../components/ClipPlayer';
@@ -137,8 +138,9 @@ function Study({ slug }: { slug: string }) {
         </div>
       </header>
 
-      {/* The video beside the story on wide screens, under it on narrow ones. */}
-      <div className={`mt-8 grid gap-8 ${study.video ? 'lg:grid-cols-[minmax(0,1fr)_17rem] xl:grid-cols-[minmax(0,1fr)_19rem]' : ''}`}>
+      {study.video && <ClipPlayer clip={study.video} className="mt-8 max-w-4xl" />}
+
+      <div className="mt-8">
         <div>
           <div className="grid gap-4 md:grid-cols-2">
             <section className={block}>
@@ -173,7 +175,6 @@ function Study({ slug }: { slug: string }) {
             </ul>
           </section>
         </div>
-        {study.video && <ClipPlayer clip={study.video} className="lg:sticky lg:top-6 lg:self-start" />}
       </div>
 
       <nav className="mt-10 flex flex-wrap items-center gap-3 border-t border-white/[0.08] pt-6">
@@ -183,7 +184,7 @@ function Study({ slug }: { slug: string }) {
         </button>
         <button
           type="button"
-          onClick={() => open(`ask?q=${encodeURIComponent(WORK.ask(study.name))}`)}
+          onClick={() => open(askAddress(WORK.ask(study.name)))}
           className="mx-auto inline-flex items-center gap-2 rounded-lg border border-accent/40 px-3.5 py-2 text-sm text-accent transition-colors hover:bg-accent/10"
         >
           <MessageCircle className="h-4 w-4" strokeWidth={1.8} />

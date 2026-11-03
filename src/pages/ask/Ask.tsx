@@ -41,6 +41,8 @@ export default function Ask() {
   const inputRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const voiceTimer = useRef(0);
+  const busyRef = useRef(false);
+  const queued = useRef<string | null>(null);
 
   useEffect(() => {
     saved = messages;
@@ -49,7 +51,13 @@ export default function Ask() {
 
   const send = async (raw: string) => {
     const question = raw.trim();
-    if (!question || busy) return;
+    if (!question) return;
+    // One question at a time; one that arrives meanwhile waits its turn.
+    if (busyRef.current) {
+      queued.current = question;
+      return;
+    }
+    busyRef.current = true;
     window.clearTimeout(voiceTimer.current);
     setDraft('');
     const history = saved.slice(-HISTORY_SENT).map(({ role, text }) => ({ role, content: text }));
@@ -61,6 +69,10 @@ export default function Ask() {
       : faqAnswer(question);
     setMessages((m) => [...m, { id: nextId++, role: 'assistant', text: reply.text, tab: reply.tab, offline: !result }]);
     setBusy(false);
+    busyRef.current = false;
+    const next = queued.current;
+    queued.current = null;
+    if (next) void sendRef.current(next);
   };
   const sendRef = useRef(send);
   sendRef.current = send;

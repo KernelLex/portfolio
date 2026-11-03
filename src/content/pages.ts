@@ -9,7 +9,7 @@ export const PAGE_IDS = [
   'story',
   'work',
   'ask',
-  'shorts',
+  'videos',
   'side-builds',
   'control',
   'web',
@@ -54,10 +54,10 @@ export const PAGES: Record<PageId, PageCopy> = {
     blurb: 'Chat with my AI twin. It is an AI, not me.',
     aliases: ['ask amogh', 'ask', 'ai twin', 'twin', 'chat', 'chatbot', 'talk to amogh', 'talk to you'],
   },
-  shorts: {
-    title: 'Shorts',
+  videos: {
+    title: 'Videos',
     blurb: 'Project videos, one swipe at a time.',
-    aliases: ['shorts', 'short', 'videos', 'video', 'reels', 'clips'],
+    aliases: ['videos', 'video', 'youtube', 'watch', 'shorts', 'reels', 'clips', 'demos', 'walkthroughs'],
   },
   'side-builds': {
     title: 'Side Builds',

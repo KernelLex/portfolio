@@ -111,11 +111,11 @@ export const BYTE_PLACES: ReadonlyArray<ByteEntry> = [
     weak: ['built', 'made', 'apps', 'tools', 'experiments'],
   },
   {
-    target: { kind: 'page', page: 'shorts' },
+    target: { kind: 'page', page: 'videos' },
     group: 'places',
-    label: 'Shorts',
+    label: 'Videos',
     example: 'Show me the videos',
-    strong: ['shorts', 'videos', 'reels', 'clips', 'demos', 'watch'],
+    strong: ['videos', 'youtube', 'walkthrough video', 'shorts', 'reels', 'clips', 'demos', 'watch'],
     weak: ['film', 'youtube', 'recording', 'footage'],
   },
   {
@@ -203,7 +203,7 @@ export const TOUR = {
     { page: 'story', text: 'The Story: from six months of zero clients to systems companies run on. Play through it.' },
     { page: 'work', text: 'Client Work: real businesses and real builds, with live sites you can open right here.' },
     { page: 'amoghpedia', text: 'His Player Profile: stats, loadout, achievements and quests at a glance. The full wiki is one click away.' },
-    { page: 'shorts', text: 'Shorts: quick videos of what he has built. Swipe through them.' },
+    { page: 'videos', text: 'Videos: walkthroughs of what he has built. Play one, then pick the next from Up next.' },
     { page: 'ask', text: 'Ask Amogh: questions go to his AI twin, which answers from what he told it.' },
     { page: 'home', text: "That's the tour. Ask me where anything is and I'll take you there, or press Ctrl+B to see it again." },
   ] satisfies { page: PageId; text: string }[],

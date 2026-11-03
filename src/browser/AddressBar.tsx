@@ -4,7 +4,7 @@ import { ADDRESS, CHROME } from '../content/browser';
 import { pageEntry } from '../pages/registry';
 import { URL_SCHEME } from '../config';
 import { useWisprInput } from '../voice/useWisprInput';
-import { addressPath, type Address } from './address';
+import { addressPath, askedIn, type Address } from './address';
 import ChromeButton from './ChromeButton';
 import { resolveCommand } from './resolveCommand';
 
@@ -146,7 +146,7 @@ export default function AddressBar({ address, canBack, canForward, onBack, onFor
                   <>
                     <Zap className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.7} />
                     <span className="min-w-0 flex-1 truncate">
-                      {ADDRESS.ask}: “{decodeURIComponent(target.to.slice('ask?q='.length))}”
+                      {ADDRESS.ask}: “{askedIn(target.to)}”
                     </span>
                   </>
                 )}
