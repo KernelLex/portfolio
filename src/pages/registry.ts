@@ -85,4 +85,4 @@ export function titleOf(raw: string): string {
 }
 
 /** The phone's bottom bar; everything else sits behind "More". */
-export const MOBILE_MAIN: ReadonlyArray<PageId> = ['home', 'story', 'work', 'amoghpedia', 'ask'];
+export const MOBILE_MAIN: ReadonlyArray<PageId> = ['home', 'story', 'work', 'side-builds', 'amoghpedia', 'ask'];

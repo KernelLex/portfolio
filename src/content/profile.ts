@@ -35,7 +35,7 @@ export const PROFILE = {
 export const STATS: ReadonlyArray<{ label: string; value: number }> = [
   { label: 'Client projects', value: CLIENT_WORK.length },
   { label: 'Products shipped', value: NOVA_PRODUCTS.length },
-  { label: 'Side builds', value: SIDE_BUILDS.length },
+  { label: 'Other projects', value: SIDE_BUILDS.length },
   { label: 'Roles before graduating', value: 7 },
   { label: 'Languages', value: 5 },
 ];
@@ -74,7 +74,7 @@ export const QUESTS: ReadonlyArray<Quest> = [
   { title: 'The pivot', detail: 'Vera ERP: one system for a group of companies.', to: 'work/vera-erp' },
   { title: 'HRMS', detail: "An HR module plugged into a client's own ERP.", to: 'work/hrms' },
   { title: 'Buildathon', detail: 'TrueCommit at the Razorpay AI Buildathon.', to: 'side-builds', when: '2026' },
-  { title: 'Still building', detail: 'Nova, side builds, and this site.', to: 'work' },
+  { title: 'Still building', detail: 'Nova, other projects, and this site.', to: 'side-builds' },
 ];
 
 export const INVENTORY: ReadonlyArray<{ item: string; use: string }> = [

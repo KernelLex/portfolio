@@ -98,7 +98,7 @@ export const ARTICLE = {
       id: 'side-projects',
       title: 'Side projects',
       body: [
-        'Amogh builds small projects constantly: to learn, to solve his own problems, or for fun. They live in [[side-builds|Side Builds]].{ref:github}',
+        'Amogh builds small projects constantly: to learn, to solve his own problems, or for fun. They live in [[side-builds|Other Projects]].{ref:github}',
         '- **TrueCommit**: a bounded autonomous revenue-recovery agent, in which "the LLM sees and speaks but never spends". It collected ₹2,15,867 across five real Razorpay invoices, all paid.{ref:truecommit}',
         '- **Throttle**: a production email scheduler that loses nothing across restarts, with a circuit breaker proven in a real SMTP outage.{ref:throttle}',
         '- **Avika**: a free offline Android app for Bengaluru parents of children with disabilities. No account, no ads, no analytics.{ref:self}',

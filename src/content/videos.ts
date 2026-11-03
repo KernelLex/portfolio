@@ -2,7 +2,7 @@ import { CLIPS, PROFILES, type Clip } from './links';
 
 /**
  * Videos: Amogh's project walkthroughs, watched like a video site. Facts from
- * the case studies and side builds; durations are the files' real lengths.
+ * the case studies and other projects; durations are the files' real lengths.
  * No view counts or like counts: there are none to show honestly.
  */
 export type Video = {
@@ -41,7 +41,7 @@ export const VIDEOS_PAGE = {
 } as const;
 
 const CASE = 'Open the case study';
-const SIDE = 'See the side builds';
+const SIDE = 'See other projects';
 const NOVA = 'Nova is the product line Amogh builds with Thushaar Rangan.';
 const COLLAB = 'A collaboration with Thushaar Rangan that Amogh played a part in.';
 

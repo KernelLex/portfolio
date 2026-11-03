@@ -4,7 +4,7 @@ import { useBrowser } from '../../browser/BrowserContext';
 import LiveLinks from '../../components/LiveLinks';
 import { SIDE_BUILDS, SIDE_BUILDS_PAGE as P } from '../../content/sideBuilds';
 
-/** Side Builds: a grid of small projects, with live links where they exist. */
+/** Other Projects: a grid of side builds and collaborations, with live links where they exist. */
 export default function SideBuilds() {
   const { open } = useBrowser();
   return (

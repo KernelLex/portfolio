@@ -17,7 +17,7 @@ type Props = SettingsActions & {
 const TAB =
   'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] leading-none transition-colors';
 
-/** The sidebar, on a phone: five pages along the bottom, the rest behind "More". */
+/** The sidebar, on a phone: six pages along the bottom, the rest behind "More". */
 export default function MobileBar({ active, onOpen, onTips, onReplayIntro, onCloseAll }: Props) {
   const [more, setMore] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

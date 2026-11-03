@@ -105,9 +105,9 @@ export const BYTE_PLACES: ReadonlyArray<ByteEntry> = [
   {
     target: { kind: 'page', page: 'side-builds' },
     group: 'places',
-    label: 'Side Builds',
+    label: 'Other Projects',
     example: 'Where are his side projects?',
-    strong: ['side builds', 'side projects', 'projects', 'builds', 'hackathons', 'buildathon', 'truecommit', 'true commit', 'throttle', 'avika', 'cropradar', 'crop radar', 'leadscope', 'lead scope', 'promise keeper', 'metakai', 'cyberbane', 'razorpay', 'trading engine'],
+    strong: ['other projects', 'more projects', 'side builds', 'side projects', 'projects', 'builds', 'hackathons', 'buildathon', 'truecommit', 'true commit', 'throttle', 'avika', 'cropradar', 'crop radar', 'leadscope', 'lead scope', 'promise keeper', 'metakai', 'cyberbane', 'razorpay', 'trading engine'],
     weak: ['built', 'made', 'apps', 'tools', 'experiments'],
   },
   {

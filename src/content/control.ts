@@ -44,7 +44,7 @@ export const GAUGES: ReadonlyArray<Gauge> = [
   },
   {
     id: 'builds',
-    label: 'Side builds',
+    label: 'Other projects',
     value: SIDE_BUILDS.length,
     summary: 'Built to learn, to fix his own problems, or just for fun.',
     items: SIDE_BUILDS.map((b) => ({ label: b.name, note: b.hook.split('. ')[0], to: 'side-builds' })),

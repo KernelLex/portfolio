@@ -30,6 +30,9 @@ export const WORK = {
   lead: 'What two people built for real businesses: first websites, then the systems those businesses run on.',
   clientsHeading: 'Client projects',
   novaHeading: 'Nova: the products',
+  otherHeading: 'Other projects',
+  otherLead: 'Side builds and collaborations: built to learn, to solve my own problems, or just for fun.',
+  otherAll: 'See all other projects',
   novaLead:
     'Nova is the product line Amogh builds with Thushaar Rangan: ERP, CRM and HRMS, already built and running. Each began as a request from one company.',
   sections: { problem: 'The problem', built: 'What we built', result: 'Result', stack: 'Built with', watch: 'Watch' },

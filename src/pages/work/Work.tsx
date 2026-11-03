@@ -3,6 +3,7 @@ import { askAddress } from '../../browser/address';
 import { useBrowser } from '../../browser/BrowserContext';
 import LiveLinks from '../../components/LiveLinks';
 import ClipPlayer from '../../components/ClipPlayer';
+import { SIDE_BUILDS } from '../../content/sideBuilds';
 import { ALL_WORK, CLIENT_WORK, NOVA_PRODUCTS, WORK, type CaseStudy } from '../../content/work';
 import { playClick } from '../../lib/sound';
 
@@ -59,6 +60,7 @@ function Card({ study }: { study: CaseStudy }) {
 }
 
 function Grid() {
+  const { open } = useBrowser();
   return (
     <div className="mx-auto w-full max-w-6xl 2xl:max-w-[1440px] px-4 pt-6 pb-16 sm:px-8 sm:pt-8 xl:px-12">
       <header className="max-w-2xl">
@@ -82,6 +84,40 @@ function Grid() {
         {NOVA_PRODUCTS.map((study) => (
           <li key={study.slug}>
             <Card study={study} />
+          </li>
+        ))}
+      </ul>
+
+      {/* The other projects, here too: side builds and collaborations, each leading to their page. */}
+      <div className="mt-12 mb-1 flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="font-mono text-[10.5px] tracking-[0.22em] text-ink-muted uppercase">{WORK.otherHeading}</h2>
+        <button type="button" onClick={() => open('side-builds')} className="inline-flex items-center gap-1 text-xs text-accent hover:underline">
+          {WORK.otherAll}
+          <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
+        </button>
+      </div>
+      <p className="mb-4 max-w-2xl text-sm leading-relaxed text-ink-muted">{WORK.otherLead}</p>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {SIDE_BUILDS.map((b) => (
+          <li key={b.name}>
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                open('side-builds');
+              }}
+              className="glass group flex h-full w-full flex-col gap-1.5 rounded-xl p-4 text-left transition-colors hover:border-accent/40"
+            >
+              <span className="flex items-baseline justify-between gap-3">
+                <span className="font-display text-xl leading-tight text-ink">{b.name}</span>
+                {b.stat ? (
+                  <span className="shrink-0 font-mono text-xs text-accent">{b.stat.value}</span>
+                ) : b.video ? (
+                  <PlayCircle className="h-4 w-4 shrink-0 text-accent" strokeWidth={1.8} aria-label={WORK.sections.watch} />
+                ) : null}
+              </span>
+              <span className="text-[13px] leading-snug text-ink-muted">{b.hook.split('. ')[0].replace(/\.$/, '')}.</span>
+            </button>
           </li>
         ))}
       </ul>

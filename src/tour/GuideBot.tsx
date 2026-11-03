@@ -33,6 +33,9 @@ const ACT_MS = 860;
 type Act = (typeof IDLE_ACTS)[number] | 'land';
 type Point = { x: number; y: number };
 
+// Once the visitor has opened Byte, its "click me" label has done its job.
+let introduced = false;
+
 /** Where Byte floats until it is moved: clear of the taskbar, the sidebar and the phone's bottom bar. */
 const SPOT: Record<Place, string> = {
   title: '',
@@ -125,6 +128,7 @@ export default function GuideBot() {
   const [act, setAct] = useState<{ name: Act; at: number } | null>(null);
   const [talking, setTalking] = useState(false);
   const [showList, setShowList] = useState(false);
+  const [labelled, setLabelled] = useState(!introduced);
   const drag = useRef<{ id: number; dx: number; dy: number; sx: number; sy: number; lastX: number; moved: boolean } | null>(null);
   const wasDragged = useRef(false);
   const tripTimer = useRef(0);
@@ -308,6 +312,8 @@ export default function GuideBot() {
     }
     playClick();
     play('hop');
+    introduced = true;
+    setLabelled(false);
     guide.setOpen(!g.open);
   };
 
@@ -343,7 +349,7 @@ export default function GuideBot() {
           </span>
         </span>
         {/* Until it is opened, Byte says what it is for, on the side with room. */}
-        {!showBubble && !held && (
+        {labelled && !showBubble && !held && (
           <span
             className={`absolute top-1/2 -translate-y-1/2 rounded-md border border-accent/40 bg-[#0d111c]/95 px-2 py-1 font-mono text-[10px] whitespace-nowrap text-accent shadow-[0_6px_18px_rgba(0,0,0,0.5)] ${onRight ? 'right-full mr-2' : 'left-full ml-2'}`}
             style={{ animation: 'fade-in 300ms ease-out both' }}

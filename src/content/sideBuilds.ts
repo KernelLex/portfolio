@@ -1,6 +1,6 @@
 import { CLIPS, LIVE, PROFILES, type Clip, type LiveSite } from './links';
 
-/** Side Builds: what Amogh builds to learn, to fix his own problems, or for fun. Facts from CLAUDE.md 3. */
+/** Other Projects (side builds): what Amogh builds to learn, to fix his own problems, or for fun. Facts from CLAUDE.md 3. */
 export type SideBuild = {
   name: string;
   hook: string;
@@ -9,14 +9,14 @@ export type SideBuild = {
   live?: LiveSite;
   /** A number worth showing, only where one is on record. */
   stat?: { value: string; label: string };
-  /** Its short, in the Shorts feed. */
+  /** Its walkthrough, on the Videos page. */
   video?: { id: string; clip: Clip };
 };
 
 export const SIDE_BUILDS_PAGE = {
   eyebrow: 'amogh://side-builds',
-  title: 'Side Builds',
-  lead: 'Small projects, built to learn, to solve my own problems, or just for fun.',
+  title: 'Other Projects',
+  lead: 'Side builds and collaborations, built to learn, to solve my own problems, or just for fun.',
   github: PROFILES.github,
   githubLabel: 'More on GitHub',
   watch: 'Watch the video',

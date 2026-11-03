@@ -41,28 +41,32 @@ export const PAGES: Record<PageId, PageCopy> = {
   },
   story: {
     title: 'The Story',
-    blurb: 'From picking freedom to building systems, one scroll at a time.',
+    short: 'Story',
+    blurb: 'From picking freedom to building systems, played one chapter at a time.',
     aliases: ['story', 'your story', 'life story', 'journey', 'how it started', 'background'],
   },
   work: {
     title: 'Client Work',
+    short: 'Work',
     blurb: 'Case studies: Vera ERP, HRMS, Secant, Hazen Lights and more.',
     aliases: ['client work', 'clients', 'client', 'work', 'case studies', 'case study', 'portfolio', 'vera', 'vera erp', 'erp', 'hrms', 'secant', 'hazen', 'hazen lights', 'websites', 'nova', 'nova erp', 'nova crm', 'nova hrms', 'crm'],
   },
   ask: {
     title: 'Ask Amogh',
+    short: 'Ask',
     blurb: 'Chat with my AI twin. It is an AI, not me.',
     aliases: ['ask amogh', 'ask', 'ai twin', 'twin', 'chat', 'chatbot', 'talk to amogh', 'talk to you'],
   },
   videos: {
     title: 'Videos',
-    blurb: 'Project videos, one swipe at a time.',
+    blurb: 'Project walkthroughs: play one, like it, pick what is next.',
     aliases: ['videos', 'video', 'youtube', 'watch', 'shorts', 'reels', 'clips', 'demos', 'walkthroughs'],
   },
   'side-builds': {
-    title: 'Side Builds',
-    blurb: 'TrueCommit, Throttle, Avika, CropRadar and more.',
-    aliases: ['side builds', 'side build', 'side projects', 'side project', 'projects', 'builds', 'truecommit', 'true commit', 'promise keeper', 'throttle', 'avika', 'cropradar', 'crop radar', 'trading engine', 'leadscope', 'lead scope'],
+    title: 'Other Projects',
+    short: 'Projects',
+    blurb: 'Side builds and collaborations: CyberBane, Metakai, TrueCommit, CropRadar, Avika and more.',
+    aliases: ['other projects', 'other project', 'more projects', 'side builds', 'side build', 'side projects', 'side project', 'projects', 'builds', 'cyberbane', 'metakai', 'truecommit', 'true commit', 'promise keeper', 'throttle', 'avika', 'cropradar', 'crop radar', 'trading engine', 'leadscope', 'lead scope'],
   },
   web: {
     title: 'Live site',
